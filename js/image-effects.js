@@ -95,7 +95,9 @@ document.addEventListener('DOMContentLoaded', function () {
     tiles();
     var d = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(3e6 / (W * H))), c = document.createElement('canvas'), ctx = c.getContext('2d');
     c.width = Math.round(W * d); c.height = Math.round(H * d); c.setAttribute('aria-hidden', 'true');
-    var st = c.style; st.position = 'absolute'; st.pointerEvents = 'none'; st.width = W + 'px'; st.height = H + 'px'; st.maxWidth = 'none';
+    /* an image that fills a positioned frame (the Archive's tiles and opened image) gets a canvas sized as a share of that frame, so it stays exactly on the image while the frame grows or shrinks */
+    var box = el.parentNode, fill = !isBg && box && el.offsetLeft === 0 && el.offsetTop === 0 && W === box.clientWidth && H === box.clientHeight && getComputedStyle(box).position !== 'static';
+    var st = c.style; st.position = 'absolute'; st.pointerEvents = 'none'; st.width = fill ? '100%' : W + 'px'; st.height = fill ? '100%' : H + 'px'; st.maxWidth = 'none';
     st.setProperty('border-radius', cs.borderRadius, 'important');
     if (cs.zIndex !== 'auto') st.zIndex = cs.zIndex;
     if (isBg) { if (cs.position === 'static') el.style.position = 'relative'; st.left = st.top = '0'; el.appendChild(c); }
@@ -221,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function vcr(host, token, settle, ms) {
     var T = tapeOpen(host);
     if (!T) return false;
-    var S = tapeScene(), t0 = performance.now(), live = true, seen = look(T.el);
+    var S = tapeScene(), t0 = performance.now(), live = true, seen = look(T.el), was = seen;
     if (settle) { S.settle = true; S.ms = rnd(GLITCH_MS, SETTLE_MS); }
     else if (ms) S.ms = ms * rnd(.8, 1.2);
     host._ntGlitching = true;
@@ -237,9 +239,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var t = (now - t0) / S.ms;
       if (t >= 1) { done(); return; }
       if (t <= 0 || Math.random() > STICK) {
-        /* an image that grows, shrinks or changes picture mid-glitch (the Archive's opened image moving to the next one) gets a fresh canvas the same size, so the glitch always covers all of it */
+        /* an image that grows, shrinks or changes picture mid-glitch (the Archive's opened image moving to the next one) gets a fresh canvas once it holds still for a frame; until then the canvas stretches with its frame, so the glitch always covers all of it */
         var now2 = look(T.el);
-        if (now2 !== seen) { var T2 = tapeOpen(host); if (T2) { T.close(); T = T2; seen = now2; } }
+        if (now2 !== seen && now2 === was) { var T2 = tapeOpen(host); if (T2) { T.close(); T = T2; seen = now2; } }
+        was = now2;
         T.place(); if (T.live) T.load(); tapeBurst(T, S, Math.max(0, t), now);
       }
       requestAnimationFrame(step);
