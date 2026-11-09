@@ -60,8 +60,13 @@
       }
       x = wrap(x);
       list.style.transform = 'translate3d(' + x + 'px,0,0)';
-      requestAnimationFrame(tick);
+      if (seen || dragging || Math.abs(momentum) > 1) requestAnimationFrame(tick); else running = false;
     }
+    /* it only moves while it is on screen, or still being dragged or coasting; off screen it rests and picks up where it left off */
+    var seen = true, running = true;
+    function run() { if (!running) { running = true; prev = performance.now(); requestAnimationFrame(tick); } }
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { seen = en[0].isIntersecting; if (seen) run(); }).observe(root);
+    root.addEventListener('pointerdown', run);
     requestAnimationFrame(tick);
 
     root.addEventListener('pointerdown', function (e) {

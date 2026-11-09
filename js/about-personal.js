@@ -68,9 +68,13 @@
       var f=idx<0?{label:'',text:''}:facts[idx];
       morphLabel(f.label);morphText(f.text);
     }
-    /* poll each frame: Webflow interactions keep moving things after scroll events stop */
-    (function loop(){update();requestAnimationFrame(loop);})();
-    addEventListener('scroll',update,{passive:true});addEventListener('resize',update);
+    /* checks every frame only while the page is moving: scrolling, resizing, or for a moment after, while Webflow's interactions finish easing things into place. At rest it does nothing */
+    var awake=0,until=0;
+    function wake(){until=performance.now()+1500;if(!awake){awake=1;requestAnimationFrame(function loop(now){update();if(now<until)requestAnimationFrame(loop);else awake=0;});}}
+    ['scroll','resize','wheel','touchmove','keydown','load'].forEach(function(n){addEventListener(n,wake,{passive:true});});
+    /* and when the page changes height, as images load or text reveals */
+    if('ResizeObserver' in window)new ResizeObserver(wake).observe(document.body);
+    wake();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
