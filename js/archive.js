@@ -591,6 +591,9 @@
         if (!part || part === overlayPart(e.relatedTarget)) return;
         if (part === big) glitch(bigImg, HOVER);
         else if (part.classList.contains('nt-thumb')) glitch(part.firstElementChild, THUMB);
+        /* the buttons get the site's button rollover, a bad signal that runs sideways, up and down, or both, new each time; the icon buttons' ghosts follow their circle and icon */
+        else if (window.__ntVhsButton && part.matches('.nt-wall-close, .nt-wall-arrow, .nt-wall-skip')) window.__ntVhsButton(part, { drop: true });
+        else if (window.__ntVhsButton && part.classList.contains('nt-more')) window.__ntVhsButton(part);
         else glitch(part, LIGHT);
         return;
       }

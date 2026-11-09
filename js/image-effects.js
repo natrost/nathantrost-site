@@ -283,7 +283,9 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   /* a button's rollover: a bad signal, like the titles. Red and cyan ghosts of its label and its outline pull apart and close back up, it jumps, flickers bright, and for the odd frame only a torn band of it shows. Each rollover gets its own mix: the failures run sideways, up and down, or both at once, at a new strength. It settles back exactly as it was */
-  function vhsButton(b) {
+  /* o.drop: for icon buttons (the Archive overlay's close, arrows and skips), the ghosts follow the button's own shape, its circle and icon, rather than its text and box */
+  function vhsButton(b, o) {
+    o = o || {};
     var t0 = performance.now(), was = { ts: b.style.textShadow, bs: b.style.boxShadow, tr: b.style.translate, f: b.style.filter, cp: b.style.clipPath };
     /* the mix: which ways it can fail (h = sideways, v = up and down), how hard, and how often it jumps and tears */
     var ways = [['h'], ['v'], ['h', 'v'], ['h', 'v'], ['h', 'v', 'd']][Math.floor(Math.random() * 5)];
@@ -296,10 +298,16 @@ document.addEventListener('DOMContentLoaded', function () {
       var t = (now - t0) / BUTTON_MS;
       if (t >= 1) { b.style.textShadow = was.ts; b.style.boxShadow = was.bs; b.style.translate = was.tr; b.style.filter = was.f; b.style.clipPath = was.cp; b._ntGlitching = false; return; }
       var e = 1 - t * t, k = Math.random() < .5 ? 1 : -1, s = Math.round((3 + Math.random() * 7) * e * mix.split), v = vec(way(), k * s);
-      b.style.textShadow = s ? v[0] + 'px ' + v[1] + 'px #ff1e3c, ' + -v[0] + 'px ' + -v[1] + 'px #18d6ff' : was.ts;
-      b.style.boxShadow = s > 2 ? v[0] + 'px ' + v[1] + 'px 0 rgba(255, 30, 60, .6), ' + -v[0] + 'px ' + -v[1] + 'px 0 rgba(24, 214, 255, .6)' : was.bs;
+      var flash = Math.random() < .25 * e;
+      if (o.drop) {
+        var ghosts = s ? 'drop-shadow(' + v[0] + 'px ' + v[1] + 'px 0 rgba(255, 30, 60, .8)) drop-shadow(' + -v[0] + 'px ' + -v[1] + 'px 0 rgba(24, 214, 255, .8))' : '';
+        b.style.filter = (ghosts + (flash ? ' brightness(1.7) contrast(1.4)' : '')).trim() || was.f;
+      } else {
+        b.style.textShadow = s ? v[0] + 'px ' + v[1] + 'px #ff1e3c, ' + -v[0] + 'px ' + -v[1] + 'px #18d6ff' : was.ts;
+        b.style.boxShadow = s > 2 ? v[0] + 'px ' + v[1] + 'px 0 rgba(255, 30, 60, .6), ' + -v[0] + 'px ' + -v[1] + 'px 0 rgba(24, 214, 255, .6)' : was.bs;
+        b.style.filter = flash ? 'brightness(1.7) contrast(1.4)' : was.f;
+      }
       if (Math.random() < mix.jump * e) { var j = vec(way(), k * Math.round(2 + Math.random() * 5 * e)); b.style.translate = j[0] + 'px ' + j[1] + 'px'; } else b.style.translate = was.tr;
-      b.style.filter = Math.random() < .25 * e ? 'brightness(1.7) contrast(1.4)' : was.f;
       /* a torn band: a horizontal strip, or a vertical slice */
       if (Math.random() < mix.tear * e) {
         var a = Math.round(rnd(5, 40)), z = Math.round(rnd(5, 40));
@@ -308,6 +316,9 @@ document.addEventListener('DOMContentLoaded', function () {
       requestAnimationFrame(step);
     })(t0);
   }
+
+  /* lets other scripts give their own buttons the same rollover (the Archive overlay) */
+  window.__ntVhsButton = function (b, o) { if (b && !b._ntGlitching) vhsButton(b, o); };
 
   /* lets other scripts play the tape on an image of their own (the About page's clients and collaborators trail): o.ms sets how long, o.settle starts it strong and resolves into the picture, o.gain below 1 makes it gentler. It waits for the image to load */
   window.__ntTape = function (el, o) {
