@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   /* one frame of a rollover: t runs 0 to 1 */
   function tapeBurst(T, S, t, now) {
-    var W = T.W, H = T.H, K = S.kinds, env = S.settle ? Math.pow(1 - t, 1.6) : t < .1 ? t / .1 : 1 - Math.pow(Math.max(0, (t - .3) / .7), 2);
+    var W = T.W, H = T.H, K = S.kinds, env = (S.settle ? Math.pow(1 - t, 1.6) : t < .1 ? t / .1 : 1 - Math.pow(Math.max(0, (t - .3) / .7), 2)) * (S.gain || 1);
     var RH = Math.max(2, Math.round(H / 320)), rows = [], box = T.el.getBoundingClientRect(), k = box.height ? H / box.height : 1;
     var y0 = Math.max(0, Math.floor(-box.top * k / RH) * RH - RH), y1 = Math.min(H, (innerHeight - box.top) * k + RH);
     /* new bands of bad signal keep breaking out at random */
@@ -233,13 +233,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var STICK = 0.12;
   /* an image's size and picture, to notice either changing mid-glitch */
   function look(e) { return e.offsetWidth + 'x' + e.offsetHeight + ' ' + (e.currentSrc || e.src || ''); }
-  /* ms, if given, sets how long it lasts, give or take a fifth */
-  function vcr(host, token, settle, ms) {
+  /* ms, if given, sets how long it lasts, give or take a fifth; gain below 1 makes it gentler */
+  function vcr(host, token, settle, ms, gain) {
     var T = tapeOpen(host);
     if (!T) return false;
     var S = tapeScene(), t0 = performance.now(), live = true, seen = look(T.el), was = seen;
-    if (settle) { S.settle = true; S.ms = rnd(GLITCH_MS, SETTLE_MS); }
+    if (settle) { S.settle = true; S.ms = ms ? ms * rnd(.8, 1.2) : rnd(GLITCH_MS, SETTLE_MS); }
     else if (ms) S.ms = ms * rnd(.8, 1.2);
+    S.gain = gain || 1;
     host._ntGlitching = true;
     function done() {
       if (!live) return;
@@ -295,6 +296,14 @@ document.addEventListener('DOMContentLoaded', function () {
       requestAnimationFrame(step);
     })(t0);
   }
+
+  /* lets other scripts play the tape on an image of their own (the About page's clients and collaborators trail): o.ms sets how long, o.settle starts it strong and resolves into the picture, o.gain below 1 makes it gentler. It waits for the image to load */
+  window.__ntTape = function (el, o) {
+    o = o || {};
+    if (!el || el.tagName !== 'IMG') return;
+    function run() { vcr(el, el._ntToken, !!o.settle, o.ms || 0, o.gain || 1); }
+    if (el.complete && el.naturalWidth) run(); else el.addEventListener('load', run, { once: true });
+  };
 
   /* easter egg: on a real pointer, rolling onto a button glitches it once more (never mid-reveal) */
   if (window.matchMedia('(hover: hover)').matches) {

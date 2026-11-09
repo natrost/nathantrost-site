@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (on) return;
     on = true;
     /* a new mix of failures for each rollover */
-    mix = { seed: rnd(0, 999), wave: Math.random() < .6 ? rnd(4, 26) : 0, freq: rnd(.02, .09), slip: (Math.random() < .5 ? -1 : 1) * rnd(2, 13), tear: rnd(5, 18), lines: Math.floor(rnd(0, 10)) };
+    mix = { seed: rnd(0, 999), wave: Math.random() < .6 ? rnd(2, 6) : 0, freq: rnd(.08, .16), slip: (Math.random() < .5 ? -1 : 1) * rnd(1.5, 5), tear: rnd(2, 6), lines: Math.floor(rnd(0, 10)) };
     size();
     host.classList.add('nt-burst-on');
     layer.classList.add('is-on');
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var f = Math.floor(now / 50), k = Math.min(1, energy * 1.6);
     for (var r = top; r < bot; r += RH) {
       var h = Math.min(RH, map.h - r), n = Math.min(1, (1 - Math.abs(r + oy - y) / band) * 2) * k;
-      var s = (wob(r, 5, f + mix.seed) * mix.tear + wob(r, 30, f * .4 + mix.seed) * 8 + Math.sin(r * mix.freq + now * .012) * mix.wave) * n, g = mix.slip * n;
+      var s = (wob(r, 5, f + mix.seed) * mix.tear + wob(r, 30, f * .4 + mix.seed) * 2 + Math.sin(r * mix.freq + now * .012) * mix.wave) * n, g = mix.slip * n;
       if (n > .02) { ctx.drawImage(map.red, 0, r * dpr, map.c.width, h * dpr, ox + s - g, oy + r, map.w, h); ctx.drawImage(map.blue, 0, r * dpr, map.c.width, h * dpr, ox + s + g, oy + r, map.w, h); }
       ctx.drawImage(map.c, 0, r * dpr, map.c.width, h * dpr, ox + s, oy + r, map.w, h);
     }
