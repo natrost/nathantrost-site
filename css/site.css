@@ -244,9 +244,9 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
   .nt-melt, .nt-fade { opacity: 1 !important; translate: none !important; }
 }
 
-/* scroll showcase (js/showcase.js): full-length page designs in a tilted window that scroll by themselves. The window runs the full width of the screen (the script fits it exactly to the visible width) and is 90% of its height, on every device; the script sizes the tilted layer to cover it whatever its shape, and widens the middle page when the window is taller than it is wide */
+/* scroll showcase (js/showcase.js): full-length page designs in a tilted window on the site's sand, drifting with the page scroll. The window runs the full width of the screen (the script fits it exactly to the visible width) and is 90% of its height, on every device; the script sizes the tilted layer to cover it whatever its shape, and widens the middle page when the window is taller than it is wide */
 .scroll_showcase { position: relative; width: 100%; }
-.scroll_showcase_frame { position: relative; box-sizing: border-box; width: 100vw; max-width: none; height: 90vh; height: 90svh; margin-left: calc(50% - 50vw); overflow: hidden; background-color: #fff; }
+.scroll_showcase_frame { position: relative; box-sizing: border-box; width: 100vw; max-width: none; height: 90vh; height: 90svh; margin-left: calc(50% - 50vw); overflow: hidden; background-color: var(--sand, #f2f0e8); }
 .scroll_showcase_tilt { --nt-sc-tilt: -14deg; position: absolute; left: 50%; top: 50%; display: flex; justify-content: center; gap: 2.5%; width: 125%; height: 150%; translate: -50% -50%; rotate: var(--nt-sc-tilt); }
 .scroll_showcase_col { position: relative; flex: 1 1 0; min-width: 0; overflow: hidden; }
 /* the pages are clipped to the window, so columns that reach past the tilted layer's edges stay hidden there */
