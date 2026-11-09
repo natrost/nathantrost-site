@@ -215,29 +215,50 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   /* the whole image fails like a VCR tape for a moment, in a new mix each time. A rollover builds up and dies away; settle starts at full strength and resolves into the picture, for reveals. The odd frame sticks on the last one, as a worn tape does. Says false if the image can't be drawn yet */
   var STICK = 0.12;
-  function vcr(host, token, settle) {
+  /* an image's size and picture, to notice either changing mid-glitch */
+  function look(e) { return e.offsetWidth + 'x' + e.offsetHeight + ' ' + (e.currentSrc || e.src || ''); }
+  /* ms, if given, sets how long it lasts, give or take a fifth */
+  function vcr(host, token, settle, ms) {
     var T = tapeOpen(host);
     if (!T) return false;
-    var S = tapeScene(), t0 = performance.now();
+    var S = tapeScene(), t0 = performance.now(), live = true, seen = look(T.el);
     if (settle) { S.settle = true; S.ms = rnd(GLITCH_MS, SETTLE_MS); }
+    else if (ms) S.ms = ms * rnd(.8, 1.2);
     host._ntGlitching = true;
-    function done() { T.close(); host._ntGlitching = false; }
+    function done() {
+      if (!live) return;
+      live = false; T.close();
+      if (host._ntStop === done) { host._ntStop = null; host._ntGlitching = false; }
+    }
+    host._ntStop = done;
     (function step(now) {
+      if (!live) return;
       if (host._ntToken !== token) { done(); return; }
       var t = (now - t0) / S.ms;
       if (t >= 1) { done(); return; }
-      if (t <= 0 || Math.random() > STICK) { T.place(); if (T.live) T.load(); tapeBurst(T, S, Math.max(0, t), now); }
+      if (t <= 0 || Math.random() > STICK) {
+        /* an image that grows, shrinks or changes picture mid-glitch (the Archive's opened image moving to the next one) gets a fresh canvas the same size, so the glitch always covers all of it */
+        var now2 = look(T.el);
+        if (now2 !== seen) { var T2 = tapeOpen(host); if (T2) { T.close(); T = T2; seen = now2; } }
+        T.place(); if (T.live) T.load(); tapeBurst(T, S, Math.max(0, t), now);
+      }
       requestAnimationFrame(step);
     })(t0);
     return true;
   }
 
-  /* lets the Archive image wall glitch its own things: images play the tape, waiting for a new image to finish loading, and a slow glitch (its reveal) settles; text and buttons keep the pixel glitch */
+  /* lets the Archive image wall glitch its own things: images play the tape, waiting for a new image to finish loading, and a slow glitch (its reveal) settles; text and buttons keep the pixel glitch.
+     The opened image and its thumbnails play it at the wall's own quicker pace, and stepping to the next image restarts it on the new one */
   window.__ntGlitch = function (el, o) {
     o = o || HOVER;
-    if (el._ntGlitching) return;
+    var overlay = el.tagName === 'IMG' && el.closest('.nt-big, .nt-thumb');
+    if (el._ntGlitching && !overlay) return;
     if (el.tagName !== 'IMG') { glitch(el, el._ntToken, o); return; }
-    function run() { if (!el._ntGlitching && !vcr(el, el._ntToken, o.ms >= GLITCH_MS)) glitch(el, el._ntToken, o); }
+    /* the last image's glitch ends at once, so it never plays over the new picture while that loads */
+    if (overlay && el._ntStop) el._ntStop();
+    function run() {
+      if (!el._ntGlitching && !vcr(el, el._ntToken, o.ms >= GLITCH_MS, overlay ? o.ms : 0)) glitch(el, el._ntToken, o);
+    }
     if (el.complete) run(); else el.addEventListener('load', run, { once: true });
   };
 
