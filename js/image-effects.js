@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var REVEAL = { ms: GLITCH_MS, block: 28, tear: 40, flicker: true };
   var REVEAL_TEXT = { ms: GLITCH_MS, block: 28, tear: 40 };  /* project page text and buttons: the same glitch without the flicker, so it never blinks */
   var HOVER = { ms: 380, block: 16, tear: 26 };  /* anything on the Archive wall that is not an image, unless it says otherwise */
-  var BUTTON = { ms: 320, block: 6, tear: 14 };  /* rolling onto a button, light enough that the label stays readable */
+  var BUTTON_MS = 280;    /* how long a button's rollover glitch lasts */
   var WORK = location.pathname.indexOf('/work/') === 0; /* project pages glitch in the things Webflow used to fade too; the headline still melts */
   var slice = function (list) { return Array.prototype.slice.call(list); };
   var units = [];
@@ -264,12 +264,27 @@ document.addEventListener('DOMContentLoaded', function () {
     if (el.complete) run(); else el.addEventListener('load', run, { once: true });
   };
 
+  /* a button's rollover: a quick bad signal, like the titles. Red and cyan ghosts of its label pull apart and close back up, it jitters sideways, and it flickers bright now and then. The label stays readable throughout */
+  function vhsButton(b) {
+    var t0 = performance.now(), was = { ts: b.style.textShadow, tr: b.style.translate, f: b.style.filter };
+    b._ntGlitching = true;
+    (function step(now) {
+      var t = (now - t0) / BUTTON_MS;
+      if (t >= 1) { b.style.textShadow = was.ts; b.style.translate = was.tr; b.style.filter = was.f; b._ntGlitching = false; return; }
+      var e = 1 - t, k = Math.random() < .5 ? 1 : -1, s = Math.round((1 + Math.random() * 3) * e);
+      b.style.textShadow = s ? k * s + 'px 0 #ff1e3c, ' + -k * s + 'px 0 #18d6ff' : was.ts;
+      b.style.translate = Math.random() < .35 * e ? k * Math.round(1 + Math.random() * 2 * e) + 'px 0' : was.tr;
+      b.style.filter = Math.random() < .18 * e ? 'brightness(1.5)' : was.f;
+      requestAnimationFrame(step);
+    })(t0);
+  }
+
   /* easter egg: on a real pointer, rolling onto a button glitches it once more (never mid-reveal) */
   if (window.matchMedia('(hover: hover)').matches) {
     document.addEventListener('mouseover', function (e) {
       var b = e.target.closest && e.target.closest('.btn_learn_more, .w-button');
       if (!b || b.contains(e.relatedTarget) || b.closest('nav, .w-nav') || b._ntGlitching) return;
-      glitch(b, b._ntToken, BUTTON);
+      vhsButton(b);
     });
   }
 
