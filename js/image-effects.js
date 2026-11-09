@@ -131,13 +131,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (o >= 1 && s < 0 && x <= 0) ctx.drawImage(l, 0, top * d, o * d, h * d, -o, y, o, h);
     }
     return {
-      el: el, c: c, ctx: ctx, W: W, H: H, d: d, live: el.tagName === 'VIDEO', load: load,
-      /* keeps the canvas on the image, wherever scrolling, scaling or its frame moves it */
+      el: el, c: c, ctx: ctx, W: W, H: H, d: d, live: el.tagName === 'VIDEO', load: load, op: 1,
+      /* keeps the canvas on the image, wherever scrolling, scaling or its frame moves it, and as faded as the image is (the About trail fades its images in) */
       place: function () {
-        var r = el.getBoundingClientRect(), k = r.width / W;
+        var r = el.getBoundingClientRect(), k = r.width / W, op = 1;
         if (!r.width) { st.visibility = 'hidden'; return; }
         st.visibility = '';
         st.transform = 'translate(' + (r.left - M * k) + 'px,' + (r.top - MV * k) + 'px) scale(' + k + ')';
+        for (var n = el; n && n !== document.body; n = n.parentElement) op *= +getComputedStyle(n).opacity;
+        this.op = op;
       },
       /* the picture for this frame, from a list of rows */
       paint: function (rows) {
@@ -214,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     T.paint(rows);
     T.finish(rows, env, S.crush * env);
-    T.c.style.opacity = t > .86 ? (1 - t) / .14 : 1;
+    T.c.style.opacity = (t > .86 ? (1 - t) / .14 : 1) * T.op;
   }
   /* one frame of the patch around the cursor: its edge frays along the scan lines, and stays put so it never flickers */
   function tapePatch(T, S, x, y, A, E, now) {
@@ -342,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (T.live) T.load();
         px += (x - px) * FOLLOW; py += (y - py) * FOLLOW;
         tapePatch(T, S, px, py, CURSOR_PX / 2, energy, now);
-        T.c.style.opacity = Math.min(1, energy * 2.2);
+        T.c.style.opacity = Math.min(1, energy * 2.2) * T.op;
       }
       raf = requestAnimationFrame(frame);
     }

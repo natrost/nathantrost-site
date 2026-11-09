@@ -59,11 +59,10 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  /* drawn over itself twice: blacks crush down and highlights burn out, so the failure reads even on a soft, pale photo */
+  /* multiplied over itself: the tones deepen, so the failure reads even on a soft, pale photo without burning it out to white */
   function crush(k) {
     if (k <= 0) return;
-    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = k; ctx.drawImage(canvas, 0, 0);
-    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k * .2; ctx.drawImage(canvas, 0, 0);
+    ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = k * .6; ctx.drawImage(canvas, 0, 0);
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   }
   var scene = null, enter = 0, energy = 0, x = 0, y = 0, px = 0, py = 0, raf = 0, seed = rnd(0, 999);
