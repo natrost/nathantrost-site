@@ -282,19 +282,29 @@ document.addEventListener('DOMContentLoaded', function () {
     if (el.complete) run(); else el.addEventListener('load', run, { once: true });
   };
 
-  /* a button's rollover: a bad signal, like the titles. Red and cyan ghosts of its label and its outline pull apart and close back up, it jumps sideways, flickers bright, and for the odd frame only a torn band of it shows. It settles back exactly as it was */
+  /* a button's rollover: a bad signal, like the titles. Red and cyan ghosts of its label and its outline pull apart and close back up, it jumps, flickers bright, and for the odd frame only a torn band of it shows. Each rollover gets its own mix: the failures run sideways, up and down, or both at once, at a new strength. It settles back exactly as it was */
   function vhsButton(b) {
     var t0 = performance.now(), was = { ts: b.style.textShadow, bs: b.style.boxShadow, tr: b.style.translate, f: b.style.filter, cp: b.style.clipPath };
+    /* the mix: which ways it can fail (h = sideways, v = up and down), how hard, and how often it jumps and tears */
+    var ways = [['h'], ['v'], ['h', 'v'], ['h', 'v'], ['h', 'v', 'd']][Math.floor(Math.random() * 5)];
+    var mix = { ways: ways, split: rnd(.7, 1.3), jump: rnd(.35, .7), tear: rnd(.1, .22), vScale: rnd(.45, .7) };
+    var way = function () { return mix.ways[Math.floor(Math.random() * mix.ways.length)]; };
+    /* a split along one way: h pulls the ghosts left and right, v up and down (buttons are short, so less), d on a diagonal */
+    var vec = function (way, s) { return way === 'h' ? [s, 0] : way === 'v' ? [0, Math.round(s * mix.vScale)] : [s, Math.round(s * mix.vScale) * (Math.random() < .5 ? 1 : -1)]; };
     b._ntGlitching = true;
     (function step(now) {
       var t = (now - t0) / BUTTON_MS;
       if (t >= 1) { b.style.textShadow = was.ts; b.style.boxShadow = was.bs; b.style.translate = was.tr; b.style.filter = was.f; b.style.clipPath = was.cp; b._ntGlitching = false; return; }
-      var e = 1 - t * t, k = Math.random() < .5 ? 1 : -1, s = Math.round((3 + Math.random() * 7) * e);
-      b.style.textShadow = s ? k * s + 'px 0 #ff1e3c, ' + -k * s + 'px 0 #18d6ff' : was.ts;
-      b.style.boxShadow = s > 2 ? k * s + 'px 0 0 rgba(255, 30, 60, .6), ' + -k * s + 'px 0 0 rgba(24, 214, 255, .6)' : was.bs;
-      b.style.translate = Math.random() < .55 * e ? k * Math.round(2 + Math.random() * 5 * e) + 'px 0' : was.tr;
+      var e = 1 - t * t, k = Math.random() < .5 ? 1 : -1, s = Math.round((3 + Math.random() * 7) * e * mix.split), v = vec(way(), k * s);
+      b.style.textShadow = s ? v[0] + 'px ' + v[1] + 'px #ff1e3c, ' + -v[0] + 'px ' + -v[1] + 'px #18d6ff' : was.ts;
+      b.style.boxShadow = s > 2 ? v[0] + 'px ' + v[1] + 'px 0 rgba(255, 30, 60, .6), ' + -v[0] + 'px ' + -v[1] + 'px 0 rgba(24, 214, 255, .6)' : was.bs;
+      if (Math.random() < mix.jump * e) { var j = vec(way(), k * Math.round(2 + Math.random() * 5 * e)); b.style.translate = j[0] + 'px ' + j[1] + 'px'; } else b.style.translate = was.tr;
       b.style.filter = Math.random() < .25 * e ? 'brightness(1.7) contrast(1.4)' : was.f;
-      b.style.clipPath = Math.random() < .14 * e ? 'inset(' + Math.round(rnd(5, 40)) + '% 0 ' + Math.round(rnd(5, 40)) + '% 0)' : was.cp;
+      /* a torn band: a horizontal strip, or a vertical slice */
+      if (Math.random() < mix.tear * e) {
+        var a = Math.round(rnd(5, 40)), z = Math.round(rnd(5, 40));
+        b.style.clipPath = way() === 'v' ? 'inset(0 ' + a + '% 0 ' + z + '%)' : 'inset(' + a + '% 0 ' + z + '% 0)';
+      } else b.style.clipPath = was.cp;
       requestAnimationFrame(step);
     })(t0);
   }
