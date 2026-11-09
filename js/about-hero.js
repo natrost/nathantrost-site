@@ -1,9 +1,9 @@
-/* About page intro photo: the Webflow background shows normally. On a real pointer, rolling onto the intro plays a VHS signal failure across it, in a new mix each time: scan lines drift and wave, the red and blue pull apart, bands tear sideways and streak, the odd row drops out. A moving cursor drags a frayed patch of bad signal around with it, like the other images. It is drawn on a canvas behind the intro's text, so the text stays readable, and the canvas clears back to the photo afterward. Touch screens and reduced motion never set any of this up.
+/* About page intro photo: as the page loads, the photo comes in as a VHS signal failure that settles into the clean picture, in a new mix each visit: scan lines drift and wave, the red and blue pull apart, bands tear sideways and streak, the odd row drops out. It plays once; the photo has no rollover. It is drawn on a canvas behind the intro's text, so the text stays readable, and the canvas clears back to the photo afterward. Reduced motion never sets any of this up.
    The image and its overlay colour are read from whatever is set on the block in Webflow, so changing them in the Designer needs no change here */
 document.addEventListener('DOMContentLoaded', function () {
-  if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var ENTER_MS = 650;   /* about how long the rollover's signal failure lasts */
-  var CURSOR_PX = 400;  /* roughly how wide the patch around the cursor is */
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var LOAD_MS = 1100;   /* about how long the photo takes to settle in */
+  var LOAD_DELAY = 150; /* ms after the photo is ready before it starts, so the page has painted */
   var RH = 3;           /* height of one scan line, in px */
   var wrap = document.querySelector('.feature_wrapper');
   if (!wrap) return;
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.imageRendering = 'auto';
   wrap.insertBefore(canvas, wrap.firstChild);
-  var ctx = canvas.getContext('2d'), img = new Image(), W = 0, H = 0, d = 1, ready = false, plain = null, layers = [];
+  var ctx = canvas.getContext('2d'), img = new Image(), W = 0, H = 0, d = 1, plain = null, layers = [], played = false;
 
   function rnd(lo, hi) { return lo + Math.random() * (hi - lo); }
   function hash(n) { var s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); }
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
       n.globalCompositeOperation = 'destination-in'; n.drawImage(plain, 0, 0);
       return l;
     });
-    ready = true;
+    if (!played) { played = true; setTimeout(start, LOAD_DELAY); }
   }
   img.onload = build;
   img.src = src[1];
@@ -49,88 +49,56 @@ document.addEventListener('DOMContentLoaded', function () {
   }).observe(wrap);
 
   /* one row of the picture, shifted sideways (wrapping round so no hole opens) with its red and blue pulled apart */
-  function row(y, h, x, w, s, split) {
+  function row(y, h, s, split) {
     ctx.globalCompositeOperation = 'lighter';
     [[0, s - split], [1, s], [2, s + split]].forEach(function (p) {
-      var l = layers[p[0]], sx = ((x - p[1]) % W + W) % W, w1 = Math.min(w, W - sx);
-      ctx.drawImage(l, sx * d, y * d, w1 * d, h * d, x * d, y * d, w1 * d, h * d);
-      if (w1 < w) ctx.drawImage(l, 0, y * d, (w - w1) * d, h * d, (x + w1) * d, y * d, (w - w1) * d, h * d);
+      var l = layers[p[0]], sx = ((-p[1]) % W + W) % W, w1 = W - sx;
+      ctx.drawImage(l, sx * d, y * d, w1 * d, h * d, 0, y * d, w1 * d, h * d);
+      if (w1 < W) ctx.drawImage(l, 0, y * d, (W - w1) * d, h * d, w1 * d, y * d, (W - w1) * d, h * d);
     });
     ctx.globalCompositeOperation = 'source-over';
   }
-
   /* multiplied over itself: the tones deepen, so the failure reads even on a soft, pale photo without burning it out to white */
   function crush(k) {
     if (k <= 0) return;
     ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = k * .6; ctx.drawImage(canvas, 0, 0);
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   }
-  var scene = null, enter = 0, energy = 0, x = 0, y = 0, px = 0, py = 0, raf = 0, seed = rnd(0, 999);
-  function newScene() {
-    return { ms: ENTER_MS * rnd(.8, 1.2), seed: rnd(0, 999), events: [], next: 0, wave: Math.random() < .7 ? rnd(16, 44) : 0, freq: rnd(.008, .025), slip: (Math.random() < .5 ? -1 : 1) * rnd(14, 34), roll: Math.random() < .35, crush: rnd(.5, .9) };
+
+  var S = null, t0 = 0;
+  function start() {
+    S = { ms: LOAD_MS * rnd(.85, 1.15), seed: rnd(0, 999), events: [], next: 0, wave: Math.random() < .7 ? rnd(16, 44) : 0, freq: rnd(.008, .025), slip: (Math.random() < .5 ? -1 : 1) * rnd(14, 34), roll: Math.random() < .35, crush: rnd(.5, .9) };
+    t0 = performance.now();
+    requestAnimationFrame(frame);
   }
   function frame(now) {
-    raf = 0;
-    if (!ready) return;
+    var t = Math.max(0, (now - t0) / S.ms);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var t = enter ? (now - enter) / scene.ms : 1;
-    if (t >= 1) enter = 0;
-    energy *= .9;
-    var f = Math.floor(now / 45);
-    if (enter) {
-      /* rollover: builds fast, then dies away */
-      var S = scene, env = t < .1 ? t / .1 : 1 - Math.pow(Math.max(0, (t - .3) / .7), 2);
-      if (now > S.next && t < .85) {
-        S.next = now + rnd(20, 110);
-        var thick = Math.random() < .4, bh = thick ? rnd(24, H * .25) : rnd(4, 18), type = Math.random();
-        S.events.push({ y: rnd(-bh / 2, H), h: bh, until: now + rnd(60, 260), s: (Math.random() < .5 ? -1 : 1) * rnd(30, W * .3), streak: type < .35, gap: type > .9, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
-      }
-      S.events = S.events.filter(function (e) { return e.until > now; });
-      var rollY = S.roll ? t * H * 1.4 % H : -1;
-      for (var yy = 0; yy < H; yy += RH) {
-        var s = (wob(yy, 6, f + S.seed) * 14 + wob(yy, 50, f * .3 + S.seed) * 10) * env, gap = false, len = 0, from = -1;
-        if (S.wave) s += Math.sin(yy * S.freq + now * .012) * S.wave * env;
-        if (rollY >= 0 && Math.abs(yy - rollY) < H * .02) gap = true;
-        for (var i = 0; i < S.events.length; i++) {
-          var e = S.events[i];
-          if (yy + RH > e.y && yy < e.y + e.h) { if (e.gap) gap = true; s += e.s * env; if (e.streak) { from = e.from; len = W * (.2 + .6 * hash(Math.floor(yy / 2) + e.seed)) * env; } }
-        }
-        if (gap) { ctx.fillStyle = 'rgba(5, 5, 5, .9)'; ctx.fillRect(0, yy * d, canvas.width, RH * d); continue; }
-        row(yy, Math.min(RH, H - yy), 0, W, Math.round(s), Math.round(S.slip * env));
-        /* a streak: one pixel of the row stretched into a long line */
-        if (len > 1) ctx.drawImage(plain, (from < 0 ? 2 : W - 3) * d, yy * d, 1, RH * d, (from < 0 ? 0 : W - len) * d, yy * d, len * d, RH * d);
-      }
-      crush(S.crush * env);
-    } else if (energy >= .04) {
-      /* moving cursor: a patch of bad signal, its edge frayed along the scan lines, gliding after the cursor */
-      px += (x - px) * .35; py += (y - py) * .35;
-      var A = CURSOR_PX / 2, split = 22 * energy;
-      ctx.globalAlpha = Math.min(1, energy * 2.2);
-      for (var r = Math.max(0, Math.round((py - A * 1.15) / RH) * RH); r < Math.min(H, py + A * 1.15); r += RH) {
-        var u = (r - py) / A, reach = Math.sqrt(Math.max(0, 1 - u * u * .8)) * A;
-        var left = Math.max(0, px - reach + wob(r, 7, 3) * 50 + wob(r, 2.5, 8) * 34), right = Math.min(W, px + reach - wob(r, 6, 21) * 50 - wob(r, 2.5, 30) * 34);
-        if (right - left < 2 || reach < 12) continue;
-        var ss = wob(r, 5, f + seed) * 18 * energy + wob(r, 34, f * .4 + seed) * 22 * energy;
-        row(r, Math.min(RH, H - r), Math.round(left), Math.round(right - left), Math.round(ss), Math.round(split));
-      }
-      ctx.globalAlpha = 1;
-      crush(.7 * energy);
+    if (t >= 1 || !plain) return;
+    /* starts at full strength and resolves into the picture */
+    var env = Math.pow(1 - t, 1.5), f = Math.floor(now / 45);
+    if (now > S.next && t < .8) {
+      S.next = now + rnd(20, 110);
+      var thick = Math.random() < .4, bh = thick ? rnd(24, H * .25) : rnd(4, 18), type = Math.random();
+      S.events.push({ y: rnd(-bh / 2, H), h: bh, until: now + rnd(60, 260), s: (Math.random() < .5 ? -1 : 1) * rnd(30, W * .3), streak: type < .35, gap: type > .9, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
     }
-    if (enter || energy >= .04) raf = requestAnimationFrame(frame);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    S.events = S.events.filter(function (e) { return e.until > now; });
+    var rollY = S.roll ? t * H * 1.4 % H : -1;
+    for (var yy = 0; yy < H; yy += RH) {
+      var s = (wob(yy, 6, f + S.seed) * 14 + wob(yy, 50, f * .3 + S.seed) * 10) * env, gap = false, len = 0, from = -1;
+      if (S.wave) s += Math.sin(yy * S.freq + now * .012) * S.wave * env;
+      if (rollY >= 0 && Math.abs(yy - rollY) < H * .02) gap = true;
+      for (var i = 0; i < S.events.length; i++) {
+        var e = S.events[i];
+        if (yy + RH > e.y && yy < e.y + e.h) { if (e.gap) gap = true; s += e.s * env; if (e.streak) { from = e.from; len = W * (.2 + .6 * hash(Math.floor(yy / 2) + e.seed)) * env; } }
+      }
+      if (gap) { ctx.fillStyle = 'rgba(5, 5, 5, ' + (.9 * env) + ')'; ctx.fillRect(0, yy * d, canvas.width, RH * d); continue; }
+      row(yy, Math.min(RH, H - yy), Math.round(s), Math.round(S.slip * env));
+      /* a streak: one pixel of the row stretched into a long line */
+      if (len > 1) ctx.drawImage(plain, (from < 0 ? 2 : W - 3) * d, yy * d, 1, RH * d, (from < 0 ? 0 : W - len) * d, yy * d, len * d, RH * d);
+    }
+    crush(S.crush * env);
+    requestAnimationFrame(frame);
   }
-  function kick() { if (!raf) raf = requestAnimationFrame(frame); }
-  wrap.addEventListener('mouseenter', function (e) {
-    var r = wrap.getBoundingClientRect();
-    x = px = e.clientX - r.left; y = py = e.clientY - r.top;
-    scene = newScene(); enter = performance.now(); seed = rnd(0, 999);
-    kick();
-  });
-  wrap.addEventListener('mousemove', function (e) {
-    var r = wrap.getBoundingClientRect(), nx = e.clientX - r.left, ny = e.clientY - r.top;
-    energy = Math.min(1, energy + Math.sqrt((nx - x) * (nx - x) + (ny - y) * (ny - y)) / 120);
-    x = nx; y = ny;
-    kick();
-  }, { passive: true });
 });
