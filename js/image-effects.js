@@ -80,10 +80,9 @@ document.addEventListener('DOMContentLoaded', function () {
       for (var i = 0; i < a.length; i += 4) { a[i] = Math.random() * 255; a[i + 1] = Math.random() * 255; a[i + 2] = Math.random() * 255; a[i + 3] = Math.random() * 90; }
       g.putImageData(im, 0, 0);
     });
-    /* the tube's red, green and blue stripes, with a dark line between rows */
+    /* the tube's red, green and blue stripes. Every third row is left clear, so nothing darkens the picture between them; filling it with a gray such as #8c8c8c would draw gray scan lines across the image */
     crt = tile(3, 3, function (g) {
       g.fillStyle = '#ffd4d4'; g.fillRect(0, 0, 1, 2); g.fillStyle = '#d4ffd4'; g.fillRect(1, 0, 1, 2); g.fillStyle = '#d4d4ff'; g.fillRect(2, 0, 1, 2);
-      g.fillStyle = '#8c8c8c'; g.fillRect(0, 2, 3, 1);
     });
   }
   function tapeOpen(host) {
