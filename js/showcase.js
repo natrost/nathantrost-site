@@ -1,5 +1,6 @@
 /* Scroll showcase: full-length page designs in a tilted 16:9 window, like a presentation board, that scroll by themselves. It never holds the page: the visitor scrolls past it as normal.
    When the window arrives, the columns slide in from opposite directions and get a throw, like the Archive wall on load: the pages coast through their content and ease off into a slow drift, the middle page up and the pages either side down. At the end of a page the drift turns round. Scrolling the page nudges them along too, the harder the scroll, the bigger the push. Each page runs its own full length, so a shorter page simply moves more slowly and they all reach their ends together. It rests while off screen.
+   The window runs the full width of the screen and is 90% of its height (css/site.css).
    Built in Webflow as the Scroll Showcase component: a .scroll_showcase block holding .scroll_showcase_frame > .scroll_showcase_tilt > three .scroll_showcase_col blocks, each with one tall image. Any number of showcases can sit on a page, with any number of columns; the middle one scrolls up.
    Optional custom attributes on the .scroll_showcase block: data-drift (seconds the slow drift takes to run a page end to end, default 40) and data-tilt (the angle in degrees, default -14) */
 (function () {
@@ -48,7 +49,23 @@
       raf = near ? requestAnimationFrame(tick) : 0;
     }
     function run() { if (!raf && near && sec.classList.contains('is-in')) { last = performance.now(); raf = requestAnimationFrame(tick); } }
-    function size() { fh = frame.offsetHeight; place(); }
+    /* the tilted layer is sized to cover the window at its angle whatever the window's shape, a little wider than it needs so the side pages run off its edges; a window taller than it is wide (a phone) gives the middle page more of the width so it stays readable */
+    function size() {
+      fh = frame.offsetHeight;
+      var fw = frame.offsetWidth, a = Math.abs(parseFloat(getComputedStyle(tilt || frame).getPropertyValue('--nt-sc-tilt')) || 14) * Math.PI / 180;
+      sec.classList.toggle('is-tall', fh > fw);
+      if (tilt) {
+        tilt.style.width = Math.ceil((fw * Math.cos(a) + fh * Math.sin(a)) * 1.12) + 'px';
+        var th = Math.ceil((fw * Math.sin(a) + fh * Math.cos(a)) * 1.04);
+        tilt.style.height = th + 'px';
+        /* no page may be shorter than its column, or the column would run out and show an empty end: a column is made at least as wide as keeps its page 10% taller than the column. On a narrow window that pushes the side pages further off the edges, which suits a phone */
+        items.forEach(function (it) {
+          var r = it.img && it.img.naturalWidth ? it.img.naturalHeight / it.img.naturalWidth : 0;
+          it.col.style.minWidth = r ? Math.ceil(th * 1.1 / r) + 'px' : '';
+        });
+      }
+      place();
+    }
     size();
     addEventListener('resize', size);
     items.forEach(function (it) { if (it.img && !it.img.complete) it.img.addEventListener('load', size, { once: true }); });
