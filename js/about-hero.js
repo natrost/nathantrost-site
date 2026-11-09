@@ -59,9 +59,16 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  /* drawn over itself twice: blacks crush down and highlights burn out, so the failure reads even on a soft, pale photo */
+  function crush(k) {
+    if (k <= 0) return;
+    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = k; ctx.drawImage(canvas, 0, 0);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k * .2; ctx.drawImage(canvas, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
   var scene = null, enter = 0, energy = 0, x = 0, y = 0, px = 0, py = 0, raf = 0, seed = rnd(0, 999);
   function newScene() {
-    return { ms: ENTER_MS * rnd(.8, 1.2), seed: rnd(0, 999), events: [], next: 0, wave: Math.random() < .6 ? rnd(8, 26) : 0, freq: rnd(.01, .03), slip: (Math.random() < .5 ? -1 : 1) * rnd(6, 18), roll: Math.random() < .3 };
+    return { ms: ENTER_MS * rnd(.8, 1.2), seed: rnd(0, 999), events: [], next: 0, wave: Math.random() < .7 ? rnd(16, 44) : 0, freq: rnd(.008, .025), slip: (Math.random() < .5 ? -1 : 1) * rnd(14, 34), roll: Math.random() < .35, crush: rnd(.5, .9) };
   }
   function frame(now) {
     raf = 0;
@@ -77,13 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
       var S = scene, env = t < .1 ? t / .1 : 1 - Math.pow(Math.max(0, (t - .3) / .7), 2);
       if (now > S.next && t < .85) {
         S.next = now + rnd(20, 110);
-        var thick = Math.random() < .3, bh = thick ? rnd(18, H * .2) : rnd(3, 16), type = Math.random();
-        S.events.push({ y: rnd(-bh / 2, H), h: bh, until: now + rnd(50, 240), s: (Math.random() < .5 ? -1 : 1) * rnd(14, W * .18), streak: type < .3, gap: type > .9, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
+        var thick = Math.random() < .4, bh = thick ? rnd(24, H * .25) : rnd(4, 18), type = Math.random();
+        S.events.push({ y: rnd(-bh / 2, H), h: bh, until: now + rnd(60, 260), s: (Math.random() < .5 ? -1 : 1) * rnd(30, W * .3), streak: type < .35, gap: type > .9, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
       }
       S.events = S.events.filter(function (e) { return e.until > now; });
       var rollY = S.roll ? t * H * 1.4 % H : -1;
       for (var yy = 0; yy < H; yy += RH) {
-        var s = (wob(yy, 6, f + S.seed) * 6 + wob(yy, 50, f * .3 + S.seed) * 5) * env, gap = false, len = 0, from = -1;
+        var s = (wob(yy, 6, f + S.seed) * 14 + wob(yy, 50, f * .3 + S.seed) * 10) * env, gap = false, len = 0, from = -1;
         if (S.wave) s += Math.sin(yy * S.freq + now * .012) * S.wave * env;
         if (rollY >= 0 && Math.abs(yy - rollY) < H * .02) gap = true;
         for (var i = 0; i < S.events.length; i++) {
@@ -95,19 +102,21 @@ document.addEventListener('DOMContentLoaded', function () {
         /* a streak: one pixel of the row stretched into a long line */
         if (len > 1) ctx.drawImage(plain, (from < 0 ? 2 : W - 3) * d, yy * d, 1, RH * d, (from < 0 ? 0 : W - len) * d, yy * d, len * d, RH * d);
       }
+      crush(S.crush * env);
     } else if (energy >= .04) {
       /* moving cursor: a patch of bad signal, its edge frayed along the scan lines, gliding after the cursor */
       px += (x - px) * .35; py += (y - py) * .35;
-      var A = CURSOR_PX / 2, split = 10 * energy;
+      var A = CURSOR_PX / 2, split = 22 * energy;
       ctx.globalAlpha = Math.min(1, energy * 2.2);
       for (var r = Math.max(0, Math.round((py - A * 1.15) / RH) * RH); r < Math.min(H, py + A * 1.15); r += RH) {
         var u = (r - py) / A, reach = Math.sqrt(Math.max(0, 1 - u * u * .8)) * A;
         var left = Math.max(0, px - reach + wob(r, 7, 3) * 50 + wob(r, 2.5, 8) * 34), right = Math.min(W, px + reach - wob(r, 6, 21) * 50 - wob(r, 2.5, 30) * 34);
         if (right - left < 2 || reach < 12) continue;
-        var ss = wob(r, 5, f + seed) * 12 * energy + wob(r, 34, f * .4 + seed) * 14 * energy;
+        var ss = wob(r, 5, f + seed) * 18 * energy + wob(r, 34, f * .4 + seed) * 22 * energy;
         row(r, Math.min(RH, H - r), Math.round(left), Math.round(right - left), Math.round(ss), Math.round(split));
       }
       ctx.globalAlpha = 1;
+      crush(.7 * energy);
     }
     if (enter || energy >= .04) raf = requestAnimationFrame(frame);
     else ctx.clearRect(0, 0, canvas.width, canvas.height);
