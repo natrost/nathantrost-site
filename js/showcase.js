@@ -71,6 +71,10 @@
     function run() { if (!raf && near && sec.classList.contains('is-in') && !reduce) { last = performance.now(); raf = requestAnimationFrame(tick); } }
     /* the tilted layer is sized to cover the window at its angle whatever the window's shape, a little wider than it needs so the side pages run off its edges; a window taller than it is wide (a phone) gives the middle page more of the width so it stays readable */
     function size() {
+      /* the window runs edge to edge of the visible page (not counting a scrollbar), wherever the block sits and whatever padding its section has */
+      frame.style.width = document.documentElement.clientWidth + 'px';
+      frame.style.marginLeft = '0px';
+      frame.style.marginLeft = -frame.getBoundingClientRect().left + 'px';
       fh = frame.offsetHeight;
       var fw = frame.offsetWidth, a = ang = Math.abs(parseFloat(getComputedStyle(tilt || frame).getPropertyValue('--nt-sc-tilt')) || 14) * Math.PI / 180;
       sec.classList.toggle('is-tall', fh > fw);
