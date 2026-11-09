@@ -1,6 +1,6 @@
 # nathantrost.com scripts
 
-JavaScript for nathantrost.com, loaded from Webflow through jsDelivr at a pinned version:
+JavaScript for nathantrost.com, loaded from Webflow through jsDelivr. Each link pins its own version, so one file can move ahead without touching the others:
 
     https://cdn.jsdelivr.net/gh/natrost/nathantrost-site@1.0.0/js/image-effects.js
 

@@ -29,6 +29,10 @@
     var ARROW_ROOM = 48;   /* space kept clear above the bottom margin for the arrows, in px */
     var BAR_GAP = 3;       /* the scrollbar's grab area starts this far outside the frame, which puts the visible bar 8px from it */
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
+    var SHIELD = 28;       /* the force field around each main nav item (The Work, the logo, About Me) reaches this far past it, in px */
+    var SHIELD_OUT = 70;   /* how quickly an image whose spot strays into a field is thrown up off the screen, in ms; lower is faster */
+    var SHIELD_BACK = 260; /* how long it takes to fade back in at its spot once the wall carries the spot clear, in ms */
+    var SHIELD_LEAD = 120; /* how far ahead, in ms of the wall's movement, the field looks for images about to arrive */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var root = document.documentElement;
     var slice = function (l) { return Array.prototype.slice.call(l); };
@@ -153,6 +157,7 @@
     }
     function layout() {
       boxW = wall.clientWidth; boxH = wall.clientHeight;
+      measureShields();
       var w = Math.min(TILE, Math.floor(boxW * 0.45));
       step = w + GAP;
       var avg = images.reduce(function (s, im) { return s + w / wallRatio(im) + GAP; }, 0) / images.length;
@@ -186,7 +191,7 @@
           el.style.width = w + 'px'; el.style.height = Math.round(t.h) + 'px';
           el.dataset.p = t.im.p;
           img.alt = ''; img.draggable = false;
-          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, shown: null, asked: false };
+          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, px: 0, py: 0, out: null, shown: null, asked: false };
           el._tile = tile; tiles.push(tile);
         });
       });
@@ -196,15 +201,60 @@
 
     /* moving the wall: tiles wrap around the loop, images load once they are near the screen, and anything off screen is skipped by the browser */
     function mod(a, b) { return ((a % b) + b) % b; }
+    /* the force field: the main nav items' boxes on the wall, each grown by SHIELD */
+    var shields = [], shieldLast = 0;
+    function measureShields() {
+      var box = wall.getBoundingClientRect();
+      shields = ['.nav_the_work', '.nav_about_me', document.querySelector('.nt-logo-solid') ? '.nt-logo-solid' : '.main_nav .nav_logo'].map(function (s) {
+        var e = document.querySelector(s), r = e && e.getBoundingClientRect();
+        return r && r.width ? { l: r.left - box.left - SHIELD, r: r.right - box.left + SHIELD, t: r.top - box.top - SHIELD, b: r.bottom - box.top + SHIELD } : null;
+      }).filter(Boolean);
+    }
+    /* the nav's text widths settle once its font arrives */
+    if (document.fonts) document.fonts.ready.then(function () { measureShields(); apply(); });
+    /* each image sits at its spot on the wall, unless that spot is inside a field: then it is thrown off the screen, and glides back once the spot is clear. One arriving from above goes back up; one arriving from below or the side goes out sideways, to the nearer edge, so it never crosses the nav on its way out. It goes by the spot, not where the image is, so an image never flickers at a field's edge. Says whether any image is still moving */
     function apply() {
+      var now = performance.now(), dt = Math.min(now - (shieldLast || now), 50), busy = false;
+      shieldLast = now;
       tiles.forEach(function (t) {
         var x = mod(t.x + panX + step, worldW) - step, y = mod(t.y + panY + t.h, worldH) - t.h;
         t.sx = x; t.sy = y;
-        t.el.style.translate = x + 'px ' + y + 'px';
-        var seen = x < boxW && x + t.w > 0 && y < boxH && y + t.h > 0;
+        /* held still while an image is open, as the nav is hidden then */
+        if (!openTile) {
+          /* a fast-moving wall would carry an image across the field's margin in one frame, so it also looks where the image is about to be */
+          var ax = x + vx * SHIELD_LEAD, ay = y + vy * SHIELD_LEAD, hit = null;
+          shields.forEach(function (r) {
+            if (!hit && Math.min(x, ax) < r.r && Math.max(x, ax) + t.w > r.l && Math.min(y, ay) < r.b && Math.max(y, ay) + t.h > r.t) hit = r;
+          });
+          /* the way out is picked when the image is first pushed, and kept until it is back */
+          if (!hit) t.out = null;
+          else if (!t.out) t.out = y < hit.t ? 'up' : x + t.w / 2 < boxW / 2 ? 'left' : 'right';
+          var gx = !hit || t.out === 'up' ? 0 : t.out === 'left' ? -(x + t.w + EXIT_PAST) : boxW - x + EXIT_PAST;
+          var gy = hit && t.out === 'up' ? -(y + t.h + EXIT_PAST) : 0;
+          /* coming back from off the screen, it fades in at its spot rather than sliding back across the nav */
+          if (!hit && (t.px || t.py)) {
+            var cx = x + t.px, cy = y + t.py;
+            if (cx >= boxW || cx + t.w <= 0 || cy >= boxH || cy + t.h <= 0) {
+              t.px = t.py = 0;
+              if (!reduce && t.el.animate) t.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SHIELD_BACK, easing: 'ease-out' });
+            }
+          }
+          if (t.px !== gx || t.py !== gy) {
+            var k = reduce ? 1 : 1 - Math.exp(-dt / (hit ? SHIELD_OUT : SHIELD_BACK));
+            t.px += (gx - t.px) * k; t.py += (gy - t.py) * k;
+            if (Math.abs(gx - t.px) < 0.5 && Math.abs(gy - t.py) < 0.5) { t.px = gx; t.py = gy; } else busy = true;
+          }
+        }
+        var px = x + t.px, py = y + t.py;
+        t.el.style.translate = px + 'px ' + py + 'px';
+        var seen = px < boxW && px + t.w > 0 && py < boxH && py + t.h > 0;
         if (seen !== t.shown) { t.shown = seen; t.el.style.visibility = seen || t.hold ? '' : 'hidden'; }
         if (!t.asked && x < boxW + 400 && x + t.w > -400 && y < boxH + 400 && y + t.h > -400) loadTile(t);
       });
+      if (!busy) shieldLast = 0;
+      /* keeps the frames coming until every image has settled, even once the wall itself has stopped */
+      if (busy && !raf) { last = now; raf = requestAnimationFrame(tick); }
+      return busy;
     }
     function loadTile(t) {
       t.asked = true;
@@ -223,9 +273,10 @@
         var k = Math.pow(FRICTION, dt / 1000);
         vx *= k; vy *= k;
       }
-      apply();
+      var busy = apply();
       if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01) { raf = requestAnimationFrame(tick); return; }
-      vx = vy = 0; raf = 0; setMoving(false);
+      vx = vy = 0; setMoving(false);
+      raf = busy ? requestAnimationFrame(tick) : 0;
     }
     function coast() { setMoving(true); if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
     function kick() { hideTitle(); coast(); }
