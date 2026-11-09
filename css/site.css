@@ -1,0 +1,245 @@
+/* Site-wide styles for nathantrost.com, linked from the site head in Webflow. Only the few rules that must apply before anything paints (hiding what animates in) stay inline in the head */
+
+/* turning the lightbox background to white */ 
+.w-lightbox-backdrop {background: rgba(242, 240, 232,.95);} 
+.w-lightbox-close {background-image: url(https://uploads-ssl.webflow.com/665638e0329e026c932efbd5/66b7d9402e3e75a374b75fc5_close.svg);}
+
+/* a very faint paper grain: a warm grain plus a few far-apart flecks. Only for sections that paint their own solid sand: it is semi-transparent, so on a see-through section it doubles and reads darker. The fourth row of each colour matrix sets the strength: grain first, then flecks */
+html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .feature_wrapper:has(.nt-px-canvas)::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .24  0 0 0 0 .19  0 0 0 0 .11  .1 0 0 0 -.035'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .08  2 0 0 0 -1.56'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-size: 600px 600px;
+}
+/* the same grain in a pale colour for the dark areas, where dark specks would not show, and a little weaker because specks stand out more on black. The backdrops behind the homepage projects and project page headers carry it on their dark veil, so it sits over the image and under the text */
+html body .inthestands_wrapper, html body .personal_wrapper_2, html body .nt-footer-under, html body .nt-blurbg .nt-stick:after, html body .nt-case-bg::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  .07 0 0 0 -.025'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  1.2 0 0 0 -.95'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E") !important;
+  background-size: 600px 600px !important;
+}
+/* the About hero image is drawn on a canvas, so its grain is a layer between the canvas and the text */
+html body .feature_wrapper:has(.nt-px-canvas)::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+
+/* page transitions: the page content tears out like a bad tape and the next one tunes in, while the logo and main nav stay put (browsers without support just load normally) */
+@view-transition { navigation: auto; }
+.nav_the_work { view-transition-name: nt-nav-work; }
+.nav_about_me { view-transition-name: nt-nav-about; }
+.main_nav .nav_logo { view-transition-name: nt-nav-logo; }
+::view-transition-group(nt-nav-work), ::view-transition-group(nt-nav-about), ::view-transition-group(nt-nav-logo),
+::view-transition-new(nt-nav-work), ::view-transition-new(nt-nav-about), ::view-transition-new(nt-nav-logo) { animation: none; }
+::view-transition-old(nt-nav-work), ::view-transition-old(nt-nav-about), ::view-transition-old(nt-nav-logo) { animation: none; opacity: 0; }
+/* like a VHS losing and finding its signal, the same failures as the image rollovers: the old page jumps sideways in torn bands with red and cyan ghosts and collapses to a bright line, like an old TV switching off; the new page tunes in the same way and settles (transition.js adds the static). Each step holds until the next, so it moves in jumps rather than gliding */
+::view-transition { background-color: var(--sand, #f2f0e8); }
+::view-transition-old(root) { animation: nt-tape-out .42s steps(1, end) both; }
+::view-transition-new(root) { animation: nt-tape-in .55s steps(1, end) .28s both; }
+@keyframes nt-tape-out {
+  0% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
+  12% { transform: translateX(-14px) skewX(-4deg); filter: drop-shadow(10px 0 rgba(255, 30, 60, .85)) drop-shadow(-10px 0 rgba(24, 214, 255, .85)) contrast(1.3); clip-path: inset(0); }
+  24% { transform: translateX(22px); clip-path: inset(18% 0 52% 0); }
+  36% { transform: translateX(-8px) scaleY(1.02); clip-path: inset(0); filter: drop-shadow(-18px 0 rgba(255, 30, 60, .9)) drop-shadow(18px 0 rgba(24, 214, 255, .9)) contrast(1.6) brightness(1.2); }
+  48% { transform: translateX(30px); clip-path: inset(46% 0 22% 0); }
+  60% { transform: translateX(-26px) skewX(6deg); clip-path: inset(8% 0 70% 0); opacity: .85; }
+  72% { transform: translateX(12px); clip-path: inset(62% 0 4% 0); opacity: .7; animation-timing-function: cubic-bezier(.6, 0, 1, 1); }
+  88% { transform: scaleY(.012); clip-path: inset(0); filter: brightness(4) contrast(2); opacity: 1; }
+  100% { transform: scaleX(0) scaleY(.012); filter: brightness(4); opacity: 0; }
+}
+@keyframes nt-tape-in {
+  0% { opacity: 0; }
+  8% { opacity: 1; transform: translateX(-20px); clip-path: inset(30% 0 40% 0); filter: drop-shadow(14px 0 rgba(255, 30, 60, .85)) drop-shadow(-14px 0 rgba(24, 214, 255, .85)) contrast(1.5); }
+  22% { transform: translateX(16px) skewX(-5deg); clip-path: inset(0 0 55% 0); }
+  36% { transform: translateX(-10px); clip-path: inset(0); filter: drop-shadow(-8px 0 rgba(255, 30, 60, .8)) drop-shadow(8px 0 rgba(24, 214, 255, .8)) contrast(1.3); }
+  52% { transform: translateX(6px); clip-path: inset(48% 0 0 0); }
+  68% { transform: none; clip-path: inset(0); filter: drop-shadow(3px 0 rgba(255, 30, 60, .6)) drop-shadow(-3px 0 rgba(24, 214, 255, .6)); }
+  84% { transform: translateX(-2px); filter: none; }
+  100% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* footer drawer: the black footer is pinned to the bottom of the screen and the page slides up off it (driven by the site footer script) */
+.nt-footer-space { width: 100%; flex: none; }
+.nt-footer-under { position: fixed !important; left: 0; right: 0; bottom: 0; z-index: 5; width: auto !important; max-width: none !important; margin: 0 !important; box-sizing: border-box; }
+.nt-footer-under > * { width: 100%; max-width: none; }
+
+/* square corners everywhere, except buttons (pills) and the little status and nav dots (round) */
+*:not(.available_dot, .nav_dot_work, .nav_dot_about, .btn_learn_more, .btn_learn_more *, .w-button, .close_btn, .close_btn *, .pill_button, .pill_button *), *::before, *::after { border-radius: 0 !important; }
+.btn_learn_more, .w-button, .close_btn, .pill_button { border-radius: 999px !important; }
+
+/* homepage additional projects: a darker veil over the blurred full-width backdrop */
+.nt-blurbg .nt-stick:after { background: rgba(0, 0, 0, .7) !important; }
+
+/* case studies featured on the homepage: the black header area takes the same blurred, darkened image as its homepage backdrop */
+.nt-case-bg { position: absolute; left: 0; right: 0; top: 0; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; background: #000; }
+.nt-case-bg::before { content: ""; position: absolute; inset: -10%; background: var(--nt-case-img) center / cover no-repeat; filter: blur(40px) saturate(1.2); transform: scale(1.1); }
+.nt-case-bg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
+.nt-case .work_feature_wrapper, .nt-case .details_div, .nt-case .detail_scroller { background-color: transparent !important; }
+
+/* project pages: Webflow's fades are overridden so the glitch alone brings things in */
+.nt-work .nt-rise.is-in, .nt-work ._1_image_block { opacity: 1 !important; transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .nt-work .close_btn, .nt-work .detail_title, .nt-work .detail_text, .nt-work ._1_image_block, .nt-work ._1_image_block video, .nt-work .detail_image, .nt-work .pill_button { opacity: 1 !important; transform: none !important; }
+}
+/* a solid logo: white on project pages, black on the homepage, About and Archive. The main nav blends with the page behind it, which tints anything inside it and draws a box around the logo during page transitions, so a solid copy sits outside the nav in the same spot (it scrolls away with the page, so it only ever shows over the top of the page) */
+.nt-logo-copy .main_nav .nav_logo { visibility: hidden; view-transition-name: none; }
+.nt-logo-solid { position: absolute; z-index: 1000; display: block; view-transition-name: nt-nav-logo; }
+.nt-logo-solid img { display: block; width: 100%; height: 100%; max-width: none; filter: brightness(0) invert(1); mix-blend-mode: normal; }
+.nt-logo-solid.is-dark img { filter: brightness(0); }
+
+/* image reveal on scroll: images glitch in as corrupted pixels that resolve (classes added by the site footer script) */
+.nt-rise:not(.is-in) { opacity: 0 !important; }
+@media (prefers-reduced-motion: reduce) {
+  .nt-rise { opacity: 1 !important; }
+}
+
+/* main nav: Webflow's own look, white labels and dots blended by difference over whatever is behind them, with each dot on the inside of its label: to the right of The Work and to the left of About Me */
+.nav_the_work, .nav_about_me { flex-direction: row-reverse !important; }
+/* the menu's text size, set once here; the Archive overlay's project list matches it */
+.main_nav_links, html body .nt-project { font-size: 14px !important; }
+/* no built-in text underlines anywhere in the nav links, including ones inherited from the link itself */
+.nav_the_work, .nav_the_work:hover, .nav_the_work *,
+.nav_about_me, .nav_about_me:hover, .nav_about_me *,
+.main_nav_links, .main_nav_links:hover { text-decoration: none !important; }
+/* rolling over a label grows a solid 3px underline in from the left under its words, like the footer links, blended with them */
+.nav_the_work .main_nav_links::after, .nav_about_me .main_nav_links::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + .625em);
+  height: 3px;
+  background-color: currentColor;
+  pointer-events: none;
+  -webkit-clip-path: inset(0 100% 0 0);
+  clip-path: inset(0 100% 0 0);
+  transition: -webkit-clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1), clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.nav_the_work:hover .main_nav_links::after, .nav_about_me:hover .main_nav_links::after,
+.nav_the_work:focus-visible .main_nav_links::after, .nav_about_me:focus-visible .main_nav_links::after {
+  -webkit-clip-path: inset(0 0 0 0);
+  clip-path: inset(0 0 0 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav_the_work .main_nav_links::after, .nav_about_me .main_nav_links::after { transition: none; }
+}
+
+/* footer text links: a solid 3px underline grows in from the left on rollover, in the link's own color, 3px below the text. The logo and LinkedIn icon have no text, so they are left out; on the email link it sits under the address, not its copy icon.
+   Webflow sets a permanent underline on the block holding the page links, which would sit there all the time, so that is turned off.
+   The text is centered in its line, and its baseline is .375em below that center at both text sizes and on phones, so the line is placed from the center */
+.projectfooter_logo .div-block-155 { text-decoration: none !important; }
+.projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer),
+.fs-copyclip_button_footer .alt_nav_items-copy { position: relative; text-decoration: none !important; }
+.projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer)::after,
+.fs-copyclip_button_footer .alt_nav_items-copy::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + .625em);
+  height: 3px;
+  background-color: currentColor;
+  pointer-events: none;
+  -webkit-clip-path: inset(0 100% 0 0);
+  clip-path: inset(0 100% 0 0);
+  transition: -webkit-clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1), clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer):hover::after,
+.fs-copyclip_button_footer:hover .alt_nav_items-copy::after {
+  -webkit-clip-path: inset(0 0 0 0);
+  clip-path: inset(0 0 0 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer)::after,
+  .fs-copyclip_button_footer .alt_nav_items-copy::after { transition: none; }
+}
+
+/* project pages: the sticky close button is now a black X circle and a dropdown of every project, both built by the script below. The bar takes up the same space the old button did, so nothing on the page moves */
+.nt-pj { position: sticky; top: 28px; z-index: 2000; display: flex; gap: 8px; align-items: flex-start; box-sizing: border-box; width: 343px; max-width: calc(100% - 32px); height: 36px; margin: 114px auto 7px; pointer-events: none; }
+.nt-pj > * { pointer-events: auto; }
+html body .nt-pj > a.close_btn { position: static; flex: none; display: block; width: 36px; height: 36px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+html body .nt-pj > a.close_btn > :not(svg) { display: none; }
+html body .nt-pj > a.close_btn > svg { display: block; width: 36px; height: 36px; }
+/* it also carries the close_btn class, so it glitches in along with the X */
+html body .nt-pj > .nt-pj-menu { position: relative; top: auto; flex: 1 1 299px; display: block; min-width: 0; width: auto; height: 36px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+html body .nt-pj-box { position: absolute; left: 0; right: 0; top: 0; height: 36px; overflow: hidden; background: #000; border-radius: 18px !important; transition: height .25s cubic-bezier(.65, 0, .35, 1); }
+.nt-pj-menu.is-open .nt-pj-box { height: var(--nt-pj-h, 232px); }
+html body .nt-pj-toggle, html body .nt-pj-list a { display: block; box-sizing: border-box; width: 100%; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 17px; letter-spacing: normal; text-align: left; text-transform: uppercase; text-decoration: none; color: #fff; }
+html body .nt-pj-toggle { position: relative; height: 34px; margin: 0; padding: 9px 40px 8px 16px; background: none; border: 0; border-radius: 0 !important; cursor: pointer; }
+html body .nt-pj-toggle svg { position: absolute; right: 14.83px; top: 15.75px; display: block; width: 8.33243px; height: 6.11064px; rotate: 180deg; }
+.nt-pj-list { visibility: hidden; margin: 0 16px; transition: visibility 0s linear .25s; }
+.nt-pj-menu.is-open .nt-pj-list { visibility: visible; transition-delay: 0s; }
+html body .nt-pj-list a { height: 33px; padding: 8px 0; box-shadow: inset 0 1px rgba(255, 255, 255, .1); }
+html body .nt-pj-list a.is-current { color: var(--gold, #ae9142); }
+html body .nt-pj-list a:focus-visible, html body .nt-pj-toggle:focus-visible { outline: 0; color: var(--gold, #ae9142); }
+@media (hover: hover) { html body .nt-pj-list a:hover { color: var(--gold, #ae9142); } }
+@media (max-width: 767px) { .nt-pj { top: 52px; margin: 98px auto 3px; } }
+@media (prefers-reduced-motion: reduce) { html body .nt-pj-box, .nt-pj-list { transition: none; } }
+
+/* Next Project and Prev Project: sand pills like the main nav, without the dots, in the normal flow at the very bottom of the page. Rolling over turns them black with sand text, like the main nav. Only the pills catch the pointer, so the bar never blocks the page under it.
+   The bar keeps its old 80px height, so nothing on the page moves */
+html.nt-work body .project_links_wrapper { position: relative; bottom: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-content: stretch; padding: 16px 20px 28px; pointer-events: none; }
+html.nt-work body .project_links { display: flex; width: auto; margin: 0; padding: 0; background: none; pointer-events: none; grid-row: 1; }
+html.nt-work body .project_links:first-child { grid-column: 1 !important; justify-self: start !important; }
+html.nt-work body .project_links.next { grid-column: 3 !important; justify-self: end !important; }
+html.nt-work body .project_links:not(.top) .smaller_project_title { display: none; }
+html.nt-work body .project_nav, html.nt-work body .smaller_project_title.top { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 36px; margin: 0; padding: 0 12px; background: var(--sand, #f2f0e8); border-radius: 999px !important; pointer-events: auto; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: .5px; text-transform: uppercase; color: #000; transition: none; }
+/* the labels come from here, while the page itself still says PREVIOUS and NEXT */
+html.nt-work body .project_nav { font-size: 0; letter-spacing: 0; }
+html.nt-work body .project_nav::after { font-size: 14px; letter-spacing: .5px; }
+html.nt-work body .project_nav.prev::after { content: "PREV PROJECT"; }
+html.nt-work body .project_nav.next::after { content: "NEXT PROJECT"; }
+@media (hover: hover) {
+  html.nt-work body .project_links:hover .project_nav, html.nt-work body .project_links:hover .smaller_project_title.top { background: #000; color: var(--sand, #f2f0e8); }
+}
+html.nt-work body .project_links:focus-visible { outline: 0; }
+html.nt-work body .project_links:focus-visible .project_nav, html.nt-work body .project_links:focus-visible .smaller_project_title.top { background: #000; color: var(--sand, #f2f0e8); }
+/* Top floats at the bottom center of the screen, but only once the hero is scrolled past, fading in and out (the script below). It has no height of its own, and at the end of the page it comes to rest in line with Next Project and Prev Project */
+.nt-pj-top { position: sticky; bottom: 28px; z-index: 200; height: 0; margin: -28px 0 28px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
+.nt-pj-top.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
+html.nt-work body .nt-pj-top .project_links.top { position: absolute; left: 50%; right: auto; top: auto; bottom: 0; z-index: auto; translate: -50% 0; }
+html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-events: none; }
+@media (max-width: 767px) {
+  html.nt-work body .project_links_wrapper { padding: 36px 4px 12px; }
+  html.nt-work body .project_nav, html.nt-work body .smaller_project_title.top { height: 32px; }
+  .nt-pj-top { bottom: 12px; margin: -12px 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .nt-pj-top { transition: none; } }
+/* the rollover images pass over the page but under Next, Prev and the top bar */
+.nt-pj-trail { position: fixed; left: 0; top: 0; z-index: 190; width: 0; height: 0; pointer-events: none; }
+html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block; width: auto; height: auto; max-width: 250px; max-height: 250px; opacity: 0; }
+
+/* project page carousel: draggable marquee (driven by the site footer script) */
+.splide.nt-pm { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.splide.nt-pm.is-dragging { cursor: grabbing; }
+.splide.nt-pm .splide__track { overflow: hidden; width: 100%; }
+.splide.nt-pm .splide__list {
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+  gap: 0;
+  will-change: transform;
+}
+.splide.nt-pm .splide__slide {
+  flex: 0 0 var(--nt-slide, 20vw);
+  width: var(--nt-slide, 20vw);
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+.splide.nt-pm .splide_image { width: 100%; height: auto; pointer-events: none; }
+.splide.nt-pm .splide__slide.marquee-low { margin-top: auto; }
+@media (max-width: 640px) {
+  .splide.nt-pm .splide__slide { padding-right: 0.5rem; }
+}
+
+/* text reveal on scroll: Instrument Serif text morphs in out of a blur (hidden until the site footer script plays it) */
+/* a Webflow interaction on every .title_text writes its own opacity inline as the title nears the screen, which would show it before the melt and then make it vanish; these rules win over it, so the melt alone controls the title */
+.nt-melt:not(.is-in) { opacity: 0 !important; }
+.title_text.nt-melt.is-in { opacity: 1 !important; }
+.nt-melt.is-done { opacity: 1; }
+/* the end-of-page sign-off: Webflow's own fade on its wrapper is overridden so the melt alone brings it in, on the homepage and the work archive alike */
+.fav_text.about .favorites_title_wrapper { opacity: 1 !important; }
+/* every other piece of text fades in from 0 to 100% while drifting up 5px, slowly and smoothly; text arriving together is staggered by the footer script.
+   The transition only exists on the way in: text is hidden instantly when it is first marked and when it resets below the screen, so it can never scroll back into view part way through fading out */
+.nt-fade { opacity: 0; translate: 0 5px; }
+.nt-fade.is-in { opacity: 1; translate: none; transition: opacity 1.4s cubic-bezier(.25, .1, .25, 1), translate 1.4s cubic-bezier(.16, 1, .3, 1); transition-delay: var(--nt-fade-delay, 0ms); }
+.nt-fade.nt-fade-init { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .nt-melt, .nt-fade { opacity: 1 !important; translate: none !important; }
+}
