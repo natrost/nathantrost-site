@@ -159,9 +159,11 @@
       var w = Math.min(TILE, Math.floor(boxW * 0.45));
       step = w + GAP;
       var avg = images.reduce(function (s, im) { return s + w / wallRatio(im) + GAP; }, 0) / images.length;
-      var cols_n = Math.max(Math.ceil((boxW + step) / step) + 1, Math.round(Math.sqrt(images.length * avg / step)));
+      /* the wall is built big enough to fill the screen at the opening zoom, when more of it shows */
+      var viewW = boxW / (reduce ? 1 : ZOOM_FROM), viewH = boxH / (reduce ? 1 : ZOOM_FROM);
+      var cols_n = Math.max(Math.ceil((viewW + step) / step) + 1, Math.round(Math.sqrt(images.length * avg / step)));
       var copies = 1;
-      while (images.length * copies / cols_n * avg < boxH + 500) copies++;
+      while (images.length * copies / cols_n * avg < viewH + 500) copies++;
       var list = [];
       for (var c = 0; c < copies; c++) list = list.concat(images);
       shuffle(list);
@@ -221,7 +223,8 @@
     function apply() {
       var mx = boxW * (1 / zoom - 1) / 2, my = boxH * (1 / zoom - 1) / 2;
       tiles.forEach(function (t) {
-        var x = mod(t.x + panX + step, worldW) - step, y = mod(t.y + panY + t.h, worldH) - t.h;
+        /* tiles wrap around a stretch that starts above and left of the screen by as much as the zoom shows there, so a zoomed-out wall is filled to its edges */
+        var x = mod(t.x + panX + step + mx, worldW) - step - mx, y = mod(t.y + panY + t.h + my, worldH) - t.h - my;
         t.sx = x; t.sy = y;
         t.el.style.translate = x + 'px ' + y + 'px';
         var seen = x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
@@ -268,7 +271,7 @@
         var z0 = performance.now();
         (function grow(now) {
           if (touched || openTile) { unzoom(); return; }
-          var f = Math.min(1, (now - z0) / ZOOM_MS), e = 1 - Math.pow(1 - f, 3);
+          var f = Math.max(0, Math.min(1, (now - z0) / ZOOM_MS)), e = 1 - Math.pow(1 - f, 3);
           setZoom(f < 1 ? ZOOM_FROM + (1 - ZOOM_FROM) * e : 1);
           apply();
           if (f < 1) requestAnimationFrame(grow);
