@@ -29,7 +29,7 @@
     var ARROW_ROOM = 48;   /* space kept clear above the bottom margin for the arrows, in px */
     var BAR_GAP = 3;       /* the scrollbar's grab area starts this far outside the frame, which puts the visible bar 8px from it */
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
-    var SHIELD = 28;       /* the force field around each main nav item (The Work, the logo, About Me) reaches this far past it, in px */
+    var SHIELD = 28;       /* the force field around The Work and About Me in the main nav reaches this far past it, in px */
     var SHIELD_OUT = 70;   /* how quickly an image whose spot strays into a field is thrown up off the screen, in ms; lower is faster */
     var SHIELD_BACK = 260; /* how long it takes to fade back in at its spot once the wall carries the spot clear, in ms */
     var SHIELD_LEAD = 120; /* how far ahead, in ms of the wall's movement, the field looks for images about to arrive */
@@ -201,18 +201,18 @@
 
     /* moving the wall: tiles wrap around the loop, images load once they are near the screen, and anything off screen is skipped by the browser */
     function mod(a, b) { return ((a % b) + b) % b; }
-    /* the force field: the main nav items' boxes on the wall, each grown by SHIELD */
+    /* the force field: The Work's and About Me's boxes on the wall, each grown by SHIELD. Images may pass behind the logo */
     var shields = [], shieldLast = 0;
     function measureShields() {
       var box = wall.getBoundingClientRect();
-      shields = ['.nav_the_work', '.nav_about_me', document.querySelector('.nt-logo-solid') ? '.nt-logo-solid' : '.main_nav .nav_logo'].map(function (s) {
+      shields = ['.nav_the_work', '.nav_about_me'].map(function (s) {
         var e = document.querySelector(s), r = e && e.getBoundingClientRect();
         return r && r.width ? { l: r.left - box.left - SHIELD, r: r.right - box.left + SHIELD, t: r.top - box.top - SHIELD, b: r.bottom - box.top + SHIELD } : null;
       }).filter(Boolean);
     }
     /* the nav's text widths settle once its font arrives */
     if (document.fonts) document.fonts.ready.then(function () { measureShields(); apply(); });
-    /* each image sits at its spot on the wall, unless that spot is inside a field: then it is thrown off the screen, and glides back once the spot is clear. One arriving from above goes back up; one arriving from below or the side goes out sideways, to the nearer edge, so it never crosses the nav on its way out. It goes by the spot, not where the image is, so an image never flickers at a field's edge. Says whether any image is still moving */
+    /* each image sits at its spot on the wall, unless that spot is inside a field: then it is thrown off the screen, and fades back in at its spot once the spot is clear. One arriving from above goes back up; one arriving from below or the side goes out sideways, to the nearer edge, so it never crosses the nav on its way out. It goes by the spot, not where the image is, so an image never flickers at a field's edge. Says whether any image is still moving */
     function apply() {
       var now = performance.now(), dt = Math.min(now - (shieldLast || now), 50), busy = false;
       shieldLast = now;
@@ -231,13 +231,10 @@
           else if (!t.out) t.out = y < hit.t ? 'up' : x + t.w / 2 < boxW / 2 ? 'left' : 'right';
           var gx = !hit || t.out === 'up' ? 0 : t.out === 'left' ? -(x + t.w + EXIT_PAST) : boxW - x + EXIT_PAST;
           var gy = hit && t.out === 'up' ? -(y + t.h + EXIT_PAST) : 0;
-          /* coming back from off the screen, it fades in at its spot rather than sliding back across the nav */
+          /* once its spot is clear it fades in there, never sliding back across the nav */
           if (!hit && (t.px || t.py)) {
-            var cx = x + t.px, cy = y + t.py;
-            if (cx >= boxW || cx + t.w <= 0 || cy >= boxH || cy + t.h <= 0) {
-              t.px = t.py = 0;
-              if (!reduce && t.el.animate) t.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SHIELD_BACK, easing: 'ease-out' });
-            }
+            t.px = t.py = 0;
+            if (!reduce && t.el.animate) t.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SHIELD_BACK, easing: 'ease-out' });
           }
           if (t.px !== gx || t.py !== gy) {
             var k = reduce ? 1 : 1 - Math.exp(-dt / (hit ? SHIELD_OUT : SHIELD_BACK));
