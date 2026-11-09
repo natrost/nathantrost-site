@@ -1,9 +1,12 @@
-/* Pixel explosion on the homepage and About page titles: moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, glitching and pixelating as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
+/* Pixel explosion on the homepage, About page and project page titles (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, glitching and pixelating as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
    The text near the cursor also fails like a VHS tape: its rows slip and wobble, red and blue ghosts pull away from it, scan lines cut through it and streaks shoot off, in a new mix for each rollover. Only on a real pointer, and never with reduced motion */
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  /* the wrapper matters: the Archive title has the same classes as the homepage headline, but sits outside this section */
-  var host = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text');
+  /* only ever one copy, in case a page also links an older version */
+  if (window.__ntTitleBurst) return;
+  window.__ntTitleBurst = true;
+  /* the wrapper matters: the Archive title has the same classes as the homepage headline, but sits outside this section. On project pages it is the white headline in the dark header */
+  var host = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text, .work_feature_wrapper .theworktextwrapper .title_text');
   if (!host) return;
   var REACH = 150;     /* the blast reaches this far from the cursor, in px, so it is about 300px across */
   var CELL = 4;        /* the size of one pixel of the text, in px */
@@ -20,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
-  var section = host.closest('.home_feature_wrapper, .feature_wrapper') || document.body;
+  var section = host.closest('.home_feature_wrapper, .feature_wrapper, .work_feature_wrapper') || document.body;
   var layer = document.createElement('canvas'), ctx = layer.getContext('2d');
   layer.className = 'nt-burst-layer';
   layer.setAttribute('aria-hidden', 'true');

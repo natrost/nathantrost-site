@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load it coasts by itself, as if just thrown, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them, and a list of every project lower right to jump to.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load it coasts by itself, as if just thrown, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -78,10 +78,15 @@
     var thumbs = make('div', 'nt-wall-thumbs', wall);
     var projectList = make('div', 'nt-wall-projects', wall);
     var closeBtn = make('button', 'nt-wall-close', wall);
-    var prevBtn = make('button', 'nt-wall-arrow is-prev', wall), nextBtn = make('button', 'nt-wall-arrow is-next', wall);
-    closeBtn.type = prevBtn.type = nextBtn.type = 'button';
+    /* the row at the bottom center: skip to the previous project, the image arrows, skip to the next project, in the same order as the project list */
+    var controls = make('div', 'nt-wall-controls', wall);
+    var skipPrev = make('button', 'nt-wall-skip is-prev', controls);
+    var prevBtn = make('button', 'nt-wall-arrow is-prev', controls), nextBtn = make('button', 'nt-wall-arrow is-next', controls);
+    var skipNext = make('button', 'nt-wall-skip is-next', controls);
+    closeBtn.type = prevBtn.type = nextBtn.type = skipPrev.type = skipNext.type = 'button';
     closeBtn.setAttribute('aria-label', 'Close');
     prevBtn.setAttribute('aria-label', 'Previous image'); nextBtn.setAttribute('aria-label', 'Next image');
+    skipPrev.setAttribute('aria-label', 'Previous project'); skipNext.setAttribute('aria-label', 'Next project');
     bigImg.draggable = false;
     bigImg.decoding = 'sync';
 
@@ -318,7 +323,7 @@
     var openTile = null, current = 0, currentProject = -1, closing = 0, waiting = false, bigAnim = null, bigRect = null, refocusing = false;
     function fit(ratio) {
       var W = wall.clientWidth, H = wall.clientHeight, pad = 32, wide = W >= 992, stack = W >= 600;
-      var n = thumbs.children.length, tw = n ? thumbs.offsetWidth : 0, th = n ? thumbs.offsetHeight : 0, foot = n ? ARROW_ROOM : 0;
+      var n = thumbs.children.length, tw = n ? thumbs.offsetWidth : 0, th = n ? thumbs.offsetHeight : 0, foot = ARROW_ROOM;
       var scrolls = ratio < SCROLL_BELOW, maxW, maxH, top, bottom;
       if (wide) {
         maxW = W - 2 * (pad * 2 + TEXT_W); top = pad; bottom = H - pad - foot;
@@ -408,11 +413,47 @@
     prevBtn.addEventListener('click', function () { stepImage(-1); });
     nextBtn.addEventListener('click', function () { stepImage(1); });
     big.addEventListener('click', function () { stepImage(1); });
+    /* the skip buttons open the next or previous project at its first image, looping round from the last to the first */
+    function stepProject(by) {
+      if (!openTile || bigAnim) return;
+      var pi = (currentProject + by + projects.length) % projects.length;
+      fillProject(pi);
+      change(projects[pi].images[0]);
+    }
+    skipPrev.addEventListener('click', function () { stepProject(-1); });
+    skipNext.addEventListener('click', function () { stepProject(1); });
+    /* on phones the description is folded away under More Info, which opens it down over the image and turns into Close Info. The opened panel reaches as far as the image's bottom and scrolls if it is longer */
+    var moreBtn = null;
+    function setMore(on) {
+      if (!moreBtn) return;
+      textBox.classList.toggle('is-more', on);
+      moreBtn.textContent = on ? 'Close Info −' : 'More Info +';
+      moreBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      if (on && bigRect) textBox.style.maxHeight = Math.max(textBox.offsetHeight, bigRect.top + bigRect.height - textBox.offsetTop) + 'px';
+      else sizeText();
+      if (!on) textBox.scrollTop = 0;
+    }
     /* the overlay's text, thumbnails and list for one project */
     function fillProject(pi) {
       var p = projects[pi];
       currentProject = pi;
-      textBox.textContent = ''; textBox.scrollTop = 0; textBox.appendChild(p.text.cloneNode(true));
+      textBox.classList.remove('is-more');
+      textBox.textContent = ''; textBox.scrollTop = 0;
+      var copy = p.text.cloneNode(true), desc = copy.querySelector('.rich-text-block, .w-richtext');
+      textBox.appendChild(copy);
+      moreBtn = null;
+      if (desc && desc.textContent.trim()) {
+        var body = make('div', 'nt-more-body');
+        desc.parentNode.insertBefore(body, desc);
+        body.appendChild(desc);
+        body.id = 'nt-more-body';
+        moreBtn = make('button', 'nt-more');
+        moreBtn.type = 'button';
+        moreBtn.setAttribute('aria-controls', body.id);
+        copy.insertBefore(moreBtn, body);
+        moreBtn.addEventListener('click', function () { setMore(!textBox.classList.contains('is-more')); });
+        setMore(false);
+      }
       thumbs.textContent = '';
       wall.classList.toggle('has-many', p.images.length > 1);
       if (p.images.length > 1) p.images.forEach(function (im) {
@@ -534,7 +575,7 @@
     /* which part of the overlay a rollover glitches: the image, a thumbnail, a button, or one block of the project text. The project list just goes solid, with no glitch */
     function overlayPart(n) {
       if (!n || !n.closest) return null;
-      var c = n.closest('.nt-big, .nt-thumb, .nt-wall-close, .nt-wall-arrow');
+      var c = n.closest('.nt-big, .nt-thumb, .nt-wall-close, .nt-wall-arrow, .nt-wall-skip');
       if (c) return c;
       if (!textBox.contains(n)) return null;
       var text = textBox.firstElementChild;
