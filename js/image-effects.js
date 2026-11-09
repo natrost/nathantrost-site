@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var slides = slice(document.querySelectorAll('.splide .splide__slide'));
   var singles = slice(document.querySelectorAll('img')).filter(function (img) {
     if (/\.svg(\?|$)/i.test(img.getAttribute('src') || '')) return false;
-    return !img.closest('.splide, nav, footer, [class*="footer"], .w-nav, .interaction_wrap, .w-lightbox-backdrop, .nt-wall');
+    return !img.closest('.splide, nav, footer, [class*="footer"], .w-nav, .interaction_wrap, .w-lightbox-backdrop, .nt-wall, .scroll_showcase');
   }).concat(slice(document.querySelectorAll('.qualcomm_wrapper .div-block-86')));
   if (WORK) singles = singles.concat(slice(document.querySelectorAll('.close_btn, .pill_button, .detail_title, .detail_text, ._1_image_block video')).filter(function (el) { return singles.indexOf(el) === -1; }));
 
