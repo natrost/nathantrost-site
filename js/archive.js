@@ -31,7 +31,6 @@
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
     var ZOOM_FROM = 0.8;   /* the wall starts at this size on load, showing more of the archive, and zooms up to full size as its opening throw slides it in */
     var ZOOM_MS = 1300;    /* how long that zoom takes */
-    var FADE_X = 110, FADE_Y = 66; /* how far the soft fade behind The Work and About Me reaches past each label, sideways and up and down, in px (the fade itself is drawn by the page's head code) */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var root = document.documentElement;
     var slice = function (l) { return Array.prototype.slice.call(l); };
@@ -195,7 +194,7 @@
           el._tile = tile; tiles.push(tile);
         });
       });
-      setZoom(zoom); measureFades();
+      setZoom(zoom);
       wall.dataset.clashes = hit.length; wall.dataset.stretch = p.dev.toFixed(3); wall.dataset.worldW = worldW; wall.dataset.worldH = worldH;
       apply();
     }
@@ -209,17 +208,6 @@
       field.style.transformOrigin = boxW / 2 + 'px ' + boxH / 2 + 'px';
       field.style.scale = z === 1 ? '' : z;
     }
-    /* the soft fades sit behind the two labels wherever the menu puts them, so the page's head code is told where they are */
-    function measureFades() {
-      var box = wall.getBoundingClientRect();
-      [['l', '.nav_the_work'], ['r', '.nav_about_me']].forEach(function (p) {
-        var e = document.querySelector(p[1]), r = e && e.getBoundingClientRect();
-        if (!r || !r.width) return;
-        wall.style.setProperty('--nt-fade-' + p[0], (r.left + r.width / 2 - box.left) + 'px ' + (r.top + r.height / 2 - box.top) + 'px');
-        wall.style.setProperty('--nt-fade-' + p[0] + '-size', (r.width / 2 + FADE_X) + 'px ' + (r.height / 2 + FADE_Y) + 'px');
-      });
-    }
-    if (document.fonts) document.fonts.ready.then(measureFades);
     function apply() {
       var mx = boxW * (1 / zoom - 1) / 2, my = boxH * (1 / zoom - 1) / 2;
       tiles.forEach(function (t) {

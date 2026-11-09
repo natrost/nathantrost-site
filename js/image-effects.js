@@ -11,11 +11,13 @@ document.addEventListener('DOMContentLoaded', function () {
   var SETTLE_MS = 800;    /* the longest an image takes to resolve */
   var INLINE_DELAY = 800; /* ms after its text starts melting in that an image set inside the text glitches in */
   var CURSOR_PX = 300;    /* roughly how wide the patch of bad tape around the cursor is */
+  var BREAK_SHARE = 0.22; /* how far torn rows and streaks may break out past an image's sides, as a share of its width */
+  var BREAK_PX = 160;     /* and at most this far, in px; above and below, a third of this */
   /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px */
   var REVEAL = { ms: GLITCH_MS, block: 28, tear: 40, flicker: true };
   var REVEAL_TEXT = { ms: GLITCH_MS, block: 28, tear: 40 };  /* project page text and buttons: the same glitch without the flicker, so it never blinks */
   var HOVER = { ms: 380, block: 16, tear: 26 };  /* anything on the Archive wall that is not an image, unless it says otherwise */
-  var BUTTON_MS = 280;    /* how long a button's rollover glitch lasts */
+  var BUTTON_MS = 420;    /* how long a button's rollover glitch lasts */
   var WORK = location.pathname.indexOf('/work/') === 0; /* project pages glitch in the things Webflow used to fade too; the headline still melts */
   var slice = function (list) { return Array.prototype.slice.call(list); };
   var units = [];
@@ -92,20 +94,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var nw = src.naturalWidth || src.videoWidth, nh = src.naturalHeight || src.videoHeight;
     if (!W || !H || !nw) return null;
     tiles();
-    var d = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(3e6 / (W * H))), c = document.createElement('canvas'), ctx = c.getContext('2d');
-    c.width = Math.round(W * d); c.height = Math.round(H * d); c.setAttribute('aria-hidden', 'true');
-    /* an image that fills a positioned frame (the Archive's tiles and opened image) gets a canvas sized as a share of that frame, so it stays exactly on the image while the frame grows or shrinks */
-    var box = el.parentNode, fill = !isBg && box && el.offsetLeft === 0 && el.offsetTop === 0 && W === box.clientWidth && H === box.clientHeight && getComputedStyle(box).position !== 'static';
-    var st = c.style; st.position = 'absolute'; st.pointerEvents = 'none'; st.width = fill ? '100%' : W + 'px'; st.height = fill ? '100%' : H + 'px'; st.maxWidth = 'none';
-    st.setProperty('border-radius', cs.borderRadius, 'important');
-    if (cs.zIndex !== 'auto') st.zIndex = cs.zIndex;
-    if (isBg) { if (cs.position === 'static') el.style.position = 'relative'; st.left = st.top = '0'; el.appendChild(c); }
-    else el.parentNode.insertBefore(c, el.nextSibling);
+    /* the canvas sits on one layer over the whole page, tracking the image, so nothing the image sits in can crop it; it reaches past the image on every side, so torn rows and streaks can break out of the box */
+    var M = Math.round(Math.min(BREAK_PX, Math.max(24, W * BREAK_SHARE))), MV = Math.round(Math.min(BREAK_PX / 3, Math.max(8, H * .06)));
+    var CW = W + 2 * M, CH = H + 2 * MV;
+    /* round images (the About intro gifs) keep their shape and stay in their box */
+    var rad = cs.borderTopLeftRadius, round = /%/.test(rad) ? Math.min(W, H) * parseFloat(rad) / 100 : parseFloat(rad) || 0;
+    if (round) M = MV = 0, CW = W, CH = H;
+    var d = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(3e6 / (CW * CH))), c = document.createElement('canvas'), ctx = c.getContext('2d');
+    c.width = Math.round(CW * d); c.height = Math.round(CH * d); c.setAttribute('aria-hidden', 'true');
+    var st = c.style; st.position = 'fixed'; st.left = st.top = '0'; st.zIndex = '650'; st.pointerEvents = 'none'; st.width = CW + 'px'; st.height = CH + 'px'; st.maxWidth = 'none'; st.transformOrigin = '0 0';
+    st.setProperty('border-radius', '0', 'important');
+    document.body.appendChild(c);
+    function base() { ctx.setTransform(d, 0, 0, d, M * d, MV * d); }
     var fit = isBg ? cs.backgroundSize : cs.objectFit, pos = (isBg ? cs.backgroundPosition : cs.objectPosition).split(' ');
     function at(p, room) { return room * (/%/.test(p) ? parseFloat(p) / 100 : .5); }
     var plain = document.createElement('canvas'), layers = ['#f00', '#0f0', '#00f'].map(function () { return document.createElement('canvas'); });
     function load() {
-      var cw = c.width, ch = c.height, g, k = fit === 'contain' ? Math.min(W / nw, H / nh) : fit === 'fill' ? 0 : Math.max(W / nw, H / nh);
+      var cw = Math.round(W * d), ch = Math.round(H * d), g, k = fit === 'contain' ? Math.min(W / nw, H / nh) : fit === 'fill' ? 0 : Math.max(W / nw, H / nh);
       plain.width = cw; plain.height = ch; g = plain.getContext('2d');
       if (k) { var dw = nw * k, dh = nh * k; g.drawImage(src, at(pos[0], W - dw) * d, at(pos[1], H - dh) * d, dw * d, dh * d); } else g.drawImage(src, 0, 0, cw, ch);
       ['#f00', '#0f0', '#00f'].forEach(function (col, i) {
@@ -116,20 +121,29 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
     load();
-    /* rows wrap around sideways, so a shifted row never leaves a hole */
+    /* rows wrap around sideways, so a shifted row never leaves a hole; the part pushed past either edge also carries on out there, so the row tears out of the box */
     function slice(l, y, h, sy, x, w, s) {
       var sx = ((x - s) % W + W) % W, w1 = Math.min(w, W - sx), top = Math.min(sy, H - h);
       ctx.drawImage(l, sx * d, top * d, w1 * d, h * d, x, y, w1, h);
       if (w1 < w) ctx.drawImage(l, 0, top * d, (w - w1) * d, h * d, x + w1, y, w - w1, h);
+      var o = Math.min(Math.abs(s), M);
+      if (o >= 1 && s > 0 && x + w >= W) ctx.drawImage(l, (W - o) * d, top * d, o * d, h * d, W, y, o, h);
+      if (o >= 1 && s < 0 && x <= 0) ctx.drawImage(l, 0, top * d, o * d, h * d, -o, y, o, h);
     }
     return {
       el: el, c: c, ctx: ctx, W: W, H: H, d: d, live: el.tagName === 'VIDEO', load: load,
-      /* keeps the canvas on the image, whatever is moving it */
-      place: function () { if (!isBg) { st.left = el.offsetLeft + 'px'; st.top = el.offsetTop + 'px'; st.transform = getComputedStyle(el).transform; } },
+      /* keeps the canvas on the image, wherever scrolling, scaling or its frame moves it */
+      place: function () {
+        var r = el.getBoundingClientRect(), k = r.width / W;
+        if (!r.width) { st.visibility = 'hidden'; return; }
+        st.visibility = '';
+        st.transform = 'translate(' + (r.left - M * k) + 'px,' + (r.top - MV * k) + 'px) scale(' + k + ')';
+      },
       /* the picture for this frame, from a list of rows */
       paint: function (rows) {
-        ctx.setTransform(d, 0, 0, d, 0, 0);
-        ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, W, H);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, c.width, c.height);
+        base();
         ctx.globalCompositeOperation = 'lighter';
         rows.forEach(function (r) {
           if (r.gap) return;
@@ -140,8 +154,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.globalCompositeOperation = 'source-over';
         rows.forEach(function (r) {
           if (r.gap) { ctx.fillStyle = '#050505'; ctx.fillRect(r.x, r.y, r.w, r.h); return; }
-          /* a streak: one pixel of the row stretched into a long line */
-          if (r.len) { var fx = r.from < 0 ? r.x : r.x + r.w - r.len, px = Math.max(0, Math.min(W - 1, r.px)); ctx.drawImage(plain, px * d, Math.min(r.sy, H - r.h) * d, 1, r.h * d, fx, r.y, r.len, r.h); }
+          /* a streak: one pixel of the row stretched into a long line, shooting out past the image's edge */
+          if (r.len) { var out = M * Math.min(1, r.len / W), fx = r.from < 0 ? r.x - out : r.x + r.w - r.len, px = Math.max(0, Math.min(W - 1, r.px)); ctx.drawImage(plain, px * d, Math.min(r.sy, H - r.h) * d, 1, r.h * d, fx, r.y, r.len + out, r.h); }
         });
       },
       /* the tube over the top: crushed contrast, static and the scan-line grid. It stays inside the rows drawn, and inside the image's own shape */
@@ -149,13 +163,14 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.save();
         ctx.beginPath(); rows.forEach(function (r) { ctx.rect(r.x, r.y, r.w, r.h); }); ctx.clip();
         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = Math.min(1, amount * .6);
-        ctx.fillStyle = ctx.createPattern(grain, 'repeat'); ctx.translate(-rnd(0, 256) | 0, -rnd(0, 256) | 0); ctx.fillRect(0, 0, W + 256, H + 256); ctx.setTransform(d, 0, 0, d, 0, 0);
+        ctx.fillStyle = ctx.createPattern(grain, 'repeat'); ctx.translate(-rnd(0, 256) | 0, -rnd(0, 256) | 0); ctx.fillRect(0, 0, W + 256, H + 256); base();
         ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = Math.min(1, amount);
         ctx.fillStyle = ctx.createPattern(crt, 'repeat'); ctx.fillRect(0, 0, W, H);
         /* drawn over itself twice: blacks crush down, highlights burn out */
-        if (crush > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = crush; ctx.drawImage(c, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = crush * .22; ctx.drawImage(c, 0, 0); ctx.setTransform(d, 0, 0, d, 0, 0); }
-        ctx.globalCompositeOperation = 'destination-in'; ctx.globalAlpha = 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(plain, 0, 0);
+        if (crush > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = crush; ctx.drawImage(c, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = crush * .22; ctx.drawImage(c, 0, 0); base(); }
+        ctx.globalCompositeOperation = 'destination-in'; ctx.globalAlpha = 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(plain, M * d, MV * d);
         ctx.restore();
+        if (round && ctx.roundRect) { ctx.save(); base(); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath(); ctx.roundRect(0, 0, W, H, round); ctx.fill(); ctx.restore(); }
       },
       close: function () { c.remove(); }
     };
@@ -170,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
   /* one frame of a rollover: t runs 0 to 1 */
   function tapeBurst(T, S, t, now) {
     var W = T.W, H = T.H, K = S.kinds, env = S.settle ? Math.pow(1 - t, 1.6) : t < .1 ? t / .1 : 1 - Math.pow(Math.max(0, (t - .3) / .7), 2);
-    var RH = Math.max(2, Math.round(H / 320)), rows = [], box = T.c.getBoundingClientRect(), k = box.height ? H / box.height : 1;
+    var RH = Math.max(2, Math.round(H / 320)), rows = [], box = T.el.getBoundingClientRect(), k = box.height ? H / box.height : 1;
     var y0 = Math.max(0, Math.floor(-box.top * k / RH) * RH - RH), y1 = Math.min(H, (innerHeight - box.top) * k + RH);
     /* new bands of bad signal keep breaking out at random */
     if (now > S.next && t < .85) {
@@ -264,17 +279,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (el.complete) run(); else el.addEventListener('load', run, { once: true });
   };
 
-  /* a button's rollover: a quick bad signal, like the titles. Red and cyan ghosts of its label pull apart and close back up, it jitters sideways, and it flickers bright now and then. The label stays readable throughout */
+  /* a button's rollover: a bad signal, like the titles. Red and cyan ghosts of its label and its outline pull apart and close back up, it jumps sideways, flickers bright, and for the odd frame only a torn band of it shows. It settles back exactly as it was */
   function vhsButton(b) {
-    var t0 = performance.now(), was = { ts: b.style.textShadow, tr: b.style.translate, f: b.style.filter };
+    var t0 = performance.now(), was = { ts: b.style.textShadow, bs: b.style.boxShadow, tr: b.style.translate, f: b.style.filter, cp: b.style.clipPath };
     b._ntGlitching = true;
     (function step(now) {
       var t = (now - t0) / BUTTON_MS;
-      if (t >= 1) { b.style.textShadow = was.ts; b.style.translate = was.tr; b.style.filter = was.f; b._ntGlitching = false; return; }
-      var e = 1 - t, k = Math.random() < .5 ? 1 : -1, s = Math.round((1 + Math.random() * 3) * e);
+      if (t >= 1) { b.style.textShadow = was.ts; b.style.boxShadow = was.bs; b.style.translate = was.tr; b.style.filter = was.f; b.style.clipPath = was.cp; b._ntGlitching = false; return; }
+      var e = 1 - t * t, k = Math.random() < .5 ? 1 : -1, s = Math.round((3 + Math.random() * 7) * e);
       b.style.textShadow = s ? k * s + 'px 0 #ff1e3c, ' + -k * s + 'px 0 #18d6ff' : was.ts;
-      b.style.translate = Math.random() < .35 * e ? k * Math.round(1 + Math.random() * 2 * e) + 'px 0' : was.tr;
-      b.style.filter = Math.random() < .18 * e ? 'brightness(1.5)' : was.f;
+      b.style.boxShadow = s > 2 ? k * s + 'px 0 0 rgba(255, 30, 60, .6), ' + -k * s + 'px 0 0 rgba(24, 214, 255, .6)' : was.bs;
+      b.style.translate = Math.random() < .55 * e ? k * Math.round(2 + Math.random() * 5 * e) + 'px 0' : was.tr;
+      b.style.filter = Math.random() < .25 * e ? 'brightness(1.7) contrast(1.4)' : was.f;
+      b.style.clipPath = Math.random() < .14 * e ? 'inset(' + Math.round(rnd(5, 40)) + '% 0 ' + Math.round(rnd(5, 40)) + '% 0)' : was.cp;
       requestAnimationFrame(step);
     })(t0);
   }
