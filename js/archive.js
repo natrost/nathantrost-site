@@ -323,7 +323,7 @@
     var openTile = null, current = 0, currentProject = -1, closing = 0, waiting = false, bigAnim = null, bigRect = null, refocusing = false;
     function fit(ratio) {
       var W = wall.clientWidth, H = wall.clientHeight, pad = 32, wide = W >= 992, stack = W >= 600;
-      var n = thumbs.children.length, tw = n ? thumbs.offsetWidth : 0, th = n ? thumbs.offsetHeight : 0, foot = ARROW_ROOM;
+      var n = thumbs.children.length, tw = n ? thumbs.offsetWidth : 0, th = n ? thumbs.offsetHeight - (parseFloat(getComputedStyle(thumbs).paddingTop) || 0) : 0, foot = ARROW_ROOM;
       var scrolls = ratio < SCROLL_BELOW, maxW, maxH, top, bottom;
       if (wide) {
         maxW = W - 2 * (pad * 2 + TEXT_W); top = pad; bottom = H - pad - foot;
