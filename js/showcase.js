@@ -57,7 +57,8 @@
     function tick() {
       raf = 0;
       measure();
-      q += (target - q) * EASE;
+      /* with the smooth wheel (smooth-scroll.js) the page already glides, so the pages follow it more closely */
+      q += (target - q) * (window.__ntSmoothScroll ? Math.max(EASE, .3) : EASE);
       if (Math.abs(target - q) < .0005) q = target;
       place();
       if (q !== target) raf = requestAnimationFrame(tick);
