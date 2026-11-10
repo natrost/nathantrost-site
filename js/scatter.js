@@ -25,6 +25,10 @@
     im.style.translate = Math.round(x - r.left) + 'px ' + Math.round(s.v * (phone ? 16 : NUDGE)) + 'px';
   }
 
+  var sized = 'ResizeObserver' in window ? new ResizeObserver(function (list) {
+    list.forEach(function (e) { var w = Math.round(e.contentRect.width); if (w && w !== e.target._ntW) { e.target._ntW = w; place(e.target); } });
+  }) : null;
+
   function start() {
     SETS.forEach(function (sel) {
       var first = Math.random() < .5 ? 0 : 1;
@@ -33,8 +37,8 @@
         im._ntScatter = { side: Math.random() < SAME_SIDE ? (Math.random() < .5 ? 0 : 1) : (i + first) % 2, u: Math.pow(Math.random(), OUTWARD), v: Math.random() * 2 - 1 };
         all.push(im);
         place(im);
-        /* an image that has not loaded has no width yet, so it is placed again once it has */
-        if (!im.complete) im.addEventListener('load', function () { place(im); }, { once: true });
+        /* an image that has not loaded has no width yet, and some change size once they do, so each is placed again whenever its size changes */
+        if (sized) sized.observe(im); else if (!im.complete) im.addEventListener('load', function () { place(im); }, { once: true });
       });
     });
     var resized = 0;
