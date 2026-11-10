@@ -170,6 +170,8 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
   68% { filter: url(#nt-mb-y1); }
   80%, 100% { filter: none; }
 }
+/* the scroll-speed glitch (js/smooth-scroll.js sets the class and its strength): the image stretches along the scroll with red and cyan ghosts above and below */
+.nt-speed { scale: 1 var(--nt-speed-s, 1); filter: drop-shadow(0 var(--nt-speed-g, 0) rgba(255, 30, 60, .6)) drop-shadow(0 calc(var(--nt-speed-g, 0px) * -1) rgba(24, 214, 255, .6)); }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*), ::view-transition-image-pair(*) { animation: none !important; }
 }

@@ -1,6 +1,6 @@
 /* Scrolling (loaded once, from the site footer). Two things, both off with reduced motion:
    1. Smooth wheel: a mouse wheel's notches glide the page instead of jumping it. Trackpads, phones, keyboards and the scrollbar keep the browser's own scrolling, which already has momentum. It still moves the page's real scroll position, so pinned sections and the other scripts work as before. It stands aside for anything that handles the wheel itself (the Archive wall), anything inside that can scroll on its own (menus, the Archive overlay) and any page that has locked scrolling.
-   2. Speed glitch: the faster the page moves, the more the images on screen fail like a bad tape, stretching along the scroll with red and cyan ghosts above and below. It snaps between a few strengths, like the rest of the site's glitches, and clears the moment the page slows down */
+   2. Speed glitch: the faster the page moves, the more the images moving across the screen fail like a bad tape, stretching along the scroll with red and cyan ghosts above and below. It snaps between a few strengths, like the rest of the site's glitches, and clears the moment the page slows down */
 (function () {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -60,14 +60,14 @@
   var FULL = 90;        /* px per frame for the full glitch */
   var LEVELS = 3;       /* how many strengths it snaps between */
   var STRETCH = .05;    /* how much the images stretch along the scroll at full strength */
-  var GHOST = 10;       /* how far the red and cyan ghosts pull away at full strength, in px */
+  var GHOST = 8;        /* how far the red and cyan ghosts pull away at full strength, in px */
   var SKIP = '.main_nav, nav, footer, [class*="footer"], .nt-wall, .interaction_wrap, .w-lightbox-backdrop, .nt-logo-solid, .scroll_showcase';
-  var seen = [], lastY = scrollY, speed = 0, level = 0, dir = 1, ticking = 0;
+  var seen = [], lastY = scrollY, speed = 0, dir = 1, ticking = 0;
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (list) {
       list.forEach(function (en) {
         var i = seen.indexOf(en.target);
-        if (en.isIntersecting && i < 0) seen.push(en.target);
+        if (en.isIntersecting && i < 0) { seen.push(en.target); en.target._ntTop = en.boundingClientRect.top; }
         else if (!en.isIntersecting && i >= 0) { seen.splice(i, 1); paint(en.target, 0); }
       });
     });
@@ -80,13 +80,16 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
     addEventListener('load', watch);
   }
+  /* the look is a class with its strength in custom properties (css/site.css), so it never mixes with the other glitches' inline filters and always comes off cleanly */
   function paint(m, l) {
-    if (m._ntLevel === l + ':' + dir) return;
-    m._ntLevel = l + ':' + dir;
-    if (!l) { m.style.removeProperty('scale'); if (!m._ntGlitching) m.style.removeProperty('filter'); return; }
-    var k = l / LEVELS, g = Math.round(GHOST * k) * dir;
-    m.style.scale = '1 ' + (1 + STRETCH * k).toFixed(3);
-    if (!m._ntGlitching && m.offsetWidth > 60) m.style.filter = 'drop-shadow(0 ' + g + 'px rgba(255,30,60,.7)) drop-shadow(0 ' + (-g) + 'px rgba(24,214,255,.7))';
+    var key = l ? l + ':' + dir : 0;
+    if (m._ntLevel === key) return;
+    m._ntLevel = key;
+    if (!l) { m.classList.remove('nt-speed'); return; }
+    var k = l / LEVELS;
+    m.style.setProperty('--nt-speed-g', Math.round(GHOST * k) * dir + 'px');
+    m.style.setProperty('--nt-speed-s', (1 + STRETCH * k).toFixed(3));
+    m.classList.add('nt-speed');
   }
   function tick() {
     var y = scrollY, d = y - lastY;
@@ -94,8 +97,15 @@
     speed = Math.max(Math.abs(d), speed * .8);
     if (d) dir = d > 0 ? 1 : -1;
     var l = speed < FROM ? 0 : Math.min(LEVELS, Math.ceil((speed - FROM) / (FULL - FROM) * LEVELS));
-    if (l !== level || l) { level = l; seen.forEach(function (m) { paint(m, l); }); }
-    if (speed > 1) ticking = requestAnimationFrame(tick); else { ticking = 0; speed = 0; }
+    seen.forEach(function (m) {
+      /* only images actually travelling across the screen; pinned ones (the homepage's project cards) hold still while the page scrolls under them */
+      var top = m.getBoundingClientRect().top, moved = Math.abs(top - m._ntTop);
+      m._ntTop = top;
+      if (d) m._ntMoving = moved > Math.abs(d) * .5;
+      paint(m, m._ntMoving ? l : 0);
+    });
+    if (speed > 1) ticking = requestAnimationFrame(tick);
+    else { ticking = 0; speed = 0; seen.forEach(function (m) { paint(m, 0); }); }
   }
   addEventListener('scroll', function () { if (!ticking) ticking = requestAnimationFrame(tick); }, { passive: true });
 })();
