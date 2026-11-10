@@ -1,4 +1,4 @@
-/* Pixel explosion on the homepage, About page and project page titles (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, glitching and pixelating as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
+/* Pixel explosion on the homepage, About page and project page titles (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
    The text near the cursor also fails like a VHS tape: its rows slip and wobble, red and blue ghosts pull away from it, scan lines cut through it and streaks shoot off, in a new mix for each rollover. Only on a real pointer, and never with reduced motion */
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -53,14 +53,33 @@ document.addEventListener('DOMContentLoaded', function () {
     for (var i = list.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = list[i]; list[i] = list[j]; list[j] = t; }
     list.slice(0, 14).forEach(function (src) { var im = new Image(); im.src = src; sources.push(im); });
   }
-  /* one image at one chunkiness, kept for next time */
-  function mosaic(im, w, h, b) {
+  /* the small images fail like the site's other images: a bad VCR tape, with the red, green and blue split apart, rows slipping sideways, bands tearing out past the edges, streaks, dropouts, static and the tube's stripes */
+  var grain = null, crt = null, TEAR_OUT = 34;
+  function tiles() {
+    if (grain) return;
+    grain = document.createElement('canvas'); grain.width = grain.height = 128;
+    var gg = grain.getContext('2d'), im = gg.createImageData(128, 128), a = im.data;
+    for (var i = 0; i < a.length; i += 4) { a[i] = Math.random() * 255; a[i + 1] = Math.random() * 255; a[i + 2] = Math.random() * 255; a[i + 3] = Math.random() * 90; }
+    gg.putImageData(im, 0, 0);
+    crt = document.createElement('canvas'); crt.width = crt.height = 3;
+    var cg = crt.getContext('2d');
+    cg.fillStyle = '#ffd4d4'; cg.fillRect(0, 0, 1, 2); cg.fillStyle = '#d4ffd4'; cg.fillRect(1, 0, 1, 2); cg.fillStyle = '#d4d4ff'; cg.fillRect(2, 0, 1, 2);
+  }
+  /* the picture at its thrown size, and its red, green and blue on their own, kept for next time */
+  function channels(im, w, h) {
+    var key = w + 'x' + h + '@' + dpr;
+    if (im._nt && im._nt[key]) return im._nt[key];
+    var cw = Math.round(w * dpr), ch = Math.round(h * dpr), plain = document.createElement('canvas');
+    plain.width = cw; plain.height = ch; plain.getContext('2d').drawImage(im, 0, 0, cw, ch);
+    var out = { plain: plain, rgb: ['#f00', '#0f0', '#00f'].map(function (col) {
+      var l = document.createElement('canvas'), n = l.getContext('2d');
+      l.width = cw; l.height = ch;
+      n.drawImage(plain, 0, 0); n.globalCompositeOperation = 'multiply'; n.fillStyle = col; n.fillRect(0, 0, cw, ch);
+      n.globalCompositeOperation = 'destination-in'; n.drawImage(plain, 0, 0);
+      return l;
+    }) };
     if (!im._nt) im._nt = {};
-    if (im._nt[b]) return im._nt[b];
-    var c = document.createElement('canvas');
-    c.width = Math.max(1, Math.ceil(w / b)); c.height = Math.max(1, Math.ceil(h / b));
-    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-    return (im._nt[b] = c);
+    return (im._nt[key] = out);
   }
   /* draws the text onto a hidden canvas, word by word at the exact spots the browser put them, then notes which grid cells have ink in them */
   function build() {
@@ -160,24 +179,71 @@ document.addEventListener('DOMContentLoaded', function () {
     nextImg = now + IMG_GAP * (1 + Math.random());
     var im = ready[Math.floor(Math.random() * ready.length)], k = IMG_SIZE / Math.max(im.naturalWidth, im.naturalHeight);
     var w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k), turn = Math.random() * 6.283, far = 70 + Math.random() * 130;
-    sprites.push({ im: im, w: w, h: h, x0: x, y0: y, x1: x + Math.cos(turn) * far, y1: y + Math.sin(turn) * far, t0: now });
+    sprites.push({ im: im, w: w, h: h, x0: x, y0: y, x1: x + Math.cos(turn) * far, y1: y + Math.sin(turn) * far, t0: now, k: { seed: rnd(0, 999), split: Math.random() < .5 ? -1 : 1, wave: Math.random() < .5 ? rnd(2, 7) : 0, freq: rnd(.08, .2), crush: rnd(.3, .8) } });
   }
-  /* starts as big blocks and resolves as it flies out, tears sideways the whole way, then breaks back up and blinks away */
+  /* comes out as a badly broken signal, steadies as it flies, then breaks up again and blinks away. The odd frame sticks, like a worn tape */
   function drawImage(sp, now) {
     var t = (now - sp.t0) / IMG_LIFE;
     if (t >= 1) return false;
-    if ((t < .12 || t > .88) && Math.random() < .35) return true;
-    var b = t < .12 ? 20 : t < .28 ? 12 : t < .68 ? 5 : t < .84 ? 10 : 20;
+    if ((t < .1 || t > .9) && Math.random() < .3) return true;
     var fly = 1 - Math.pow(1 - Math.min(1, t / .55), 3);
     var px = Math.round((sp.x0 + (sp.x1 - sp.x0) * fly - sp.w / 2) / CELL) * CELL, py = Math.round((sp.y0 + (sp.y1 - sp.y0) * fly - sp.h / 2) / CELL) * CELL;
-    var m = mosaic(sp.im, sp.w, sp.h, b), unit = sp.w / m.width;
-    ctx.drawImage(m, px, py, sp.w, sp.h);
-    var bands = Math.floor(Math.random() * 3);
-    for (var i = 0; i < bands; i++) {
-      var by = Math.floor(Math.random() * m.height), bh = Math.min(m.height - by, 1 + Math.floor(Math.random() * 3));
-      ctx.drawImage(m, 0, by, m.width, bh, px + (Math.random() - .5) * 44, py + by * unit, sp.w, bh * unit);
-    }
+    if (!sp.c || Math.random() > .12) paintTape(sp, t, now);
+    ctx.globalAlpha = t > .9 ? (1 - t) / .1 : 1;
+    ctx.drawImage(sp.c, px - TEAR_OUT, py, sp.w + TEAR_OUT * 2, sp.h);
+    ctx.globalAlpha = 1;
     return true;
+  }
+  function paintTape(sp, t, now) {
+    var w = sp.w, h = sp.h, M = TEAR_OUT, ch = channels(sp.im, w, h), RH = 2, k = sp.k;
+    if (!sp.c) { tiles(); sp.c = document.createElement('canvas'); sp.c.width = Math.round((w + M * 2) * dpr); sp.c.height = Math.round(h * dpr); sp.events = []; sp.next = 0; }
+    var c = sp.c, g = c.getContext('2d');
+    /* how broken it is: strong as it comes out, calmer in flight, strong again as it goes */
+    var env = t < .2 ? 1 - t / .2 * .7 : t < .7 ? .3 : .3 + (t - .7) / .3 * .7;
+    if (now > sp.next) {
+      sp.next = now + rnd(20, 90);
+      var big = Math.random() < .3, bh = big ? rnd(8, h * .3) : rnd(2, 8), type = Math.random();
+      sp.events.push({ y: rnd(-bh / 2, h), h: bh, until: now + rnd(40, 200), s: (Math.random() < .5 ? -1 : 1) * rnd(6, w * .35), streak: type < .3, gap: type > .82, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
+    }
+    sp.events = sp.events.filter(function (e) { return e.until > now; });
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
+    g.setTransform(dpr, 0, 0, dpr, M * dpr, 0);
+    var frame = Math.floor(now / 45), split = (2 + 7 * env) * k.split, gaps = [], streaks = [];
+    g.globalCompositeOperation = 'lighter';
+    for (var y = 0; y < h; y += RH) {
+      var rh = Math.min(RH, h - y), s = wob(y, 5, frame + k.seed) * 6 * env + wob(y, 30, frame * .3 + k.seed) * 5 * env, gap = false;
+      if (k.wave) s += Math.sin(y * k.freq + now * .012) * k.wave * env;
+      for (var i = 0; i < sp.events.length; i++) {
+        var e = sp.events[i];
+        if (y + rh > e.y && y < e.y + e.h) { if (e.gap) gap = true; s += e.s * env + wob(y, 3, e.seed + frame) * 10 * env; if (e.streak) streaks.push([y, rh, e.from, w * (.2 + .8 * hash(Math.floor(y / 2) + e.seed)) * env]); }
+      }
+      if (gap) { gaps.push([y, rh]); continue; }
+      s = Math.round(s);
+      for (var l = 0; l < 3; l++) slipRow(g, ch.rgb[l], w, y, rh, s + (l === 0 ? -Math.round(split) : l === 2 ? Math.round(split) : 0), M);
+    }
+    g.globalCompositeOperation = 'source-over';
+    gaps.forEach(function (r) { g.fillStyle = '#050505'; g.fillRect(0, r[0], w, r[1]); });
+    /* a streak: one pixel of the row stretched into a line shooting out past the edge */
+    streaks.forEach(function (r) { var len = r[3], sx = r[2] < 0 ? 2 : w - 3; g.drawImage(ch.plain, sx * dpr, r[0] * dpr, 1, r[1] * dpr, r[2] < 0 ? -M * Math.min(1, len / w) : w - len, r[0], len + M * Math.min(1, len / w), r[1]); });
+    /* the tube: static, the scan-line stripes and crushed contrast, then trimmed back to where there is picture */
+    if (!sp.mask) { sp.mask = document.createElement('canvas'); sp.mask.width = c.width; sp.mask.height = c.height; }
+    var mg = sp.mask.getContext('2d'); mg.clearRect(0, 0, c.width, c.height); mg.drawImage(c, 0, 0);
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = Math.min(1, env * .6 + .15);
+    g.fillStyle = g.createPattern(grain, 'repeat'); g.save(); g.translate(-rnd(0, 128) | 0, -rnd(0, 128) | 0); g.fillRect(-M, 0, w + M * 2 + 128, h + 128); g.restore();
+    g.globalCompositeOperation = 'multiply'; g.globalAlpha = .9; g.fillStyle = g.createPattern(crt, 'repeat'); g.fillRect(0, 0, w, h);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'overlay'; g.globalAlpha = k.crush * (.4 + env * .6); g.drawImage(c, 0, 0);
+    g.globalCompositeOperation = 'destination-in'; g.globalAlpha = 1; g.drawImage(sp.mask, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+  }
+  /* one row of one colour, shifted sideways; it wraps round inside the picture so it never leaves a hole, and the part pushed past an edge also tears out beyond it */
+  function slipRow(g, l, w, y, h, s, M) {
+    var sx = ((-s) % w + w) % w;
+    g.drawImage(l, sx * dpr, y * dpr, (w - sx) * dpr, h * dpr, 0, y, w - sx, h);
+    if (sx) g.drawImage(l, 0, y * dpr, sx * dpr, h * dpr, w - sx, y, sx, h);
+    var o = Math.min(Math.abs(s), M);
+    if (o >= 1 && s > 0) g.drawImage(l, (w - o) * dpr, y * dpr, o * dpr, h * dpr, w, y, o, h);
+    if (o >= 1 && s < 0) g.drawImage(l, 0, y * dpr, o * dpr, h * dpr, -o, y, o, h);
   }
   /* the text, with the rows near the cursor out of sync: each row is drawn on its own, with its coloured ghosts either side */
   function paintText(ox, oy, now) {
@@ -239,9 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
       ctx.fillRect(Math.round((x + Math.cos(a) * d) / 2) * 2, Math.round((y + Math.sin(a) * d) / 2) * 2, s, s);
     }
     ctx.globalAlpha = 1;
-    ctx.imageSmoothingEnabled = false;
     sprites = sprites.filter(function (sp) { return drawImage(sp, now); });
-    ctx.imageSmoothingEnabled = true;
     ctx.fillStyle = color;
     var keep = Math.pow(DRAG, dt);
     flying = flying.filter(function (p) {
