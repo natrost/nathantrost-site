@@ -143,8 +143,35 @@ html.nt-vt-5::view-transition-new(root) { animation-name: nt-crt-in; }
   84% { transform: none; filter: none; }
   100% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
 }
+/* motion blur: the jumps smear along the way they move, sideways for every transition but the vertical hold, which smears up and down. It pulses with the big jumps of the old page leaving and the new one arriving, and clears as the new page settles. The blurs are SVG filters (nt-mb-x1 to nt-mb-y4, weakest to strongest) that transition.js adds to the page */
+::view-transition-image-pair(root) { animation: nt-mb-x .83s steps(1, end) both; }
+html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
+@keyframes nt-mb-x {
+  0% { filter: none; }
+  6% { filter: url(#nt-mb-x2); }
+  14% { filter: url(#nt-mb-x3); }
+  22% { filter: url(#nt-mb-x1); }
+  30% { filter: url(#nt-mb-x4); }
+  40% { filter: url(#nt-mb-x2); }
+  48% { filter: url(#nt-mb-x3); }
+  58% { filter: url(#nt-mb-x2); }
+  68% { filter: url(#nt-mb-x1); }
+  80%, 100% { filter: none; }
+}
+@keyframes nt-mb-y {
+  0% { filter: none; }
+  6% { filter: url(#nt-mb-y2); }
+  14% { filter: url(#nt-mb-y3); }
+  22% { filter: url(#nt-mb-y2); }
+  30% { filter: url(#nt-mb-y4); }
+  40% { filter: url(#nt-mb-y3); }
+  48% { filter: url(#nt-mb-y4); }
+  58% { filter: url(#nt-mb-y2); }
+  68% { filter: url(#nt-mb-y1); }
+  80%, 100% { filter: none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*), ::view-transition-image-pair(*) { animation: none !important; }
 }
 
 /* footer drawer: the black footer is pinned to the bottom of the screen and the page slides up off it (driven by the site footer script) */
