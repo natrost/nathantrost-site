@@ -10,6 +10,9 @@
     var count = slides.length;
     if (!count) return;
 
+    /* tell the browser how wide each slide really shows (a quarter of the screen; on phones half, or a third in the second carousel), so it downloads a sharp enough picture whatever size Webflow guessed */
+    var phone = root.id === 'splide2' ? '33vw' : '50vw';
+    list.querySelectorAll('img[srcset]').forEach(function (img) { img.sizes = '(max-width: 640px) ' + phone + ', 25vw'; });
     slides.forEach(function (s, i) {
       if (i % 2 === 0) s.classList.add('marquee-low');
       s.style.animationDelay = (i * 0.12) + 's';

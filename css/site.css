@@ -335,6 +335,10 @@ html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-ev
 .nt-pj-trail { position: fixed; left: 0; top: 0; z-index: 190; width: 0; height: 0; pointer-events: none; }
 html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block; width: auto; height: auto; max-width: 250px; max-height: 250px; opacity: 0; }
 
+/* homepage carousels: each slide's link fills its slide, so the picture inside always fills it too */
+.splide.is-marquee .splide__slide > a { display: block; width: 100%; }
+.splide.is-marquee .splide_image { width: 100%; height: auto; }
+
 /* project page carousel: draggable marquee (driven by the site footer script) */
 .splide.nt-pm { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .splide.nt-pm.is-dragging { cursor: grabbing; }
