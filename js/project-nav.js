@@ -78,7 +78,19 @@
       }
     })();
 
-    /* Challenge and Solution each get a box whose white outline draws itself from the top left corner, clockwise, the first time it comes on screen (the look is in css/site.css) */
+    /* Challenge and Solution each get a box whose white outline draws itself from the top left corner, clockwise, the first time it comes on screen (the look is in css/site.css). The boxes line up with the edges of the overview text above them */
+    var csRow = document.querySelector('.challenge_solution_row'), overview = document.querySelector('.overview_text');
+    if (csRow && overview) (function () {
+      function line() {
+        csRow.style.paddingLeft = csRow.style.paddingRight = '0px';
+        var r = csRow.getBoundingClientRect(), o = overview.getBoundingClientRect();
+        csRow.style.paddingLeft = Math.max(0, Math.round(o.left - r.left)) + 'px';
+        csRow.style.paddingRight = Math.max(0, Math.round(r.right - o.right)) + 'px';
+      }
+      line();
+      addEventListener('resize', line);
+      addEventListener('load', line);
+    })();
     Array.prototype.forEach.call(document.querySelectorAll('.challenge_solution_row > *'), function (box) {
       box.classList.add('nt-sbox');
       var NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), path = document.createElementNS(NS, 'path');

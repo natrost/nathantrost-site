@@ -196,16 +196,17 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 .nt-case-stick::before { content: ""; position: absolute; inset: -10%; background: var(--nt-case-img) center / cover no-repeat; filter: blur(40px) saturate(1.2); transform: scale(1.1); }
 .nt-case-stick::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
 .nt-case .work_feature_wrapper, .nt-case .details_div, .nt-case .detail_scroller, .nt-case .overview_text_wrapper, .nt-case .nt-case-intro { background-color: transparent !important; }
-/* Challenge and Solution each sit in their own box: a 1px white outline that draws itself from the top left corner, clockwise round the box, when it comes on screen (js/project-nav.js) */
-.nt-case .challenge_solution_row { gap: 2rem; padding-top: 6rem; }
-.nt-case .challenge_solution_row > .nt-sbox { position: relative; flex: 1 1 0; min-width: 0; padding: 2.5rem 2rem !important; }
+/* Challenge and Solution each sit in their own box, one above the other, as wide as the overview text above them (js/project-nav.js lines them up with it): a 1px white outline that draws itself from the top left corner, clockwise round the box, when it comes on screen. Their own dividing lines, and the one just below them, give way to the boxes */
+.nt-case .challenge_solution_row { flex-direction: column; gap: 2rem; padding-top: 6rem; }
+.nt-case .challenge_solution_row > .nt-sbox { position: relative; flex: none; width: 100%; min-width: 0; padding: 2.5rem 2rem !important; border: 0 !important; }
+.nt-case .challenge_solution_row + * { border-top: 0 !important; }
+.nt-case .nt-sbox .section_title { margin-bottom: 4rem !important; }
 .nt-sbox-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .nt-sbox-line path { fill: none; stroke: #fff; stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s cubic-bezier(.65, 0, .35, 1); }
-.nt-sbox + .nt-sbox .nt-sbox-line path { transition-delay: .3s; }
 .nt-sbox.is-drawn .nt-sbox-line path { stroke-dashoffset: 0; }
 @media (max-width: 767px) {
   .nt-case .challenge_solution_row { gap: 1rem; padding-top: 1rem; }
-  .nt-case .challenge_solution_row > .nt-sbox { flex: none; padding: 1.75rem 1.25rem !important; }
+  .nt-case .challenge_solution_row > .nt-sbox { padding: 1.75rem 1.25rem !important; }
 }
 @media (prefers-reduced-motion: reduce) { .nt-sbox-line path { transition: none; } }
 /* the intro and the first section sit on the dark backdrop, so their text is white and their dividing lines are a faint white */
