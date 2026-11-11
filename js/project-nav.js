@@ -1,4 +1,4 @@
-/* Project pages: the X and project dropdown (both glitch on rollover), the Top button that waits for the hero to scroll past, and a burst of images on Next and Prev from the project each one leads to.
+/* Project pages: the X and project dropdown (both glitch on rollover), the self-drawing boxes round Challenge and Solution, the Top button that waits for the hero to scroll past, and a burst of images on Next and Prev from the project each one leads to.
    To add a project, add one line to PROJECTS, in the order it should appear in the dropdown. Its images can be its Thumb trails images from the CMS or any others */
 (function () {
   if (location.pathname.indexOf('/work/') !== 0) return;
@@ -77,6 +77,26 @@
         box.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(box); });
       }
     })();
+
+    /* Challenge and Solution each get a box whose white outline draws itself from the top left corner, clockwise, the first time it comes on screen (the look is in css/site.css) */
+    Array.prototype.forEach.call(document.querySelectorAll('.challenge_solution_row > *'), function (box) {
+      box.classList.add('nt-sbox');
+      var NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), path = document.createElementNS(NS, 'path');
+      svg.setAttribute('class', 'nt-sbox-line'); svg.setAttribute('aria-hidden', 'true');
+      path.setAttribute('pathLength', '1');
+      svg.appendChild(path); box.appendChild(svg);
+      /* the outline runs half a pixel inside the box's edge so the whole line shows */
+      function trace() {
+        var w = box.offsetWidth, h = box.offsetHeight;
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        path.setAttribute('d', 'M.5 .5H' + (w - .5) + 'V' + (h - .5) + 'H.5Z');
+      }
+      trace();
+      if ('ResizeObserver' in window) new ResizeObserver(trace).observe(box); else addEventListener('resize', trace);
+      if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { box.classList.add('is-drawn'); return; }
+      var seen = new IntersectionObserver(function (en) { if (en[0].isIntersecting) { box.classList.add('is-drawn'); seen.disconnect(); } }, { threshold: .35 });
+      seen.observe(box);
+    });
 
     /* Top leaves the Next and Prev bar so it can float on its own, showing once the bottom of the hero has gone off the top of the screen */
     var top = document.querySelector('.project_links.top'), row = document.querySelector('.project_links_wrapper');
