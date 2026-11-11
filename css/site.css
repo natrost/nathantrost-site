@@ -10,7 +10,7 @@ html body, html body .favorites_wrapper_2, html body .professionalwrapper, html 
   background-size: 600px 600px;
 }
 /* the same grain in a pale colour for the dark areas, where dark specks would not show, and a little weaker because specks stand out more on black. The backdrops behind the homepage projects and project page headers carry it on their dark veil, so it sits over the image and under the text */
-html body .inthestands_wrapper, html body .personal_wrapper_2, html body .nt-footer-under, html body .nt-blurbg .nt-stick:after, html body .nt-case-bg::after {
+html body .inthestands_wrapper, html body .personal_wrapper_2, html body .nt-footer-under, html body .nt-blurbg .nt-stick:after, html body .nt-case-stick::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  .07 0 0 0 -.025'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  1.2 0 0 0 -.95'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E") !important;
   background-size: 600px 600px !important;
 }
@@ -190,11 +190,15 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 /* homepage additional projects: a darker veil over the blurred full-width backdrop */
 .nt-blurbg .nt-stick:after { background: rgba(0, 0, 0, .7) !important; }
 
-/* case studies featured on the homepage: the black header area takes the same blurred, darkened image as its homepage backdrop */
-.nt-case-bg { position: absolute; left: 0; right: 0; top: 0; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; background: #000; }
-.nt-case-bg::before { content: ""; position: absolute; inset: -10%; background: var(--nt-case-img) center / cover no-repeat; filter: blur(40px) saturate(1.2); transform: scale(1.1); }
-.nt-case-bg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
-.nt-case .work_feature_wrapper, .nt-case .details_div, .nt-case .detail_scroller { background-color: transparent !important; }
+/* case studies: the same blurred, darkened image as the project's homepage backdrop fills the screen and stays put behind the hero, the intro and the first section (the challenge, solution, outcome and how it was done). At the end of that section it scrolls away and the sand case study comes up. js/site-early.js sets how far down it reaches and marks the first section */
+.nt-case-bg { position: absolute; left: 0; right: 0; top: 0; height: 100vh; z-index: -1; overflow: clip; pointer-events: none; background: #000; }
+.nt-case-stick { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; }
+.nt-case-stick::before { content: ""; position: absolute; inset: -10%; background: var(--nt-case-img) center / cover no-repeat; filter: blur(40px) saturate(1.2); transform: scale(1.1); }
+.nt-case-stick::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
+.nt-case .work_feature_wrapper, .nt-case .details_div, .nt-case .detail_scroller, .nt-case .overview_text_wrapper, .nt-case .nt-case-intro { background-color: transparent !important; }
+/* the intro and the first section sit on the dark backdrop, so their text is white and their dividing lines are a faint white */
+.nt-case .overview_text_wrapper, .nt-case .nt-case-intro { color: #fff; }
+.nt-case .overview_text_wrapper *, .nt-case .nt-case-intro * { color: inherit; border-color: rgba(255, 255, 255, .14); }
 
 /* project pages: Webflow's fades are overridden so the glitch alone brings things in */
 .nt-work .nt-rise.is-in, .nt-work ._1_image_block { opacity: 1 !important; transform: none !important; }

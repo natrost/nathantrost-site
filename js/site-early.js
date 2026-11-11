@@ -1,6 +1,6 @@
 /* Site-wide early setup for nathantrost.com, linked from the site head in Webflow. It runs while the page is still loading, so the project page backdrops, the solid logo and the text reveals are in place before anything paints */
 
-/* project pages: the dark header takes a blurred, darkened backdrop, the same image the project's card uses on the homepage. The image is set in Webflow, as the data-nt-backdrop custom attribute on the page's Body (Body settings, Custom attributes), so a new project needs no code: give its Body that attribute with the image's address */
+/* project pages: a blurred, darkened backdrop fills the screen and stays put behind the hero, the intro and the first section, then scrolls away for the sand case study. It is the same image the project's card uses on the homepage. The image is set in Webflow, as the data-nt-backdrop custom attribute on the page's Body (Body settings, Custom attributes), so a new project needs no code: give its Body that attribute with the image's address */
 (function () {
   var bg = null, host = null;
   /* made the moment the page body starts, so the header paints with its backdrop rather than starting empty */
@@ -14,6 +14,9 @@
     bg.className = 'nt-case-bg';
     bg.setAttribute('aria-hidden', 'true');
     bg.style.setProperty('--nt-case-img', 'url("' + img + '")');
+    var stick = document.createElement('div');
+    stick.className = 'nt-case-stick';
+    bg.appendChild(stick);
     document.body.insertBefore(bg, document.body.firstChild);
     return true;
   }
@@ -22,10 +25,12 @@
   document.addEventListener('DOMContentLoaded', function () {
     watcher.disconnect();
     if (!make()) return;
-    /* it reaches down to the bottom of the header's last dark block */
+    /* it reaches down to the bottom of the first section after the intro (the challenge, solution, outcome and how it was done), which is marked so its text turns white */
+    var first = document.querySelector('.overview_text_wrapper ~ .work_detail_section') || document.querySelector('.work_detail_section');
+    if (first) first.classList.add('nt-case-intro');
     function size() {
       var bottom = 0;
-      Array.prototype.forEach.call(document.querySelectorAll('.work_feature_wrapper, .details_div, .detail_scroller'), function (e) {
+      Array.prototype.forEach.call(document.querySelectorAll('.work_feature_wrapper, .details_div, .detail_scroller, .overview_text_wrapper, .nt-case-intro'), function (e) {
         bottom = Math.max(bottom, e.getBoundingClientRect().bottom + scrollY);
       });
       bg.style.height = Math.round(bottom) + 'px';
