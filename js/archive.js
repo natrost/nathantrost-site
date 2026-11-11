@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load it coasts by itself, as if just thrown, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it zooms in and coasts by itself, as if just thrown, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -14,8 +14,9 @@
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
     var INTRO_X = -1.6, INTRO_Y = -1; /* the throw the wall gets on load, in px per ms; it travels about 285 times this before stopping */
-    var INTRO_READY = 0.6; /* the throw waits until this share of the images on screen have loaded, so it can be seen */
-    var INTRO_WAIT = 1500; /* longest the throw waits for them, in ms */
+    var INTRO_READY = 1;   /* the throw waits until this share of the images on screen have loaded, so the whole wall fills in first */
+    var INTRO_WAIT = 4000; /* longest the throw waits for them, in ms, for slow connections */
+    var INTRO_HOLD = 500;  /* once they have, the full wall holds still this long before the throw and zoom */
     var TEXT_W = 320;      /* width of the project text beside the opened image, in px */
     var THUMBS_SHARE = 0.45; /* when the text and thumbnails cannot both fit down the left side, the thumbnails keep this share of the height and scroll */
     var OPEN_MS = 800;     /* how long the image takes to grow and the others to leave */
@@ -29,8 +30,8 @@
     var ARROW_ROOM = 48;   /* space kept clear above the bottom margin for the arrows, in px */
     var BAR_GAP = 3;       /* the scrollbar's grab area starts this far outside the frame, which puts the visible bar 8px from it */
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
-    var ZOOM_FROM = 0.8;   /* the wall starts at this size on load, showing more of the archive, and zooms up to full size as its opening throw slides it in */
-    var ZOOM_MS = 1300;    /* how long that zoom takes */
+    var ZOOM_FROM = 0.65;  /* the wall starts at this size on load, showing more of the archive, and zooms up to full size as its opening throw slides it in */
+    var ZOOM_MS = 1500;    /* how long that zoom takes */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var root = document.documentElement;
     var slice = function (l) { return Array.prototype.slice.call(l); };
@@ -259,6 +260,10 @@
         if (touched || openTile) { unzoom(); return; }
         var seen = tiles.filter(function (t) { return t.shown; }), ready = seen.filter(function (t) { return t.img.classList.contains('is-loaded'); });
         if (ready.length < seen.length * INTRO_READY && performance.now() - began < INTRO_WAIT) { setTimeout(wait, 100); return; }
+        setTimeout(go, INTRO_HOLD);
+      })();
+      function go() {
+        if (touched || openTile) { unzoom(); return; }
         vx = INTRO_X; vy = INTRO_Y; coast();
         /* the zoom runs with the throw, easing in at the end; touching the wall finishes it at once */
         var z0 = performance.now();
@@ -269,7 +274,7 @@
           apply();
           if (f < 1) requestAnimationFrame(grow);
         })(z0);
-      })();
+      }
     }
 
     var down = false, startX = 0, startY = 0, startPanX = 0, startPanY = 0, moved = false, samples = [], pid = 0;

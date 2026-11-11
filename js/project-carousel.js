@@ -1,9 +1,32 @@
-/* Project pages: draggable marquee carousel (replaces Splide) */
+/* Project pages: draggable marquee carousel (replaces Splide). It also turns plain image grids named in GRIDS into the same carousel (the In the Stands Shop shirt designs and product shots) */
 (function () {
   if (location.pathname.indexOf('/work/') !== 0) return;
   var SECONDS_PER_SLIDE = 25; /* lower = faster */
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var slice = function (l) { return Array.prototype.slice.call(l); };
+  /* grids of images that become carousels: per = how many across (phone count after the slash), dir = 1 runs it the other way */
+  var GRIDS = [
+    { sel: '.div-block-125', per: 4, phone: 2, dir: -1 },
+    { sel: '.image_wrapper.shirts', per: 4, phone: 2, dir: 1 }
+  ];
+  GRIDS.forEach(function (g) {
+    slice(document.querySelectorAll(g.sel)).forEach(function (grid) {
+      var imgs = slice(grid.querySelectorAll('img'));
+      if (imgs.length < 2) return;
+      var root = document.createElement('div'), track = document.createElement('div'), list = document.createElement('div');
+      root.className = 'splide nt-pm-grid'; track.className = 'splide__track'; list.className = 'splide__list';
+      root.dataset.per = g.per; root.dataset.phone = g.phone; root.dataset.dir = g.dir;
+      imgs.forEach(function (img) {
+        var slide = document.createElement('div');
+        slide.className = 'splide__slide';
+        img.classList.add('splide_image');
+        slide.appendChild(img);
+        list.appendChild(slide);
+      });
+      track.appendChild(list); root.appendChild(track);
+      grid.parentNode.replaceChild(root, grid);
+    });
+  });
 
   slice(document.querySelectorAll('.splide')).forEach(function (root) {
     var list = root.querySelector('.splide__list');
@@ -26,12 +49,12 @@
     slice(list.querySelectorAll('img, a')).forEach(function (el) { el.setAttribute('draggable', 'false'); });
     root.classList.add('nt-pm');
 
-    var count = base.length, dir = -1;
+    var count = base.length, dir = +root.dataset.dir || -1;
     var x = 0, half = 0, speed = 0, momentum = 0;
     var dragging = false, moved = false, startX = 0, lastX = 0, lastT = 0, vel = 0;
 
     function measure() {
-      var per = window.innerWidth <= 640 ? 3 : 5;
+      var per = window.innerWidth <= 640 ? (+root.dataset.phone || 3) : (+root.dataset.per || 5);
       root.style.setProperty('--nt-slide', (root.clientWidth / per) + 'px');
       half = list.scrollWidth / 2;
       speed = (half / count) / SECONDS_PER_SLIDE;
