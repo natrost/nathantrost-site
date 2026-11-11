@@ -271,3 +271,22 @@ window.__ntTextSetup = function () {
   watcher.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('DOMContentLoaded', go);
 })();
+
+/* a safety net for Webflow's image size hints: now and then a publish tells the browser every picture on a page shows only 144px wide, so it fetches tiny versions and draws them small and blurry. Any picture with that hint is told it may show at full width instead, as Webflow normally says; the homepage carousels then narrow it to their real slide width */
+(function () {
+  var BAD = '144px';
+  function fix(img) { if (img.getAttribute('sizes') === BAD) img.setAttribute('sizes', '(max-width: 2000px) 100vw, 2000px'); }
+  var watch = new MutationObserver(function (list) {
+    list.forEach(function (m) {
+      Array.prototype.forEach.call(m.addedNodes, function (n) {
+        if (n.nodeType !== 1) return;
+        if (n.tagName === 'IMG') fix(n); else if (n.querySelectorAll) Array.prototype.forEach.call(n.querySelectorAll('img[sizes]'), fix);
+      });
+    });
+  });
+  watch.observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('DOMContentLoaded', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('img[sizes="' + BAD + '"]'), fix);
+    watch.disconnect();
+  });
+})();
