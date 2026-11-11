@@ -20,6 +20,13 @@
       var href = a.getAttribute('href') || '';
       if (href === '/' || /^https?:\/\/[^\/]+\/?$/.test(href)) a.setAttribute('aria-label', 'Nathan Trost, home');
       else if (img && img.alt) a.setAttribute('aria-label', img.alt);
+      /* a picture with no description that jumps to a project further down is named after that project */
+      else if (href.charAt(0) === '#' && href.length > 1) {
+        var to = document.getElementById(href.slice(1)), name = to && to.querySelector('.title_text, .section_title, h2, h3');
+        /* or, when that spot has no title of its own, after the link's own address: #island-way reads as Island Way */
+        var text = name && name.textContent.trim() ? name.textContent.trim().replace(/\s+/g, ' ') : href.slice(1).replace(/[-_]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+        a.setAttribute('aria-label', 'Go to ' + text);
+      }
     });
     Array.prototype.forEach.call(document.images, function (i) { if (!i.hasAttribute('alt')) i.setAttribute('alt', ''); });
   }
