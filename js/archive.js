@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it zooms in and coasts by itself, as if just thrown, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it zooms in as it glides across, easing in and out, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -13,7 +13,7 @@
     var MAX_SPEED = 6;     /* fastest coast on release, in px per ms */
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
-    var INTRO_X = -1.6, INTRO_Y = -1; /* the throw the wall gets on load, in px per ms; it travels about 285 times this before stopping */
+    var INTRO_X = -760, INTRO_Y = -470; /* how far the wall slides on load, in px, easing in and out as it zooms up to full size */
     var INTRO_READY = 1;   /* the throw waits until this share of the images on screen have loaded, so the whole wall fills in first */
     var INTRO_WAIT = 4000; /* longest the throw waits for them, in ms, for slow connections */
     var INTRO_HOLD = 500;  /* once they have, the full wall holds still this long before the throw and zoom */
@@ -31,12 +31,12 @@
     var BAR_GAP = 3;       /* the scrollbar's grab area starts this far outside the frame, which puts the visible bar 8px from it */
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
     var ZOOM_FROM = 0.65;  /* the wall starts at this size on load, showing more of the archive, and zooms up to full size as its opening throw slides it in */
-    var ZOOM_MS = 1500;    /* how long that zoom takes */
+    var ZOOM_MS = 2400;    /* how long that slide and zoom take */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var root = document.documentElement;
     var slice = function (l) { return Array.prototype.slice.call(l); };
-    /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px. Buttons and text get the light one so they stay readable */
-    var HOVER = { ms: 380, block: 16, tear: 26 }, REVEAL = { ms: 500, block: 28, tear: 40 }, THUMB = { ms: 380, block: 10, tear: 12 }, LIGHT = { ms: 320, block: 5, tear: 14 };
+    /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px. */
+    var HOVER = { ms: 380, block: 16, tear: 26 }, REVEAL = { ms: 500, block: 28, tear: 40 }, THUMB = { ms: 380, block: 10, tear: 12 };
     function glitch(el, o) { if (window.__ntGlitch) window.__ntGlitch(el, o); }
     function make(tag, cls, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; }
 
@@ -264,15 +264,16 @@
       })();
       function go() {
         if (touched || openTile) { unzoom(); return; }
-        vx = INTRO_X; vy = INTRO_Y; coast();
-        /* the zoom runs with the throw, easing in at the end; touching the wall finishes it at once */
-        var z0 = performance.now();
+        /* the slide and the zoom share one curve that eases in and out, so the wall gathers speed, glides and settles; touching the wall finishes the zoom at once and hands it over */
+        var z0 = performance.now(), x0 = panX, y0 = panY;
+        setMoving(true);
         (function grow(now) {
-          if (touched || openTile) { unzoom(); return; }
-          var f = Math.max(0, Math.min(1, (now - z0) / ZOOM_MS)), e = 1 - Math.pow(1 - f, 3);
+          if (touched || openTile) { unzoom(); setMoving(false); return; }
+          var f = Math.max(0, Math.min(1, (now - z0) / ZOOM_MS)), e = f < .5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;
+          panX = x0 + INTRO_X * e; panY = y0 + INTRO_Y * e;
           setZoom(f < 1 ? ZOOM_FROM + (1 - ZOOM_FROM) * e : 1);
           apply();
-          if (f < 1) requestAnimationFrame(grow);
+          if (f < 1) requestAnimationFrame(grow); else setMoving(false);
         })(z0);
       }
     }
@@ -596,10 +597,9 @@
         if (!part || part === overlayPart(e.relatedTarget)) return;
         if (part === big) glitch(bigImg, HOVER);
         else if (part.classList.contains('nt-thumb')) glitch(part.firstElementChild, THUMB);
-        /* the buttons get the site's button rollover, a bad signal that runs sideways, up and down, or both, new each time; the icon buttons' ghosts follow their circle and icon */
+        /* the buttons get the site's button rollover, a bad signal that runs sideways, up and down, or both, new each time; the icon buttons' ghosts follow their circle and icon. The text has no rollover */
         else if (window.__ntVhsButton && part.matches('.nt-wall-close, .nt-wall-arrow, .nt-wall-skip')) window.__ntVhsButton(part, { drop: true });
         else if (window.__ntVhsButton && part.classList.contains('nt-more')) window.__ntVhsButton(part);
-        else glitch(part, LIGHT);
         return;
       }
       var el = e.target.closest && e.target.closest('.nt-tile');
