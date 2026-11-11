@@ -198,7 +198,7 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 .nt-case .work_feature_wrapper, .nt-case .details_div, .nt-case .detail_scroller, .nt-case .overview_text_wrapper, .nt-case .nt-case-intro { background-color: transparent !important; }
 /* Challenge and Solution each sit in their own box, one above the other, as wide as the overview text above them (js/project-nav.js lines them up with it): a 1px white outline that draws itself from the top left corner, clockwise round the box, when it comes on screen. Their own dividing lines, and the one just below them, give way to the boxes */
 .nt-case .challenge_solution_row { flex-direction: column; gap: 2rem; padding-top: 6rem; }
-.nt-case .challenge_solution_row > .nt-sbox { position: relative; flex: none; width: 100%; min-width: 0; padding: 2.5rem 2rem !important; border: 0 !important; }
+.nt-case .challenge_solution_row > .nt-sbox { position: relative; flex: none; width: 100%; min-width: 0; padding: 2.5rem 2rem !important; border: 0 !important; row-gap: 0 !important; }
 .nt-case .challenge_solution_row + * { border-top: 0 !important; }
 .nt-case .nt-sbox .section_title { margin-bottom: 4rem !important; }
 .nt-sbox-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
