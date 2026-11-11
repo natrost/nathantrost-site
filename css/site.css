@@ -286,42 +286,47 @@ html body .nt-pj-box { position: absolute; left: 0; right: 0; top: 0; height: 36
 .nt-pj-menu.is-open .nt-pj-box { height: var(--nt-pj-h, 232px); }
 html body .nt-pj-toggle, html body .nt-pj-list a { display: block; box-sizing: border-box; width: 100%; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 17px; letter-spacing: normal; text-align: left; text-transform: uppercase; text-decoration: none; color: #fff; }
 html body .nt-pj-toggle { position: relative; height: 34px; margin: 0; padding: 9px 40px 8px 16px; background: none; border: 0; border-radius: 0 !important; cursor: pointer; }
-html body .nt-pj-toggle svg { position: absolute; right: 14.83px; top: 15.75px; display: block; width: 8.33243px; height: 6.11064px; rotate: 180deg; }
+html body .nt-pj-toggle svg { position: absolute; right: 14.83px; top: 15.75px; display: block; width: 8.33243px; height: 6.11064px; rotate: 180deg; color: var(--brighter_blue, #18d6ff); }
 .nt-pj-list { visibility: hidden; margin: 0 16px; transition: visibility 0s linear .25s; }
 .nt-pj-menu.is-open .nt-pj-list { visibility: visible; transition-delay: 0s; }
 html body .nt-pj-list a { height: 33px; padding: 8px 0; box-shadow: inset 0 1px rgba(255, 255, 255, .1); }
-html body .nt-pj-list a.is-current { color: var(--gold, #ae9142); }
-html body .nt-pj-list a:focus-visible, html body .nt-pj-toggle:focus-visible { outline: 0; color: var(--gold, #ae9142); }
-@media (hover: hover) { html body .nt-pj-list a:hover { color: var(--gold, #ae9142); } }
+/* the project you are on, the one under the pointer and the arrow are the bright blue */
+html body .nt-pj-list a.is-current { color: var(--brighter_blue, #18d6ff); }
+html body .nt-pj-list a:focus-visible, html body .nt-pj-toggle:focus-visible { outline: 0; color: var(--brighter_blue, #18d6ff); }
+@media (hover: hover) { html body .nt-pj-list a:hover { color: var(--brighter_blue, #18d6ff); } }
 @media (max-width: 767px) { .nt-pj { top: 52px; margin: 98px auto 3px; } }
 @media (prefers-reduced-motion: reduce) { html body .nt-pj-box, .nt-pj-list { transition: none; } }
 
-/* Next Project and Prev Project: sand pills like the main nav, without the dots, in the normal flow at the very bottom of the page. Rolling over turns them black with sand text, like the main nav. Only the pills catch the pointer, so the bar never blocks the page under it.
-   The bar keeps its old 80px height, so nothing on the page moves */
-html.nt-work body .project_links_wrapper { position: relative; bottom: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-content: stretch; padding: 16px 20px 28px; pointer-events: none; }
-html.nt-work body .project_links { display: flex; width: auto; margin: 0; padding: 0; background: none; pointer-events: none; grid-row: 1; }
+/* Next Project and Prev Project: no pill, just the label with the project it leads to below it, in black, at the very bottom of the page. Rolling over draws a 3px underline in under the project name, like the footer links. Only the links catch the pointer, so the bar never blocks the page under it */
+html.nt-work body .project_links_wrapper { position: relative; bottom: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; justify-content: stretch; padding: 16px 32px 28px; pointer-events: none; }
+html.nt-work body .project_links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: auto; margin: 0; padding: 0; background: none; pointer-events: auto; grid-row: 1; color: #000; text-decoration: none; }
 html.nt-work body .project_links:first-child { grid-column: 1 !important; justify-self: start !important; }
-html.nt-work body .project_links.next { grid-column: 3 !important; justify-self: end !important; }
-html.nt-work body .project_links:not(.top) .smaller_project_title { display: none; }
-html.nt-work body .project_nav, html.nt-work body .smaller_project_title.top { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 36px; margin: 0; padding: 0 12px; background: var(--sand, #f2f0e8); border-radius: 999px !important; pointer-events: auto; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: .5px; text-transform: uppercase; color: #000; transition: none; }
+html.nt-work body .project_links.next { grid-column: 3 !important; justify-self: end !important; align-items: flex-end; text-align: right; }
+html.nt-work body .project_nav { display: block; height: auto; margin: 0; padding: 0; background: none; font-family: trade-gothic-next-condensed, sans-serif; font-size: 0; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: uppercase; color: #000; transition: none; }
 /* the labels come from here, while the page itself still says PREVIOUS and NEXT */
-html.nt-work body .project_nav { font-size: 0; letter-spacing: 0; }
 html.nt-work body .project_nav::after { font-size: 14px; letter-spacing: .5px; }
 html.nt-work body .project_nav.prev::after { content: "PREV PROJECT"; }
 html.nt-work body .project_nav.next::after { content: "NEXT PROJECT"; }
+html.nt-work body .project_links:not(.top) .smaller_project_title { position: relative; display: block; margin: 0; padding: 0; background: none; font-family: trade-gothic-next-condensed, sans-serif; font-size: 1.25rem; font-weight: 700; line-height: 1.2; letter-spacing: normal; color: #000; }
+html.nt-work body .project_links:not(.top) .smaller_project_title::after, html.nt-work body .smaller_project_title.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: currentColor; clip-path: inset(0 100% 0 0); transition: clip-path .35s cubic-bezier(.65, 0, .35, 1); }
+html.nt-work body .project_links.next .smaller_project_title::after { clip-path: inset(0 0 0 100%); }
 @media (hover: hover) {
-  html.nt-work body .project_links:hover .project_nav, html.nt-work body .project_links:hover .smaller_project_title.top { background: #000; color: var(--sand, #f2f0e8); }
+  html.nt-work body .project_links:hover .smaller_project_title::after { clip-path: inset(0); }
 }
 html.nt-work body .project_links:focus-visible { outline: 0; }
-html.nt-work body .project_links:focus-visible .project_nav, html.nt-work body .project_links:focus-visible .smaller_project_title.top { background: #000; color: var(--sand, #f2f0e8); }
+html.nt-work body .project_links:focus-visible .smaller_project_title::after { clip-path: inset(0); }
 /* Top floats at the bottom center of the screen, but only once the hero is scrolled past, fading in and out (the script below). It has no height of its own, and at the end of the page it comes to rest in line with Next Project and Prev Project */
 .nt-pj-top { position: sticky; bottom: 28px; z-index: 200; height: 0; margin: -28px 0 28px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
 .nt-pj-top.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
 html.nt-work body .nt-pj-top .project_links.top { position: absolute; left: 50%; right: auto; top: auto; bottom: 0; z-index: auto; translate: -50% 0; }
+/* Top has no pill: white letters in difference blend, so they show up dark on the sand and light over images and dark sections */
+.nt-pj-top { mix-blend-mode: difference; }
+html.nt-work body .smaller_project_title.top { position: relative; display: block; height: auto; margin: 0; padding: 0 0 2px; background: none; pointer-events: auto; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: .5px; text-transform: uppercase; color: #fff; transition: none; }
+@media (hover: hover) { html.nt-work body .project_links.top:hover .smaller_project_title.top::after { clip-path: inset(0); } }
+html.nt-work body .project_links.top:focus-visible .smaller_project_title.top::after { clip-path: inset(0); }
 html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-events: none; }
 @media (max-width: 767px) {
-  html.nt-work body .project_links_wrapper { padding: 36px 4px 12px; }
-  html.nt-work body .project_nav, html.nt-work body .smaller_project_title.top { height: 32px; }
+  html.nt-work body .project_links_wrapper { padding: 36px 24px 12px; }
   .nt-pj-top { bottom: 12px; margin: -12px 0 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .nt-pj-top { transition: none; } }

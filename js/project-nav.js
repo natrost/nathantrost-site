@@ -1,4 +1,4 @@
-/* Project pages: the X and project dropdown, the Top button that waits for the hero to scroll past, and a burst of images on Next and Prev from the project each one leads to.
+/* Project pages: the X and project dropdown (both glitch on rollover), the Top button that waits for the hero to scroll past, and a burst of images on Next and Prev from the project each one leads to.
    To add a project, add one line to PROJECTS, in the order it should appear in the dropdown. Its images can be its Thumb trails images from the CMS or any others */
 (function () {
   if (location.pathname.indexOf('/work/') !== 0) return;
@@ -13,7 +13,7 @@
     { path: '/work/rubios', name: 'Rubios', images: from(CMS, ['66abf15dbda2ac99f63d6acb_imgtrail_rubios_concepts_1.jpg', '66abf15b473565f42bc366f8_imgtrail_rubios_concepts_2.jpg', '66abf159873a5c5028923426_imgtrail_rubios_concepts_3.jpg', '66abf15791f190a298ad22b9_imgtrail_rubios_concepts_4.jpg', '66abf154bee2855ce6c75ef3_imgtrail_rubios_concepts_5.jpg', '66abf152068751eb63bf4596_imgtrail_rubios_concepts_6.jpg']) }
   ];
   var X_ICON = '<svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="18" fill="black"/><path d="M22.4854 14.707L18.9502 18.2422L22.4854 21.7773L21.7783 22.4844L18.2422 18.9492L14.708 22.4844L14.001 21.7773L17.5352 18.2422L14 14.707L14.708 14L18.2432 17.5352L21.7783 14L22.4854 14.707Z" fill="white"/></svg>';
-  var ARROW = '<svg width="8.33243" height="6.11064" viewBox="0 0 8.33243 6.11064" fill="none" aria-hidden="true"><path d="M3.37381 0.390006C3.77411 -0.130002 4.55832 -0.130002 4.95862 0.390006L8.12299 4.50064C8.62919 5.15821 8.16043 6.11064 7.33059 6.11064H1.00184C0.172003 6.11064 -0.296761 5.15821 0.209436 4.50065L3.37381 0.390006Z" fill="#AE9142"/></svg>';
+  var ARROW = '<svg width="8.33243" height="6.11064" viewBox="0 0 8.33243 6.11064" fill="none" aria-hidden="true"><path d="M3.37381 0.390006C3.77411 -0.130002 4.55832 -0.130002 4.95862 0.390006L8.12299 4.50064C8.62919 5.15821 8.16043 6.11064 7.33059 6.11064H1.00184C0.172003 6.11064 -0.296761 5.15821 0.209436 4.50065L3.37381 0.390006Z" fill="currentColor"/></svg>';
   function projectAt(href) {
     var path = href.replace(/^https?:\/\/[^\/]+/, '').replace(/[?#].*$/, '').replace(/\/$/, '');
     return PROJECTS.filter(function (p) { return p.path === path; })[0];
@@ -71,6 +71,11 @@
       });
       /* coming back with the browser's back button shows it closed */
       addEventListener('pageshow', function () { setOpen(false); });
+      /* rolling onto the X or the dropdown glitches it like the site's buttons (the site footer's image effects): the X's ghosts follow its circle, the dropdown's its pill and label */
+      if (window.matchMedia('(hover: hover)').matches) {
+        close.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(close, { drop: true }); });
+        box.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(box); });
+      }
     })();
 
     /* Top leaves the Next and Prev bar so it can float on its own, showing once the bottom of the hero has gone off the top of the screen */
