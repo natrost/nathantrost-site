@@ -221,7 +221,7 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 .nav_the_work, .nav_the_work:hover, .nav_the_work *,
 .nav_about_me, .nav_about_me:hover, .nav_about_me *,
 .main_nav_links, .main_nav_links:hover { text-decoration: none !important; }
-/* rolling over a label grows a solid 3px underline in from the left under its words, like the footer links, blended with them */
+/* rolling over a label grows a solid 3px underline under its words, like the footer links, blended with them: The Work's in from the left, About Me's in from the right, each from its own edge of the page */
 .nav_the_work .main_nav_links::after, .nav_about_me .main_nav_links::after {
   content: "";
   position: absolute;
@@ -235,6 +235,7 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
   clip-path: inset(0 100% 0 0);
   transition: -webkit-clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1), clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
+.nav_about_me .main_nav_links::after { -webkit-clip-path: inset(0 0 0 100%); clip-path: inset(0 0 0 100%); }
 .nav_the_work:hover .main_nav_links::after, .nav_about_me:hover .main_nav_links::after,
 .nav_the_work:focus-visible .main_nav_links::after, .nav_about_me:focus-visible .main_nav_links::after {
   -webkit-clip-path: inset(0 0 0 0);
