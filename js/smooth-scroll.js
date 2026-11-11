@@ -1,6 +1,6 @@
 /* Scrolling (loaded once, from the site footer). Two things, both off with reduced motion:
    1. Smooth wheel: a mouse wheel's notches glide the page instead of jumping it. Trackpads, phones, keyboards and the scrollbar keep the browser's own scrolling, which already has momentum. It still moves the page's real scroll position, so pinned sections and the other scripts work as before. It stands aside for anything that handles the wheel itself (the Archive wall), anything inside that can scroll on its own (menus, the Archive overlay) and any page that has locked scrolling.
-   2. Speed glitch: the faster the page moves, the more the images moving across the screen fail like a bad tape, stretching along the scroll with red and cyan ghosts above and below. It snaps between a few strengths, like the rest of the site's glitches, and clears the moment the page slows down */
+   2. Speed glitch: the faster the page moves, the more the images moving across the screen (the scroll showcases' columns included) fail like a bad tape, stretching along the scroll as their red and blue split apart. It snaps between a few strengths, like the rest of the site's glitches, and clears the moment the page slows down */
 (function () {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -60,7 +60,7 @@
   var FULL = 90;        /* px per frame for the full glitch */
   var LEVELS = 3;       /* how many strengths it snaps between */
   var STRETCH = .05;    /* how much the images stretch along the scroll at full strength */
-  var GHOST = 8;        /* how far the red and cyan ghosts pull away at full strength, in px */
+  var GHOST = 8;        /* how far the red and blue pull apart at full strength, in px */
   var SKIP = '.main_nav, nav, footer, [class*="footer"], .nt-wall, .interaction_wrap, .w-lightbox-backdrop, .nt-logo-solid, .scroll_showcase';
   var seen = [], lastY = scrollY, speed = 0, dir = 1, ticking = 0;
   if ('IntersectionObserver' in window) {
@@ -76,19 +76,33 @@
         if (m._ntSpeed || m.closest(SKIP) || /\.svg(\?|$)/i.test(m.getAttribute('src') || '')) return;
         m._ntSpeed = true; io.observe(m);
       });
+      /* the scroll showcases glitch a column at a time, so the ghosts run along each tilted page */
+      Array.prototype.forEach.call(document.querySelectorAll('.scroll_showcase_col'), function (c) {
+        if (!c._ntSpeed) { c._ntSpeed = true; io.observe(c); }
+      });
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
     addEventListener('load', watch);
   }
+  /* the colour split: the picture's red slides one way along the scroll and its blue the other, inside the picture's own edges. One SVG filter for each strength and direction (nt-speed-1u to nt-speed-3d) */
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0">';
+  for (var lv = 1; lv <= LEVELS; lv++) [1, -1].forEach(function (sd) {
+    var g = Math.round(GHOST * lv / LEVELS) * sd, only = function (r, gg, b) { return r + ' 0 0 0 0  0 ' + gg + ' 0 0 0  0 0 ' + b + ' 0 0  0 0 0 1 0'; };
+    svg += '<filter id="nt-speed-' + lv + (sd > 0 ? 'd' : 'u') + '" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">' +
+      '<feOffset in="SourceGraphic" dy="' + g + '" result="a"/><feColorMatrix in="a" type="matrix" values="' + only(1, 0, 0) + '" result="r"/>' +
+      '<feColorMatrix in="SourceGraphic" type="matrix" values="' + only(0, 1, 0) + '" result="gr"/>' +
+      '<feOffset in="SourceGraphic" dy="' + (-g) + '" result="c"/><feColorMatrix in="c" type="matrix" values="' + only(0, 0, 1) + '" result="b"/>' +
+      '<feBlend in="r" in2="gr" mode="screen" result="rg"/><feBlend in="rg" in2="b" mode="screen"/></filter>';
+  });
+  (document.body || document.documentElement).insertAdjacentHTML('beforeend', svg + '</svg>');
   /* the look is a class with its strength in custom properties (css/site.css), so it never mixes with the other glitches' inline filters and always comes off cleanly */
   function paint(m, l) {
     var key = l ? l + ':' + dir : 0;
     if (m._ntLevel === key) return;
     m._ntLevel = key;
     if (!l) { m.classList.remove('nt-speed'); return; }
-    var k = l / LEVELS;
-    m.style.setProperty('--nt-speed-g', Math.round(GHOST * k) * dir + 'px');
-    m.style.setProperty('--nt-speed-s', (1 + STRETCH * k).toFixed(3));
+    m.style.setProperty('--nt-speed-f', 'url(#nt-speed-' + l + (dir > 0 ? 'd' : 'u') + ')');
+    m.style.setProperty('--nt-speed-s', (1 + STRETCH * l / LEVELS).toFixed(3));
     m.classList.add('nt-speed');
   }
   function tick() {
