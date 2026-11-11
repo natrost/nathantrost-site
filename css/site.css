@@ -213,6 +213,8 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 @media (prefers-reduced-motion: reduce) { .nt-sbox-line path { transition: none; } }
 /* the intro and the first section sit on the dark backdrop, so their text is white and their dividing lines are a faint white */
 .nt-case .overview_text_wrapper, .nt-case .nt-case-intro { color: #fff; }
+/* the backdrop carries its own pale grain, so the intro's sand grain is dropped rather than doubled over it */
+html.nt-case body .overview_text_wrapper { background-image: none !important; }
 .nt-case .overview_text_wrapper *, .nt-case .nt-case-intro * { color: inherit; border-color: rgba(255, 255, 255, .14); }
 
 /* project pages: Webflow's fades are overridden so the glitch alone brings things in */
