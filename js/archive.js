@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it sweeps across on a diagonal and zooms in, easing in and out, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -13,9 +13,9 @@
     var MAX_SPEED = 6;     /* fastest coast on release, in px per ms */
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
-    var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, before it zooms in */
-    var SLIDE_MS = 1400;   /* how long that slide takes, easing in and out */
-    var ZOOM_AT = 0.8;     /* the zoom starts this far through the slide, so the two flow into each other */
+    var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
+    var INTRO_MS = 2600;   /* how long the whole sweep takes, easing in and out */
+    var ZOOM_AT = 0.3;     /* the zoom joins in this far into the sweep, and both finish together */
     var INTRO_READY = 1;   /* the throw waits until this share of the images on screen have loaded, so the whole wall fills in first */
     var INTRO_WAIT = 4000; /* longest the throw waits for them, in ms, for slow connections */
     var INTRO_HOLD = 500;  /* once they have, the full wall holds still this long before the throw and zoom */
@@ -33,7 +33,6 @@
     var BAR_GAP = 3;       /* the scrollbar's grab area starts this far outside the frame, which puts the visible bar 8px from it */
     var BAR_MIN = 32;      /* shortest the scrollbar's handle gets, in px */
     var ZOOM_FROM = 0.65;  /* the wall starts at this size on load, showing more of the archive, and zooms up to full size as its opening throw slides it in */
-    var ZOOM_MS = 1300;    /* how long the zoom up to full size takes, easing in and out */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var root = document.documentElement;
     var slice = function (l) { return Array.prototype.slice.call(l); };
@@ -266,17 +265,18 @@
       })();
       function go() {
         if (touched || openTile) { unzoom(); return; }
-        /* first the wall sweeps across on a diagonal, gathering speed and settling, then it zooms in, both easing in and out; the zoom starts just before the slide ends so they flow into each other. Touching the wall finishes the zoom at once and hands it over */
-        var z0 = performance.now(), x0 = panX, y0 = panY, zoomAt = SLIDE_MS * ZOOM_AT;
+        /* one motion: the wall sweeps across on a diagonal and zooms in as it goes. The sweep gathers speed and settles; the zoom joins partway in and eases up to full size, and both come to rest at the same moment, so it never stops between them. Touching the wall finishes the zoom at once and hands it over */
+        var z0 = performance.now(), x0 = panX, y0 = panY;
         var ease = function (f) { f = Math.max(0, Math.min(1, f)); return f < .5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2; };
+        var glide = function (f) { f = Math.max(0, Math.min(1, f)); return f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; };
         setMoving(true);
         (function grow(now) {
           if (touched || openTile) { unzoom(); setMoving(false); return; }
-          var t = now - z0, s = ease(t / SLIDE_MS), z = ease((t - zoomAt) / ZOOM_MS);
+          var f = (now - z0) / INTRO_MS, s = glide(f), z = ease((f - ZOOM_AT) / (1 - ZOOM_AT));
           panX = x0 + INTRO_X * s; panY = y0 + INTRO_Y * s;
           setZoom(z < 1 ? ZOOM_FROM + (1 - ZOOM_FROM) * z : 1);
           apply();
-          if (t < zoomAt + ZOOM_MS) requestAnimationFrame(grow); else setMoving(false);
+          if (f < 1) requestAnimationFrame(grow); else setMoving(false);
         })(z0);
       }
     }
