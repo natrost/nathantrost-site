@@ -488,8 +488,8 @@ html body .nt-wall-skip.is-next::after { content: "NEXT\A PROJ"; right: calc(100
   html.nt-wall-on body .nt-wall .nt-wall-skip.is-next { margin-left: calc(6rem - 12px); }
   html.nt-wall-on body .nt-wall:not(.has-many) .nt-wall-skip.is-next { margin-left: 0; }
 }
-/* IMA / GES sits between the two image arrows, in the same type as the project labels. The arrows open up to make room for it, and it is only a label:
+/* IMAGES sits between the two image arrows, on one line, in the same type as the project labels. The arrows open up to make room for it, and it is only a label:
    clicks on it do nothing, and screen readers already get "Previous image" and "Next image" */
 html body .nt-wall-arrow.is-prev { position: relative; }
-html body .nt-wall-arrow.is-prev::after { content: "IMA\A GES"; position: absolute; left: calc(100% + 22px); top: 50%; translate: -50% -50%; white-space: pre; text-align: center; pointer-events: none; font-family: trade-gothic-next-compressed, trade-gothic-next-condensed, sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; letter-spacing: .5px; text-transform: uppercase; color: #000; }
-html.nt-wall-on body .nt-wall .nt-wall-arrow.is-next { margin-left: 32px; }
+html body .nt-wall-arrow.is-prev::after { content: "IMAGES"; position: absolute; left: calc(100% + 30px); top: 50%; translate: -50% -50%; white-space: pre; text-align: center; pointer-events: none; font-family: trade-gothic-next-compressed, trade-gothic-next-condensed, sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; letter-spacing: .5px; text-transform: uppercase; color: #000; }
+html.nt-wall-on body .nt-wall .nt-wall-arrow.is-next { margin-left: 48px; }
