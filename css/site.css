@@ -345,8 +345,8 @@ html.nt-case body .overview_text_wrapper { background-image: none !important; }
 }
 
 /* project pages: the sticky close button is now a black X circle and a dropdown of every project, both built by the script below. The bar takes up the same space the old button did, so nothing on the page moves */
-.nt-pj { position: sticky; top: 28px; z-index: 2000; display: flex; gap: 8px; align-items: flex-start; box-sizing: border-box; width: auto; max-width: none; height: 44px; margin: 114px 32px 7px; pointer-events: none; }
-/* the X and the dropdown together run from the left edge of The Work to the right edge of About Me (js/project-nav.js measures them; these margins are the fallback) */
+.nt-pj { position: sticky; top: 28px; z-index: 2000; display: flex; gap: 8px; align-items: flex-start; box-sizing: border-box; width: 390px; max-width: calc(100% - 32px); height: 44px; margin: 114px auto 7px; pointer-events: none; }
+/* on tablets and desktops the X and the dropdown sit centred, 390px wide together; on phones they run from the left edge of The Work to the right edge of About Me (js/project-nav.js measures them; these margins are the fallback) */
 .nt-pj > * { pointer-events: auto; }
 html body .nt-pj > a.close_btn { position: static; flex: none; display: block; width: 44px; height: 44px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
 html body .nt-pj > a.close_btn > :not(svg) { display: none; }
@@ -365,7 +365,7 @@ html body .nt-pj-list a { height: 40px; padding: 11px 0 12px; box-shadow: inset 
 html body .nt-pj-list a.is-current { color: var(--brighter_blue, #18d6ff); }
 html body .nt-pj-list a:focus-visible, html body .nt-pj-toggle:focus-visible { outline: 0; color: var(--brighter_blue, #18d6ff); }
 @media (hover: hover) { html body .nt-pj-list a:hover { color: var(--brighter_blue, #18d6ff); } }
-@media (max-width: 767px) { .nt-pj { top: 52px; margin: 98px 16px 3px; } }
+@media (max-width: 767px) { .nt-pj { top: 52px; width: auto; max-width: none; margin: 98px 16px 3px; } }
 @media (prefers-reduced-motion: reduce) { html body .nt-pj-box, .nt-pj-list { transition: none; } }
 
 /* Next Project and Prev Project: no pill, just the label with the project it leads to below it, in black, at the very bottom of the page. Rolling over draws a 3px underline in under the project name, like the footer links. Only the links catch the pointer, so the bar never blocks the page under it */
@@ -430,6 +430,8 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
 }
 .splide.nt-pm .splide_image { width: 100%; height: auto; pointer-events: none; }
 .splide.nt-pm .splide__slide.marquee-low { margin-top: auto; }
+/* the image grids turned into carousels (In the Stands Shop) run edge to edge on phones too, past their section's side padding, like the other carousels */
+@media (max-width: 767px) { .splide.nt-pm-grid { width: 100vw; max-width: none; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); } }
 @media (max-width: 640px) {
   .splide.nt-pm .splide__slide { padding-right: 0.5rem; }
 }

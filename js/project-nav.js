@@ -60,10 +60,13 @@
       menu.appendChild(box);
       bar.appendChild(menu);
 
-      /* the X and the dropdown together span from the left edge of The Work to the right edge of About Me in the nav (layout positions, so the nav's intro animation doesn't throw them off) */
+      /* on phones the X and the dropdown together span from the left edge of The Work to the right edge of About Me in the nav (layout positions, so the nav's intro animation doesn't throw them off); wider screens keep them centred at a set width (the stylesheet) */
       var navL = document.querySelector('.nav_the_work'), navR = document.querySelector('.nav_about_me');
       function edge(el) { var x = 0; for (var e = el; e; e = e.offsetParent) x += e.offsetLeft; return x; }
+      var phone = window.matchMedia('(max-width: 767px)');
       function fit() {
+        bar.style.marginLeft = bar.style.marginRight = '';
+        if (!phone.matches) return;
         if (!navL || !navR || !navL.offsetWidth || !navR.offsetWidth) return;
         var host = bar.parentNode, cs = getComputedStyle(host), hl = edge(host) + host.clientLeft + parseFloat(cs.paddingLeft);
         var hr = edge(host) + host.clientLeft + host.clientWidth - parseFloat(cs.paddingRight);
