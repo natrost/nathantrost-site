@@ -17,13 +17,23 @@
   var HIDDEN = { opacity: 0, y: SHIFT }, SHOWN = { opacity: 1, y: 0 };
 
   /* a line split before the Adobe fonts (or the final layout) arrived can end up wider than its box. Whenever the fonts or the
-     page settle, any block with such a line is split again */
+     page settle, any block with such a line is split again. A block whose box is sized by its own text can change width when it is
+     split, so its lines never fit; if a fresh split still does not fit, that block goes back to its plain text and the whole-block fade */
   var splits = [];
   /* each split line is kept on one row (site.css), since joined words can come out a hair wider than SplitText measured them;
-     a line that sticks out of its box by more than that means the split is stale */
+     a line that sticks out of its box by more than that means the split does not fit */
   function wraps(line) { return line.scrollWidth > line.clientWidth + 3; }
   function check() {
-    splits.forEach(function (s) { if (s.lines && s.lines.some(wraps)) s.split(); });
+    splits.forEach(function (it) {
+      var s = it.split, el = it.el;
+      if (it.plain || !s.lines) return;
+      if (!s.lines.some(wraps)) { it.retried = false; return; }
+      if (!it.retried) { it.retried = true; s.split(); return; }
+      it.plain = true;
+      s.revert();
+      el._ntLines = [];
+      el.classList.remove('nt-lines');
+    });
   }
   var pending = 0;
   function checkSoon() { clearTimeout(pending); pending = setTimeout(check, 60); }
@@ -32,14 +42,17 @@
     var els = Array.prototype.slice.call(document.querySelectorAll('.nt-fade'));
     els.forEach(function (el) {
       el._ntShown = false;
-      splits.push(SplitText.create(el, {
+      var it = { el: el };
+      it.split = SplitText.create(el, {
         type: 'lines', linesClass: 'nt-line', autoSplit: true,
         onSplit: function (self) {
+          if (it.plain) return;
           el._ntLines = self.lines;
           el.classList.add('nt-lines');
           gsap.set(self.lines, el._ntShown ? SHOWN : HIDDEN);
         }
-      }));
+      });
+      splits.push(it);
     });
     done();
     if (document.fonts) { document.fonts.addEventListener('loadingdone', checkSoon); document.fonts.ready.then(checkSoon); }
