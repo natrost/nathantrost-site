@@ -10,6 +10,7 @@
   var EASE = .14;        /* how quickly the pages catch up with the scroll each frame, 0 to 1; lower is softer */
   var SIDES = [.62, .3]; /* where the side columns sit when the window is centred, as a share of the way down the page, left then right */
   var GLITCH_MS = 600;   /* about how long the bad-tape moment lasts, in ms */
+  var HOVER_MS = 450;    /* a rollover glitch is a quicker burst than the arrival */
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
   var rnd = function (lo, hi) { return lo + Math.random() * (hi - lo); };
   var hash = function (n) { var v = Math.sin(n * 127.1) * 43758.5453; return v - Math.floor(v); };
@@ -182,7 +183,7 @@
       var tapes = items.map(function (it) { return it.img ? snapshot(it) : null; }).filter(Boolean);
       if (!tapes.length) return;
       glitching = true;
-      var t0 = performance.now(), ms = GLITCH_MS * rnd(.85, 1.25);
+      var t0 = performance.now(), ms = (settle ? GLITCH_MS : HOVER_MS) * rnd(.85, 1.25);
       (function step(now) {
         var t = (now - t0) / ms;
         if (t >= 1) { tapes.forEach(function (T) { T.c.remove(); }); glitching = false; return; }

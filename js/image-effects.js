@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function () {
   /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px */
   var REVEAL = { ms: GLITCH_MS, block: 28, tear: 40, flicker: true };
   var REVEAL_TEXT = { ms: GLITCH_MS, block: 28, tear: 40 };  /* project page text and buttons: the same glitch without the flicker, so it never blinks */
-  var HOVER = { ms: 380, block: 16, tear: 26 };  /* anything on the Archive wall that is not an image, unless it says otherwise */
-  var BUTTON_MS = 420;    /* how long a button's rollover glitch lasts */
+  var HOVER = { ms: 285, block: 16, tear: 26 };  /* anything on the Archive wall that is not an image, unless it says otherwise */
+  var BUTTON_MS = 315;    /* how long a button's rollover glitch lasts */
   var WORK = location.pathname.indexOf('/work/') === 0; /* project pages glitch in the things Webflow used to fade too; the headline still melts */
   var slice = function (list) { return Array.prototype.slice.call(list); };
   var units = [];
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var all = ['sync', 'wave', 'track', 'slip', 'roll'], kinds = {};
     kinds[all[Math.floor(rnd(0, 5))]] = 1;
     if (Math.random() < .55) kinds[all[Math.floor(rnd(0, 5))]] = 1;
-    return { kinds: kinds, ms: rnd(440, 850), seed: rnd(0, 999), events: [], next: 0, crush: rnd(.35, .95), slipR: (Math.random() < .5 ? -1 : 1) * rnd(8, 26), slipB: 0, waveAmp: rnd(10, 38), waveFreq: rnd(.012, .05), waveTop: rnd(0, .6), waveLen: rnd(.25, .7), bend: (Math.random() < .5 ? -1 : 1) * rnd(40, 140), bendAt: Math.random() < .5, roll: (Math.random() < .5 ? -1 : 1) * rnd(.4, 1.6) };
+    return { kinds: kinds, ms: rnd(330, 640), seed: rnd(0, 999), events: [], next: 0, crush: rnd(.35, .95), slipR: (Math.random() < .5 ? -1 : 1) * rnd(8, 26), slipB: 0, waveAmp: rnd(10, 38), waveFreq: rnd(.012, .05), waveTop: rnd(0, .6), waveLen: rnd(.25, .7), bend: (Math.random() < .5 ? -1 : 1) * rnd(40, 140), bendAt: Math.random() < .5, roll: (Math.random() < .5 ? -1 : 1) * rnd(.4, 1.6) };
   }
   /* one frame of a rollover: t runs 0 to 1 */
   function tapeBurst(T, S, t, now) {
