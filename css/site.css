@@ -202,7 +202,8 @@ html.nt-vt-2::view-transition-image-pair(root) { animation-name: nt-mb-y; }
 .nt-case .challenge_solution_row + * { border-top: 0 !important; }
 .nt-case .nt-sbox .section_title { margin-bottom: 8rem !important; }
 .nt-case .nt-sbox .section_title, .nt-case .nt-sbox .detail_page_section_text { width: 100% !important; max-width: none !important; grid-column: 1 / -1 !important; }
-.nt-case .challenge_solution_row > .nt-sbox { align-content: start !important; }
+/* side by side the boxes match in height: the title stays at the top and the copy sits at the bottom, so both boxes' copy ends on the same line; the title's 8rem margin is the least space between them */
+.nt-case .challenge_solution_row > .nt-sbox { align-content: space-between !important; }
 .nt-sbox-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .nt-sbox-line path { fill: none; stroke: rgba(255, 255, 255, .14); stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s cubic-bezier(.65, 0, .35, 1); }
 .nt-sbox.is-drawn .nt-sbox-line path { stroke-dashoffset: 0; }
