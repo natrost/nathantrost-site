@@ -448,7 +448,7 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
 .nt-fade { opacity: 0; translate: 0 5px; }
 .nt-fade.is-in { opacity: 1; translate: none; transition: opacity 1.4s cubic-bezier(.25, .1, .25, 1), translate 1.4s cubic-bezier(.16, 1, .3, 1); transition-delay: var(--nt-fade-delay, 0ms); }
 .nt-fade.nt-fade-init { transition: none !important; }
-/* body copy split into lines (js/split-lines.js): each line rises from behind its own mask instead, so the block itself stays put and visible; until the split happens it stays hidden */
+/* body copy split into lines (js/split-lines.js): each line fades in and drifts up a few pixels on its own instead, so the block itself stays put and visible; until the split happens it stays hidden */
 html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: none !important; }
 .nt-fade.nt-lines { opacity: 1 !important; translate: none !important; transition: none !important; }
 .nt-fade .nt-line { will-change: transform; }
