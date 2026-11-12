@@ -1,8 +1,8 @@
-/* Page transitions: when one page of the site opens another with a page transition, a different VHS failure plays each time, picked at random and never the same one twice running: the tape tear, vertical hold, slice shuffle, colour split or CRT collapse (the animations are in css/site.css; this marks the page nt-vt-2 to nt-vt-5 for all but the tape tear). The jumps are smeared with motion blur (the strengths are below; when it pulses is in css/site.css). The new page then arrives through a wash of chunky pixel static with rolling tracking bars that clears in about half a second, also in a new mix each time: the size of the static, how strong it is, how long it takes to clear, and how many bars roll which way.
+/* Page transitions: when one page of the site opens another with a page transition, a different VHS failure plays each time, picked at random and never the same one twice running: the tape tear, vertical hold, slice shuffle or colour split (the animations are in css/site.css; this marks the page nt-vt-2 to nt-vt-4 for all but the tape tear). The jumps are smeared with motion blur (the strengths are below; when it pulses is in css/site.css). The new page then arrives through a wash of chunky pixel static with rolling tracking bars that clears in about half a second, also in a new mix each time: the size of the static, how strong it is, how long it takes to clear, and how many bars roll which way.
    Browsers without page transitions, and reduced motion, never see any of it */
 (function () {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var KINDS = 5;                 /* how many transitions there are to pick from */
+  var KINDS = 4;                 /* how many transitions there are to pick from */
   var CHUNKS = [4, 6, 6, 9];     /* sizes one pixel of static can be, in px; repeats make a size more likely */
   var BLURS = [2, 4, 7, 11];     /* the four strengths of motion blur, weakest to strongest, in px */
   function rnd(lo, hi) { return lo + Math.random() * (hi - lo); }

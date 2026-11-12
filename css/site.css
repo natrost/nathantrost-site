@@ -50,7 +50,7 @@ html body .feature_wrapper:has(.nt-px-canvas)::after { content: ""; position: ab
   84% { transform: translateX(-2px); filter: none; }
   100% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
 }
-/* the other transitions: transition.js picks one at random for each page change (never the same twice running) and marks the page nt-vt-2 to nt-vt-5; without a mark the tape tear above plays.
+/* the other transitions: transition.js picks one at random for each page change (never the same twice running) and marks the page nt-vt-2 to nt-vt-4; without a mark the tape tear above plays.
    2, vertical hold: the picture loses its hold and rolls up and away in jumps, and the next one rolls in and settles */
 html.nt-vt-2::view-transition-old(root) { animation-name: nt-hold-out; }
 html.nt-vt-2::view-transition-new(root) { animation-name: nt-hold-in; }
@@ -118,29 +118,6 @@ html.nt-vt-4::view-transition-new(root) { animation-name: nt-split-in; }
   52% { transform: translate(-3px, 1px); filter: drop-shadow(-8px 0 rgba(255, 30, 60, .7)) drop-shadow(8px 0 rgba(24, 214, 255, .7)); }
   70% { transform: none; filter: drop-shadow(3px 0 rgba(255, 30, 60, .5)) drop-shadow(-3px 0 rgba(24, 214, 255, .5)); }
   86% { filter: none; }
-  100% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
-}
-/* 5, CRT collapse: the picture squeezes to a thin upright line, then a dot, like an old set switching off the other way; the next one opens out from a line */
-html.nt-vt-5::view-transition-old(root) { animation-name: nt-crt-out; }
-html.nt-vt-5::view-transition-new(root) { animation-name: nt-crt-in; }
-@keyframes nt-crt-out {
-  0% { transform: none; filter: none; opacity: 1; }
-  16% { transform: translateX(-10px) scaleX(.94); filter: drop-shadow(10px 0 rgba(255, 30, 60, .85)) drop-shadow(-10px 0 rgba(24, 214, 255, .85)) contrast(1.3); }
-  32% { transform: translateX(12px) scaleX(.7); clip-path: inset(6% 0 0 0); }
-  48% { transform: scaleX(.38); clip-path: inset(0 0 8% 0); filter: brightness(1.6) contrast(1.4); }
-  64% { transform: scaleX(.12) scaleY(1.02); clip-path: inset(0); filter: brightness(2.4) contrast(1.8); opacity: .9; }
-  80% { transform: scaleX(.012) scaleY(.9); filter: brightness(4) contrast(2); opacity: 1; }
-  92% { transform: scaleX(.012) scaleY(.012); filter: brightness(4); }
-  100% { transform: scale(0); opacity: 0; }
-}
-@keyframes nt-crt-in {
-  0% { opacity: 0; }
-  10% { opacity: 1; transform: scaleX(1) scaleY(.012); filter: brightness(4) contrast(2); }
-  24% { transform: scaleY(.3) translateX(-14px); filter: brightness(2) drop-shadow(12px 0 rgba(255, 30, 60, .85)) drop-shadow(-12px 0 rgba(24, 214, 255, .85)); }
-  38% { transform: scaleY(.76) translateX(10px); clip-path: inset(0 0 30% 0); filter: brightness(1.4); }
-  52% { transform: scaleY(1.03) translateX(-4px); clip-path: inset(0); filter: drop-shadow(-5px 0 rgba(255, 30, 60, .7)) drop-shadow(5px 0 rgba(24, 214, 255, .7)); }
-  68% { transform: scaleY(.99) translateX(2px); }
-  84% { transform: none; filter: none; }
   100% { transform: none; filter: none; clip-path: inset(0); opacity: 1; }
 }
 /* motion blur: the jumps smear along the way they move, sideways for every transition but the vertical hold, which smears up and down. It pulses with the big jumps of the old page leaving and the new one arriving, and clears as the new page settles. The blurs are SVG filters (nt-mb-x1 to nt-mb-y4, weakest to strongest) that transition.js adds to the page */
