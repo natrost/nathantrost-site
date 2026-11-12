@@ -481,5 +481,10 @@ html body .nt-wall-skip { position: relative; }
 html body .nt-wall-skip::after { position: absolute; top: 50%; translate: 0 -50%; white-space: pre; pointer-events: none; font-family: trade-gothic-next-compressed, trade-gothic-next-condensed, sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; letter-spacing: .5px; text-transform: uppercase; color: #000; }
 html body .nt-wall-skip.is-prev::after { content: "PREV\A PROJ"; left: calc(100% + 8px); text-align: left; }
 html body .nt-wall-skip.is-next::after { content: "NEXT\A PROJ"; right: calc(100% + 8px); text-align: right; }
-/* with no image arrows between them, the two buttons move further apart so their labels never meet */
-html body .nt-wall:not(.has-many) .nt-wall-skip.is-next { margin-left: calc(2rem + 12px); }
+/* the project buttons stand 6rem from the image arrows (2rem more than the Archive page's own 4rem), so the labels have room; with no arrows the two
+   buttons are still 6rem apart. Phones keep the full-width row. The extra html.nt-wall-on beats the page's own rules, which load after this file */
+@media (min-width: 600px) {
+  html.nt-wall-on body .nt-wall .nt-wall-skip.is-prev { margin-right: calc(6rem - 12px); }
+  html.nt-wall-on body .nt-wall .nt-wall-skip.is-next { margin-left: calc(6rem - 12px); }
+  html.nt-wall-on body .nt-wall:not(.has-many) .nt-wall-skip.is-next { margin-left: 0; }
+}
