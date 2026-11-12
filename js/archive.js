@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in, the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in (along with every image the opening sweep will pass over), the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -228,7 +228,12 @@
         if (!t.asked && x < boxW + mx + 400 && x + t.w > -mx - 400 && y < boxH + my + 400 && y + t.h > -my - 400) loadTile(t);
       });
     }
-    function unzoom() { if (zoom !== 1) { setZoom(1); apply(); } }
+    var zoomAnim = null;
+    function unzoom() {
+      var had = zoomAnim;
+      if (zoomAnim) { zoomAnim.cancel(); zoomAnim = null; }
+      if (had || zoom !== 1) { setZoom(1); apply(); }
+    }
     function loadTile(t) {
       t.asked = true;
       t.img.onload = function () {
@@ -258,26 +263,54 @@
     function intro() {
       if (reduce || touched) { unzoom(); return; }
       var began = performance.now();
+      /* every image the sweep will pass over is loaded and decoded before it starts, so none arrive mid-motion and stall a frame */
+      function within(t, px, py, z) {
+        var mx = boxW * (1 / z - 1) / 2 + 60, my = boxH * (1 / z - 1) / 2 + 60;
+        var x = mod(t.x + px + step + mx, worldW) - step - mx, y = mod(t.y + py + t.h + my, worldH) - t.h - my;
+        return x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
+      }
+      var path = tiles.filter(function (t) {
+        for (var i = 0; i <= 10; i++) { var f = i / 10; if (within(t, panX + INTRO_X * f, panY + INTRO_Y * f, ZOOM_FROM + (1 - ZOOM_FROM) * f)) return true; }
+        return false;
+      });
+      path.forEach(function (t) { if (!t.asked) loadTile(t); });
       (function wait() {
         if (touched || openTile) { unzoom(); return; }
-        var seen = tiles.filter(function (t) { return t.shown; }), ready = seen.filter(function (t) { return t.img.classList.contains('is-loaded'); });
-        if (ready.length < seen.length * INTRO_READY && performance.now() - began < INTRO_WAIT) { setTimeout(wait, 100); return; }
-        setTimeout(go, INTRO_HOLD);
+        var ready = path.filter(function (t) { return t.img.classList.contains('is-loaded'); });
+        if (ready.length < path.length * INTRO_READY && performance.now() - began < INTRO_WAIT) { setTimeout(wait, 100); return; }
+        var decoding = ready.map(function (t) { return t.img.decode ? t.img.decode().catch(function () {}) : null; });
+        var held = false;
+        function hold() { if (!held) { held = true; setTimeout(go, INTRO_HOLD); } }
+        Promise.all(decoding).then(hold);
+        setTimeout(hold, 1000);
       })();
       function go() {
         if (touched || openTile) { unzoom(); return; }
         /* one motion: the wall sweeps across on a diagonal and zooms in as it goes. The sweep gathers speed and settles; the zoom joins partway in and eases up to full size, and both come to rest at the same moment, so it never stops between them. Touching the wall finishes the zoom at once and hands it over */
+        /* the zoom is a native animation, so the browser runs it on the graphics card and draws the wall at full size throughout,
+           instead of redrawing every image at a new size each frame; the sweep reads the zoom back from it to keep the wall filled to the edges */
         var z0 = performance.now(), x0 = panX, y0 = panY;
-        var ease = function (f) { f = Math.max(0, Math.min(1, f)); return f < .5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2; };
         var glide = function (f) { f = Math.max(0, Math.min(1, f)); return f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; };
         setMoving(true);
+        if (field.animate) {
+          zoomAnim = field.animate([{ scale: String(ZOOM_FROM) }, { scale: '1' }], { duration: INTRO_MS * (1 - ZOOM_AT), delay: INTRO_MS * ZOOM_AT, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both' });
+        }
         (function grow(now) {
           if (touched || openTile) { unzoom(); setMoving(false); return; }
-          var f = (now - z0) / INTRO_MS, s = glide(f), z = ease((f - ZOOM_AT) / (1 - ZOOM_AT));
+          var f = (now - z0) / INTRO_MS, s = glide(f);
           panX = x0 + INTRO_X * s; panY = y0 + INTRO_Y * s;
-          setZoom(z < 1 ? ZOOM_FROM + (1 - ZOOM_FROM) * z : 1);
+          if (zoomAnim) {
+            var pr = zoomAnim.effect.getComputedTiming().progress;
+            zoom = ZOOM_FROM + (1 - ZOOM_FROM) * (pr == null ? 1 : pr);
+          } else {
+            var e = Math.max(0, Math.min(1, (f - ZOOM_AT) / (1 - ZOOM_AT)));
+            setZoom(ZOOM_FROM + (1 - ZOOM_FROM) * (e < .5 ? 4 * e * e * e : 1 - Math.pow(-2 * e + 2, 3) / 2));
+          }
           apply();
-          if (f < 1) requestAnimationFrame(grow); else setMoving(false);
+          if (f < 1) { requestAnimationFrame(grow); return; }
+          if (zoomAnim) { zoomAnim.cancel(); zoomAnim = null; }
+          setZoom(1); apply();
+          setMoving(false);
         })(z0);
       }
     }

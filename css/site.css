@@ -472,3 +472,6 @@ html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: 
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col { opacity: 0; translate: 0 -30%; }
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col.is-up { translate: 0 30%; }
 @media (prefers-reduced-motion: reduce) { .scroll_showcase.nt-sc-on .scroll_showcase_col { transition: none; } }
+
+/* Archive wall: each image is its own layer, so moving the wall repositions them instead of repainting it */
+.nt-wall .nt-tile { will-change: translate; }
