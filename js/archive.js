@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in (along with every image the opening sweep will pass over), the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in (along with every image the opening sweep will pass over), the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info, and a sideways swipe steps through a project's images.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -455,7 +455,25 @@
     }
     prevBtn.addEventListener('click', function () { stepImage(-1); });
     nextBtn.addEventListener('click', function () { stepImage(1); });
-    big.addEventListener('click', function () { stepImage(1); });
+    var swipedAt = 0;
+    big.addEventListener('click', function () { if (performance.now() - swipedAt > 400) stepImage(1); });
+    /* on touch screens a sideways swipe across the open image (or anywhere on the overlay that is not text, thumbnails or a button) steps through the
+       project's images: left for the next, right for the previous. It must be mostly sideways, so scrolling a tall screenshot still scrolls */
+    var SWIPE_PX = 40;
+    var sw = null;
+    wall.addEventListener('pointerdown', function (e) {
+      sw = null;
+      if (!openTile || bigAnim || e.pointerType === 'mouse') return;
+      if (e.target.closest('.nt-wall-thumbs, .nt-wall-text, .nt-wall-projects, button')) return;
+      sw = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+    });
+    wall.addEventListener('pointerup', function (e) {
+      if (!sw || e.pointerId !== sw.id) return;
+      var dx = e.clientX - sw.x, dy = e.clientY - sw.y, quick = performance.now() - sw.t < 800;
+      sw = null;
+      if (quick && Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) { swipedAt = performance.now(); stepImage(dx < 0 ? 1 : -1); }
+    });
+    wall.addEventListener('pointercancel', function () { sw = null; });
     /* the skip buttons open the next or previous project at its first image, looping round from the last to the first */
     function stepProject(by) {
       if (!openTile || bigAnim) return;
