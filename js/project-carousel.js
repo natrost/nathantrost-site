@@ -48,13 +48,17 @@
     base.forEach(function (s) { list.appendChild(makeClone(s)); });
     slice(list.querySelectorAll('img, a')).forEach(function (el) { el.setAttribute('draggable', 'false'); });
     root.classList.add('nt-pm');
+    /* tell the browser how wide each slide shows, so it downloads a sharp enough picture */
+    var per0 = +root.dataset.per || 4, ph0 = +root.dataset.phone || 2;
+    slice(list.querySelectorAll('img[srcset]')).forEach(function (img) { img.sizes = '(max-width: 640px) ' + Math.round(100 / ph0) + 'vw, ' + Math.round(100 / per0) + 'vw'; });
 
     var count = base.length, dir = +root.dataset.dir || -1;
     var x = 0, half = 0, speed = 0, momentum = 0;
     var dragging = false, moved = false, startX = 0, lastX = 0, lastT = 0, vel = 0;
 
     function measure() {
-      var per = window.innerWidth <= 640 ? (+root.dataset.phone || 3) : (+root.dataset.per || 5);
+      /* same size as the homepage carousels: a quarter of the row, half on phones */
+      var per = window.innerWidth <= 640 ? (+root.dataset.phone || 2) : (+root.dataset.per || 4);
       root.style.setProperty('--nt-slide', (root.clientWidth / per) + 'px');
       half = list.scrollWidth / 2;
       speed = (half / count) / SECONDS_PER_SLIDE;

@@ -423,8 +423,8 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
   will-change: transform;
 }
 .splide.nt-pm .splide__slide {
-  flex: 0 0 var(--nt-slide, 20vw);
-  width: var(--nt-slide, 20vw);
+  flex: 0 0 var(--nt-slide, 25vw);
+  width: var(--nt-slide, 25vw);
   padding-right: 1rem;
   box-sizing: border-box;
 }
