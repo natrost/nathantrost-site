@@ -112,10 +112,10 @@ window.__ntTextSetup = function () {
   });
   /* never the menu, the footer or links; the homepage featured stage and About facts melt their own text */
   els = els.filter(function (el) { return !el.closest('nav, footer, .w-nav, [role="navigation"], a, .favorites_wrapper_1, .personal_text_wrapper'); });
-  /* the end-of-page sign-off melts in as a whole: its eyebrow with the headline, then its buttons */
+  /* the end-of-page sign-off melts in as a whole: its eyebrow with the headline, then its buttons, which simply fade in together (no blur or goo) */
   var add = function (el) { if (els.indexOf(el) === -1) els.push(el); };
   slice(document.querySelectorAll('.fav_text.about .title_text')).forEach(add);
-  slice(document.querySelectorAll('.fav_text.about .div-block-154, .fav_text.about .div-block-156')).forEach(function (el) { el._ntDelay = BUTTON_DELAY; add(el); });
+  slice(document.querySelectorAll('.fav_text.about .div-block-154, .fav_text.about .div-block-156')).forEach(function (el) { el._ntDelay = BUTTON_DELAY; el._ntPlain = true; add(el); });
 
   /* every other piece of text fades in, taking the outermost block with its own text; text that already animates
      (melting, glitching in on project pages, Webflow interactions, the featured stage and About facts), the menu, footer, links and buttons are left alone */
@@ -182,8 +182,15 @@ window.__ntTextSetup = function () {
     if (el.classList.contains('nt-melt')) el.style.opacity = '';
     if (p && p.inner !== el) { p.inner.style.filter = ''; p.inner.style.opacity = ''; }
   }
+  var BUTTON_FADE = 700; /* ms the end-of-page buttons take to fade in */
   /* text a Webflow interaction already fades in only gets the blur and goo; the interaction keeps the fade */
   function play(el) {
+    if (el._ntPlain) {
+      el.style.transition = 'opacity ' + BUTTON_FADE + 'ms ease ' + (el._ntDelay || 0) + 'ms';
+      el.style.opacity = '1';
+      el.classList.add('is-done');
+      return;
+    }
     var p = prepare(el), fade = el.classList.contains('nt-melt');
     var token = el._ntToken = (el._ntToken || 0) + 1, t0 = performance.now() + (el._ntDelay || 0);
     if (fade && p.inner !== el) el.style.opacity = '1';
@@ -210,6 +217,7 @@ window.__ntTextSetup = function () {
   function reset(el) {
     el._ntToken = (el._ntToken || 0) + 1;
     clear(el);
+    if (el._ntPlain) el.style.transition = '';
     el.classList.remove('is-in', 'is-done');
     el.dispatchEvent(new CustomEvent('nt:unmelt', { bubbles: true }));
   }
