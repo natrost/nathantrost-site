@@ -128,6 +128,8 @@ window.__ntTextSetup = function () {
   });
   /* hidden at once, without a visible fade-out, before the fades start */
   fades.forEach(function (el) { el.classList.add('nt-fade', 'nt-fade-init'); });
+  /* the footer's line-by-line reveal (js/split-lines.js) takes these over; until it has split them they stay hidden rather than fading in first. If it never runs, the plain fade takes over after a few seconds */
+  if (fades.length) { document.documentElement.classList.add('nt-split-wait'); setTimeout(function () { document.documentElement.classList.remove('nt-split-wait'); }, 4000); }
   /* pieces that come into view together fade in one after another, top to bottom */
   var fadeIn = new IntersectionObserver(function (entries) {
     entries.filter(function (en) { return en.isIntersecting && !en.target.classList.contains('is-in'); })
