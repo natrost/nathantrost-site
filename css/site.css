@@ -451,7 +451,7 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
 /* body copy split into lines (js/split-lines.js): each line fades in and drifts up a few pixels on its own instead, so the block itself stays put and visible; until the split happens it stays hidden */
 html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: none !important; }
 .nt-fade.nt-lines { opacity: 1 !important; translate: none !important; transition: none !important; }
-.nt-fade .nt-line { will-change: transform; }
+.nt-fade .nt-line { will-change: transform; white-space: nowrap; } /* a split line never breaks again: rejoined words can measure a hair wider than when they were split */
 @media (prefers-reduced-motion: reduce) {
   .nt-melt, .nt-fade { opacity: 1 !important; translate: none !important; }
 }

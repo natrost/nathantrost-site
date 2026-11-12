@@ -1,6 +1,6 @@
 /* Body copy reveals line by line: every piece of text the early setup marks to fade in (js/site-early.js, .nt-fade) is split into its
    real lines with GSAP SplitText, and each line fades in, drifting up a few pixels, in turn as the block comes on screen, replaying after
-   scrolling back up past it like the fade it replaces. Lines re-split when the width changes or the fonts finish loading, and any line that ends up wrapping is split again.
+   scrolling back up past it like the fade it replaces. Lines re-split when the width changes or the fonts finish loading, and any line that ends up too wide is split again.
    Needs gsap and SplitText loaded before it; without them, or with reduced motion, the plain fade stays */
 (function () {
   var root = document.documentElement;
@@ -16,19 +16,12 @@
   var SHIFT = 6;        /* px each line drifts up as it fades in */
   var HIDDEN = { opacity: 0, y: SHIFT }, SHOWN = { opacity: 1, y: 0 };
 
-  /* a line split before the Adobe fonts (or the final layout) arrived can end up wider than its box and wrap onto a second row,
-     which shows as a stray break mid-sentence. Whenever the fonts or the page settle, any block with such a line is split again */
+  /* a line split before the Adobe fonts (or the final layout) arrived can end up wider than its box. Whenever the fonts or the
+     page settle, any block with such a line is split again */
   var splits = [];
-  var range = document.createRange();
-  function wraps(line) {
-    range.selectNodeContents(line);
-    var rects = range.getClientRects(), top = null;
-    for (var i = 0; i < rects.length; i++) {
-      if (!rects[i].width) continue;
-      if (top === null) top = rects[i].top; else if (Math.abs(rects[i].top - top) > 2) return true;
-    }
-    return false;
-  }
+  /* each split line is kept on one row (site.css), since joined words can come out a hair wider than SplitText measured them;
+     a line that sticks out of its box by more than that means the split is stale */
+  function wraps(line) { return line.scrollWidth > line.clientWidth + 3; }
   function check() {
     splits.forEach(function (s) { if (s.lines && s.lines.some(wraps)) s.split(); });
   }
