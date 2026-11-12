@@ -387,10 +387,10 @@ html.nt-work body .project_links.next .smaller_project_title::after { clip-path:
 }
 html.nt-work body .project_links:focus-visible { outline: 0; }
 html.nt-work body .project_links:focus-visible .smaller_project_title::after { clip-path: inset(0); }
-/* Top floats at the bottom center of the screen, but only once the hero is scrolled past, fading in and out (the script below). It has no height of its own, and at the end of the page it comes to rest in line with Next Project and Prev Project */
-.nt-pj-top { position: sticky; bottom: 28px; z-index: 200; height: 0; margin: -28px 0 28px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
+/* Top floats at the bottom center of the screen, but only once the hero is scrolled past, fading in and out (the script below). It has no height of its own and sits just before the Next/Prev bar, so at the end of the page it stops 2rem above that bar. The link is lifted 2rem inside the holder for that gap, and the holder's sticky offset takes the 2rem back so it still floats 28px from the bottom of the screen */
+.nt-pj-top { position: sticky; bottom: calc(28px - 2rem); z-index: 200; height: 0; margin: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
 .nt-pj-top.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
-html.nt-work body .nt-pj-top .project_links.top { position: absolute; left: 50%; right: auto; top: auto; bottom: 0; z-index: auto; translate: -50% 0; }
+html.nt-work body .nt-pj-top .project_links.top { position: absolute; left: 50%; right: auto; top: auto; bottom: 2rem; z-index: auto; translate: -50% 0; }
 /* Top has no pill: white letters in difference blend, so they show up dark on the sand and light over images and dark sections */
 .nt-pj-top { mix-blend-mode: difference; }
 html.nt-work body .smaller_project_title.top { position: relative; display: block; height: auto; margin: 0; padding: 0 0 2px; background: none; pointer-events: auto; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: .5px; text-transform: uppercase; color: #fff; transition: none; }
@@ -399,7 +399,7 @@ html.nt-work body .project_links.top:focus-visible .smaller_project_title.top::a
 html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-events: none; }
 @media (max-width: 767px) {
   html.nt-work body .project_links_wrapper { padding: 36px 24px 12px; }
-  .nt-pj-top { bottom: 12px; margin: -12px 0 12px; }
+  .nt-pj-top { bottom: calc(12px - 2rem); margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .nt-pj-top { transition: none; } }
 /* the rollover images pass over the page but under Next, Prev and the top bar */

@@ -110,12 +110,12 @@
       seen.observe(box);
     });
 
-    /* Top leaves the Next and Prev bar so it can float on its own, showing once the bottom of the hero has gone off the top of the screen */
+    /* Top leaves the Next and Prev bar so it can float on its own, showing once the bottom of the hero has gone off the top of the screen. It sits just before the bar, so at the end of the page it stops above it instead of running into it */
     var top = document.querySelector('.project_links.top'), row = document.querySelector('.project_links_wrapper');
     if (top && row) (function () {
       var holder = document.createElement('div');
       holder.className = 'nt-pj-top';
-      row.parentNode.insertBefore(holder, row.nextSibling);
+      row.parentNode.insertBefore(holder, row);
       holder.appendChild(top);
       var hero = Array.prototype.slice.call(document.querySelectorAll('.work_feature_wrapper, .details_div, .detail_scroller'));
       function check() {
