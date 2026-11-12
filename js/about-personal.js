@@ -58,8 +58,8 @@
     wrap.appendChild(pin);
     wrap.classList.add('nt-personal-on');
 
-    /* each fact takes over once its photo's top edge has come a quarter of the way up the screen (SWITCH_AT is measured from the top, so 0.75); -1 until the first photo gets there */
-    var SWITCH_AT=0.75;
+    /* each fact takes over once its photo's top edge has come a fifth of the way up the screen (SWITCH_AT is measured from the top, so 0.8); -1 until the first photo gets there */
+    var SWITCH_AT=0.8;
     var cur=-2;
     function update(){
       var mid=innerHeight*SWITCH_AT,idx=-1;
