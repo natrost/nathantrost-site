@@ -372,6 +372,8 @@ html.nt-work body .project_links_wrapper { position: relative; bottom: auto; dis
 html.nt-work body .project_links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: auto; margin: 0; padding: 0; background: none; pointer-events: auto; grid-row: 1; color: #000; text-decoration: none; }
 html.nt-work body .project_links:first-child { grid-column: 1 !important; justify-self: start !important; }
 html.nt-work body .project_links.next { grid-column: 3 !important; justify-self: end !important; align-items: flex-end; text-align: right; }
+/* if the links get wrapped in a Div Block in Webflow, that block spans the whole row with Previous on the left and Next on the right */
+html.nt-work body .project_links_wrapper > :not(.project_links) { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-start; width: 100%; pointer-events: none; }
 html.nt-work body .project_nav { display: block; height: auto; margin: 0; padding: 0; background: none; font-family: trade-gothic-next-condensed, sans-serif; font-size: 0; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: uppercase; color: #000; transition: none; }
 /* the labels come from here, while the page itself still says PREVIOUS and NEXT */
 html.nt-work body .project_nav::after { font-size: 14px; letter-spacing: .5px; }
