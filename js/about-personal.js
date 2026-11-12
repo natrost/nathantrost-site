@@ -58,10 +58,11 @@
     wrap.appendChild(pin);
     wrap.classList.add('nt-personal-on');
 
-    /* -1 until the first photo scrolls up to 60% of the screen */
+    /* each fact takes over once its photo's top edge has come a quarter of the way up the screen (SWITCH_AT is measured from the top, so 0.75); -1 until the first photo gets there */
+    var SWITCH_AT=0.75;
     var cur=-2;
     function update(){
-      var mid=innerHeight*0.6,idx=-1;
+      var mid=innerHeight*SWITCH_AT,idx=-1;
       for(var i=0;i<n;i++){if(marks[i].getBoundingClientRect().top<mid)idx=i;}
       if(idx===cur)return;
       cur=idx;
