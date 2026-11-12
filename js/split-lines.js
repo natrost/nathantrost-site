@@ -19,7 +19,16 @@
   /* a line split before the Adobe fonts (or the final layout) arrived can end up wider than its box and wrap onto a second row,
      which shows as a stray break mid-sentence. Whenever the fonts or the page settle, any block with such a line is split again */
   var splits = [];
-  function wraps(line) { return line.getClientRects().length > 1; }
+  var range = document.createRange();
+  function wraps(line) {
+    range.selectNodeContents(line);
+    var rects = range.getClientRects(), top = null;
+    for (var i = 0; i < rects.length; i++) {
+      if (!rects[i].width) continue;
+      if (top === null) top = rects[i].top; else if (Math.abs(rects[i].top - top) > 2) return true;
+    }
+    return false;
+  }
   function check() {
     splits.forEach(function (s) { if (s.lines && s.lines.some(wraps)) s.split(); });
   }
