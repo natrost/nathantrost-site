@@ -82,20 +82,27 @@
     function isOff(el){return Math.abs(el.getBoundingClientRect().top-(parseFloat(el.style.scrollMarginTop)||0))>4;}
 
     /* clicking a label scrolls to that project's own block, the same place its X on the project page lands. Images load during the scroll and can move the block, so it checks again when the scroll ends; scrolling by hand cancels that */
-    var scrollToken=0;
+    var scrollToken=0,jumping=-1;
     function goTo(i){
       var el=texts[i].nextElementSibling;
       if(!el)return;
       var token=++scrollToken;
+      /* the title, card and backdrop go straight to the clicked project in one melt and hold there while the page scrolls past the ones in between */
+      jumping=i;show(i);
+      /* browsers that never say the scroll has ended let go after a moment anyway */
+      setTimeout(function(){if(token===scrollToken&&jumping===i){jumping=-1;wake();}},2500);
       fitStops();
       el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
       addEventListener('scrollend',function(){
         if(token!==scrollToken)return;
+        jumping=-1;
         fitStops();
         if(isOff(el))el.scrollIntoView({behavior:'auto',block:'start'});
+        wake();
       },{once:true});
     }
-    function cancelScroll(){scrollToken++;}
+    /* scrolling by hand mid-jump hands the stage back to the scroll */
+    function cancelScroll(){scrollToken++;if(jumping>=0){jumping=-1;wake();}}
     addEventListener('wheel',cancelScroll,{passive:true});addEventListener('touchmove',cancelScroll,{passive:true});addEventListener('keydown',cancelScroll);addEventListener('mousedown',cancelScroll);
 
     /* the project labels live on the pinned text stage, one per project, in page order. Odd parts always show; even parts are the letters that type in on rollover. To add a project, add a line here in the same order as the page */
@@ -197,8 +204,12 @@
     /* -1 until the first project scrolls up to 60% of the screen, so the first title melts in too */
     var cur=-2;
     function update(){
+      if(jumping>=0)return;
       var mid=innerHeight*0.6,idx=-1;
       for(var i=0;i<n;i++){if(texts[i].getBoundingClientRect().top<mid)idx=i;}
+      show(idx);
+    }
+    function show(idx){
       if(idx===cur)return;
       if(cur>=0){blurs[cur].classList.remove('is-active');stageCards[cur].classList.remove('is-active');dots[cur].classList.remove('is-active');dots[cur].removeAttribute('aria-current');}
       cur=idx;
