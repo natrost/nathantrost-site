@@ -10,7 +10,7 @@
 
   var FADE_AT = '12%';  /* how far up the screen a block must come before its lines rise, as for the fade */
   var DURATION = 1.3;   /* seconds each line takes */
-  var STAGGER = 0.2;    /* seconds between lines */
+  var STAGGER = 0.13;    /* seconds between lines */
   var BLOCK_STAGGER = 0.09, MAX_DELAY = 0.45; /* blocks arriving together go top to bottom */
   var EASE = 'power2.out';
   var SHIFT = 6;        /* px each line drifts up as it fades in */
