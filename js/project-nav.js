@@ -54,11 +54,27 @@
         if (p === here) { a.className = 'is-current'; a.setAttribute('aria-current', 'page'); }
         list.appendChild(a);
       });
-      box.style.setProperty('--nt-pj-h', (34 + 33 * PROJECTS.length) + 'px');
+      box.style.setProperty('--nt-pj-h', (44 + 40 * PROJECTS.length) + 'px');
       box.appendChild(toggle);
       box.appendChild(list);
       menu.appendChild(box);
       bar.appendChild(menu);
+
+      /* the X and the dropdown together span from the left edge of The Work to the right edge of About Me in the nav (layout positions, so the nav's intro animation doesn't throw them off) */
+      var navL = document.querySelector('.nav_the_work'), navR = document.querySelector('.nav_about_me');
+      function edge(el) { var x = 0; for (var e = el; e; e = e.offsetParent) x += e.offsetLeft; return x; }
+      function fit() {
+        if (!navL || !navR || !navL.offsetWidth || !navR.offsetWidth) return;
+        var host = bar.parentNode, cs = getComputedStyle(host), hl = edge(host) + host.clientLeft + parseFloat(cs.paddingLeft);
+        var hr = edge(host) + host.clientLeft + host.clientWidth - parseFloat(cs.paddingRight);
+        var l = edge(navL) - hl, r = hr - (edge(navR) + navR.offsetWidth);
+        if (l < 0 || r < 0) return;
+        bar.style.marginLeft = l + 'px';
+        bar.style.marginRight = r + 'px';
+      }
+      fit();
+      addEventListener('resize', fit);
+      addEventListener('load', fit);
 
       function setOpen(open) {
         menu.classList.toggle('is-open', open);
