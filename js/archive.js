@@ -38,6 +38,7 @@
     var slice = function (l) { return Array.prototype.slice.call(l); };
     /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px. */
     var HOVER = { ms: 380, block: 16, tear: 26 }, REVEAL = { ms: 500, block: 28, tear: 40 }, THUMB = { ms: 380, block: 10, tear: 12 };
+    var STEP = { ms: 240, block: 16, tear: 26 }; /* stepping to another image in the open view: a quicker glitch, so moving through a project feels snappy */
     function glitch(el, o) { if (window.__ntGlitch) window.__ntGlitch(el, o); }
     function make(tag, cls, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; }
 
@@ -412,7 +413,7 @@
       });
       return r;
     }
-    function change(im) { current = im; show(im); glitch(bigImg, HOVER); }
+    function change(im) { current = im; show(im); glitch(bigImg, STEP); }
     /* the arrows, keys and clicking the image loop through the open project's images */
     function stepImage(by) {
       if (!openTile || bigAnim) return;

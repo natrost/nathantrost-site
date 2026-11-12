@@ -1,5 +1,5 @@
 /* Image reveal on scroll: each image comes in as a bad VCR signal that settles into the clean picture, the moment it is 50px on screen; replays after scrolling back up past it. Project page text and buttons, which have to stay readable, resolve from corrupted pixels instead.
-   Easter eggs: rolling onto an image plays a VCR burst across it, a moving cursor drags a patch of bad tape around, and buttons glitch again for a moment */
+   Easter eggs: rolling onto an image plays a VCR burst across it, and buttons glitch again for a moment */
 document.addEventListener('DOMContentLoaded', function () {
   if (!('IntersectionObserver' in window)) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var GLITCH_MS = 425;    /* the shortest an image takes to resolve; text and buttons take exactly this */
   var SETTLE_MS = 680;    /* the longest an image takes to resolve */
   var INLINE_DELAY = 800; /* ms after its text starts melting in that an image set inside the text glitches in */
-  var CURSOR_PX = 300;    /* roughly how wide the patch of bad tape around the cursor is */
   var BREAK_SHARE = 0.15; /* how far torn rows and streaks may break out past an image's sides, as a share of its width */
   var BREAK_PX = 80;      /* and at most this far, in px; above and below, a third of this */
   /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px */
@@ -218,19 +217,6 @@ document.addEventListener('DOMContentLoaded', function () {
     T.finish(rows, env, S.crush * env);
     T.c.style.opacity = (t > .86 ? (1 - t) / .14 : 1) * T.op;
   }
-  /* one frame of the patch around the cursor: its edge frays along the scan lines, and stays put so it never flickers */
-  function tapePatch(T, S, x, y, A, E, now) {
-    var W = T.W, H = T.H, RH = 2, rows = [], frame = Math.floor(now / 60), split = 8 * E, top = Math.max(0, Math.round((y - A * 1.15) / RH) * RH), end = Math.min(H, y + A * 1.15);
-    for (var r = top; r < end; r += RH) {
-      var u = (r - y) / A, reach = Math.sqrt(Math.max(0, 1 - u * u * .8)) * A;
-      var fray = wob(r, 7, 3) * 50 + wob(r, 2.5, 8) * 34, left = Math.max(0, x - reach + fray), right = Math.min(W, x + reach - wob(r, 6, 21) * 50 - wob(r, 2.5, 30) * 34);
-      if (right - left < 2 || reach < 12) continue;
-      var s = wob(r, 5, frame + S.seed) * 10 * E + wob(r, 34, frame * .4 + S.seed) * 12 * E;
-      rows.push({ x: Math.round(left), w: Math.round(right - left), y: r, h: RH, sy: r, s: Math.round(s), rs: Math.round(split), bs: -Math.round(split), gap: false, len: 0, from: -1, px: 0 });
-    }
-    T.paint(rows);
-    if (rows.length) T.finish(rows, .9, S.crush * .75);
-  }
   /* the whole image fails like a VCR tape for a moment, in a new mix each time. A rollover builds up and dies away; settle starts at full strength and resolves into the picture, for reveals. The odd frame sticks on the last one, as a worn tape does. Says false if the image can't be drawn yet */
   var STICK = 0.12;
   /* an image's size and picture, to notice either changing mid-glitch */
@@ -337,53 +323,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* easter egg: moving the cursor over an image drags a patch of bad tape around with it, stronger the faster it moves, fading out when it stops. Its edge frays into scan-line spikes. To keep that from feeling harsh, the edge pattern stays put, the patch glides after the cursor, and it fades in and out with the movement */
-  if (window.matchMedia('(hover: hover)').matches) (function () {
-    var FOLLOW = 0.35; /* how quickly the patch catches up with the cursor each frame, 0 to 1 */
-    var el = null, T = null, S = null, energy = 0, x = 0, y = 0, px = 0, py = 0, raf = 0;
-
-    /* the About page's Qualcomm photo is a background image on a plain block, so it is named here to get the image glitch */
-    var isImage = function (t) { return t.tagName === 'IMG' || t.tagName === 'VIDEO' || t.classList.contains('splide__slide') || t.classList.contains('div-block-86'); };
-    /* revealed images and slides only; text, the menu, footer, buttons and links are left alone. The homepage headline and About intro copy have the pixel explosion instead */
-    function pick(t) {
-      if (!t || !t.closest || t.closest('nav, footer, [class*="footer"], .w-nav, button, .w-button, .btn_learn_more, .close_btn, .favorites_about')) return null;
-      var img = t.closest('.nt-rise');
-      return img && isImage(img) && img.classList.contains('is-in') ? img : null;
-    }
-    function drop() { if (T) { T.close(); T = null; } energy = 0; }
-    function frame(now) {
-      raf = 0;
-      if (!el) return;
-      energy *= 0.9;
-      /* once the cursor rests the patch fades away, but stays ready so the next move picks it back up */
-      if (energy < 0.04) { energy = 0; if (T) T.c.style.opacity = 0; return; }
-      /* never mid-burst or mid-reveal */
-      if (el._ntGlitching) { if (T) T.c.style.opacity = 0; }
-      else {
-        if (!T) { T = tapeOpen(el); S = tapeScene(); if (!T) { energy = 0; return; } }
-        T.place();
-        if (T.live) T.load();
-        px += (x - px) * FOLLOW; py += (y - py) * FOLLOW;
-        tapePatch(T, S, px, py, CURSOR_PX / 2, energy, now);
-        T.c.style.opacity = Math.min(1, energy * 2.2) * T.op;
-      }
-      raf = requestAnimationFrame(frame);
-    }
-    document.addEventListener('mousemove', function (e) {
-      var t = pick(e.target), fresh = t !== el;
-      if (fresh) { drop(); el = t; }
-      if (!t) return;
-      /* the patch works in the image's own pixels, so undo any scaling on it */
-      var b = t.tagName === 'IMG' || t.tagName === 'VIDEO' ? t : t.querySelector('img, video') || t;
-      var r = b.getBoundingClientRect(), k = r.width ? b.offsetWidth / r.width : 1;
-      var nx = (e.clientX - r.left) * k, ny = (e.clientY - r.top) * k;
-      if (fresh) { px = nx; py = ny; }
-      else energy = Math.min(1, energy + Math.sqrt((nx - x) * (nx - x) + (ny - y) * (ny - y)) / 80);
-      x = nx; y = ny;
-      if (energy >= 0.04 && !raf) raf = requestAnimationFrame(frame);
-    }, { passive: true });
-    document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) { drop(); el = null; } });
-  })();
   if (!singles.length && !slides.length) return;
 
   function whenLoaded(el, cb) {
