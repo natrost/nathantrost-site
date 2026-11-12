@@ -1,6 +1,6 @@
 /* Body copy reveals line by line: every piece of text the early setup marks to fade in (js/site-early.js, .nt-fade) is split into its
    real lines with GSAP SplitText, and each line fades in, drifting up a few pixels, in turn as the block comes on screen, replaying after
-   scrolling back up past it like the fade it replaces. Lines re-split when the width changes or the fonts finish loading.
+   scrolling back up past it like the fade it replaces. Lines re-split when the width changes or the fonts finish loading, and any line that ends up wrapping is split again.
    Needs gsap and SplitText loaded before it; without them, or with reduced motion, the plain fade stays */
 (function () {
   var root = document.documentElement;
@@ -16,20 +16,36 @@
   var SHIFT = 6;        /* px each line drifts up as it fades in */
   var HIDDEN = { opacity: 0, y: SHIFT }, SHOWN = { opacity: 1, y: 0 };
 
+  /* a line split before the Adobe fonts (or the final layout) arrived can end up wider than its box and wrap onto a second row,
+     which shows as a stray break mid-sentence. Whenever the fonts or the page settle, any block with such a line is split again */
+  var splits = [];
+  function wraps(line) { return line.getClientRects().length > 1; }
+  function check() {
+    splits.forEach(function (s) { if (s.lines && s.lines.some(wraps)) s.split(); });
+  }
+  var pending = 0;
+  function checkSoon() { clearTimeout(pending); pending = setTimeout(check, 60); }
+
   function start() {
     var els = Array.prototype.slice.call(document.querySelectorAll('.nt-fade'));
     els.forEach(function (el) {
       el._ntShown = false;
-      SplitText.create(el, {
+      splits.push(SplitText.create(el, {
         type: 'lines', linesClass: 'nt-line', autoSplit: true,
         onSplit: function (self) {
           el._ntLines = self.lines;
           el.classList.add('nt-lines');
           gsap.set(self.lines, el._ntShown ? SHOWN : HIDDEN);
         }
-      });
+      }));
     });
     done();
+    if (document.fonts) { document.fonts.addEventListener('loadingdone', checkSoon); document.fonts.ready.then(checkSoon); }
+    /* the Adobe kit marks the page wf-active once its fonts are in */
+    new MutationObserver(checkSoon).observe(root, { attributes: true, attributeFilter: ['class'] });
+    addEventListener('load', checkSoon);
+    addEventListener('resize', checkSoon);
+    setTimeout(check, 1500); setTimeout(check, 4000);
 
     var rise = new IntersectionObserver(function (entries) {
       entries.filter(function (en) { return en.isIntersecting && !en.target._ntShown; })
