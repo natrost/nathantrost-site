@@ -9,7 +9,7 @@
   var PEEK = .07;        /* how much of the window's height the end of the page (and the gap after it) shows above the hero */
   var EASE = .14;        /* how quickly the pages catch up with the scroll each frame, 0 to 1; lower is softer */
   var SIDES = [.62, .3]; /* where the side columns sit when the window is centred, as a share of the way down the page, left then right */
-  var GLITCH_MS = 700;   /* about how long the bad-tape moment lasts, in ms */
+  var GLITCH_MS = 600;   /* about how long the bad-tape moment lasts, in ms */
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
   var rnd = function (lo, hi) { return lo + Math.random() * (hi - lo); };
   var hash = function (n) { var v = Math.sin(n * 127.1) * 43758.5453; return v - Math.floor(v); };
@@ -147,8 +147,8 @@
       /* new bands of bad signal keep breaking out: some tear sideways, some streak, some drop out to black */
       if (now > T.next) {
         T.next = now + rnd(15, 110);
-        var bh = Math.random() < .3 ? rnd(14, H * .15) : rnd(2, 14), type = Math.random();
-        T.events.push({ y: rnd(0, H), h: bh, until: now + rnd(40, 240), s: (Math.random() < .5 ? -1 : 1) * rnd(10, W * .3), streak: type < .3, gap: type > .85, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
+        var bh = Math.random() < .3 ? rnd(14, H * .18) : rnd(2, 14), type = Math.random();
+        T.events.push({ y: rnd(0, H), h: bh, until: now + rnd(35, 205), s: (Math.random() < .5 ? -1 : 1) * rnd(10, W * .2), streak: type < .3, gap: type > .85, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
       }
       T.events = T.events.filter(function (e) { return e.until > now; });
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.clearRect(0, 0, W, H);

@@ -7,12 +7,12 @@ document.addEventListener('DOMContentLoaded', function () {
   var START_PX = 50;      /* how far onto the screen an image must be before it reveals */
   var EDGE_PX = 40;       /* how far a carousel slide must drift in from the side before it reveals */
   var MAX_WAIT = 2500;    /* ms to wait for an image to load before animating anyway */
-  var GLITCH_MS = 500;    /* the shortest an image takes to resolve; text and buttons take exactly this */
-  var SETTLE_MS = 800;    /* the longest an image takes to resolve */
+  var GLITCH_MS = 425;    /* the shortest an image takes to resolve; text and buttons take exactly this */
+  var SETTLE_MS = 680;    /* the longest an image takes to resolve */
   var INLINE_DELAY = 800; /* ms after its text starts melting in that an image set inside the text glitches in */
   var CURSOR_PX = 300;    /* roughly how wide the patch of bad tape around the cursor is */
-  var BREAK_SHARE = 0.22; /* how far torn rows and streaks may break out past an image's sides, as a share of its width */
-  var BREAK_PX = 160;     /* and at most this far, in px; above and below, a third of this */
+  var BREAK_SHARE = 0.15; /* how far torn rows and streaks may break out past an image's sides, as a share of its width */
+  var BREAK_PX = 80;      /* and at most this far, in px; above and below, a third of this */
   /* glitch strengths: how long it lasts, the biggest pixel block and the furthest sideways tear, in px */
   var REVEAL = { ms: GLITCH_MS, block: 28, tear: 40, flicker: true };
   var REVEAL_TEXT = { ms: GLITCH_MS, block: 28, tear: 40 };  /* project page text and buttons: the same glitch without the flicker, so it never blinks */
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var all = ['sync', 'wave', 'track', 'slip', 'roll'], kinds = {};
     kinds[all[Math.floor(rnd(0, 5))]] = 1;
     if (Math.random() < .55) kinds[all[Math.floor(rnd(0, 5))]] = 1;
-    return { kinds: kinds, ms: rnd(520, 1000), seed: rnd(0, 999), events: [], next: 0, crush: rnd(.35, .95), slipR: (Math.random() < .5 ? -1 : 1) * rnd(8, 26), slipB: 0, waveAmp: rnd(10, 38), waveFreq: rnd(.012, .05), waveTop: rnd(0, .6), waveLen: rnd(.25, .7), bend: (Math.random() < .5 ? -1 : 1) * rnd(40, 140), bendAt: Math.random() < .5, roll: (Math.random() < .5 ? -1 : 1) * rnd(.4, 1.6) };
+    return { kinds: kinds, ms: rnd(440, 850), seed: rnd(0, 999), events: [], next: 0, crush: rnd(.35, .95), slipR: (Math.random() < .5 ? -1 : 1) * rnd(8, 26), slipB: 0, waveAmp: rnd(10, 38), waveFreq: rnd(.012, .05), waveTop: rnd(0, .6), waveLen: rnd(.25, .7), bend: (Math.random() < .5 ? -1 : 1) * rnd(40, 140), bendAt: Math.random() < .5, roll: (Math.random() < .5 ? -1 : 1) * rnd(.4, 1.6) };
   }
   /* one frame of a rollover: t runs 0 to 1 */
   function tapeBurst(T, S, t, now) {
@@ -192,8 +192,8 @@ document.addEventListener('DOMContentLoaded', function () {
     /* new bands of bad signal keep breaking out at random */
     if (now > S.next && t < .85) {
       S.next = now + rnd(15, 110);
-      var thick = Math.random() < .3, h = thick ? rnd(14, H * .24) : rnd(2, 14), type = Math.random();
-      S.events.push({ y: rnd(-h / 2, H), h: h, until: now + rnd(40, 260), vy: Math.random() < .35 ? rnd(-.3, .3) : 0, s: (Math.random() < .5 ? -1 : 1) * rnd(10, W * .3),
+      var thick = Math.random() < .3, h = thick ? rnd(14, H * .18) : rnd(2, 14), type = Math.random();
+      S.events.push({ y: rnd(-h / 2, H), h: h, until: now + rnd(35, 220), vy: Math.random() < .35 ? rnd(-.3, .3) : 0, s: (Math.random() < .5 ? -1 : 1) * rnd(10, W * .2),
         streak: type < (K.sync ? .65 : .3), gap: K.track ? type > .55 : type > .92, from: Math.random() < .5 ? -1 : 1, seed: rnd(0, 999) });
     }
     S.events = S.events.filter(function (e) { return e.until > now; });
