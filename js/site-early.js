@@ -277,10 +277,10 @@ window.__ntTextSetup = function () {
   document.addEventListener('DOMContentLoaded', go);
 })();
 
-/* a safety net for Webflow's image size hints: now and then a publish tells the browser every picture on a page shows only 144px wide, so it fetches tiny versions and draws them small and blurry. Any picture with that hint is told it may show at full width instead, as Webflow normally says; the homepage carousels then narrow it to their real slide width */
+/* a safety net for Webflow's image size hints: now and then a publish tells the browser a picture shows only a fixed few pixels wide (144px, 134px, 86px...), so it fetches a tiny version and draws it small and blurry; pictures with no set width even shrink to that size. Any picture whose hint is a bare pixel width is told it may show at full width instead, as Webflow normally says; the homepage carousels then narrow it to their real slide width */
 (function () {
-  var BAD = '144px';
-  function fix(img) { if (img.getAttribute('sizes') === BAD) img.setAttribute('sizes', '(max-width: 2000px) 100vw, 2000px'); }
+  var BAD = /^\s*\d+(\.\d+)?px\s*$/;
+  function fix(img) { if (img.hasAttribute('srcset') && BAD.test(img.getAttribute('sizes') || '')) img.setAttribute('sizes', '(max-width: 2000px) 100vw, 2000px'); }
   var watch = new MutationObserver(function (list) {
     list.forEach(function (m) {
       Array.prototype.forEach.call(m.addedNodes, function (n) {
@@ -291,7 +291,7 @@ window.__ntTextSetup = function () {
   });
   watch.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('DOMContentLoaded', function () {
-    Array.prototype.forEach.call(document.querySelectorAll('img[sizes="' + BAD + '"]'), fix);
+    Array.prototype.forEach.call(document.querySelectorAll('img[sizes]'), fix);
     watch.disconnect();
   });
 })();
