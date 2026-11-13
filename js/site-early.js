@@ -13,7 +13,10 @@
     bg = document.createElement('div');
     bg.className = 'nt-case-bg';
     bg.setAttribute('aria-hidden', 'true');
-    bg.style.setProperty('--nt-case-img', 'url("' + img + '")');
+    /* the backdrop is heavily blurred, so Webflow's 800px copy of the image looks the same at a fraction of the size; if a picture has no such copy, the full image is used */
+    var small = /website-files\.com\//.test(img) && !/-p-\d+\.[a-z0-9]+$/i.test(img) ? img.replace(/(\.[a-z0-9]+)$/i, '-p-800$1') : img;
+    bg.style.setProperty('--nt-case-img', 'url("' + small + '")');
+    if (small !== img) { var probe = new Image(); probe.onerror = function () { bg.style.setProperty('--nt-case-img', 'url("' + img + '")'); }; probe.src = small; }
     var stick = document.createElement('div');
     stick.className = 'nt-case-stick';
     bg.appendChild(stick);
