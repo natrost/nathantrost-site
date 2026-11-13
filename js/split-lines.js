@@ -39,7 +39,8 @@
   function checkSoon() { clearTimeout(pending); pending = setTimeout(check, 60); }
 
   function start() {
-    var els = Array.prototype.slice.call(document.querySelectorAll('.nt-fade'));
+    /* a flex or grid box would lay each split line out as its own item (a case study's client line came out one word per row), so those keep the plain whole-block fade */
+    var els = Array.prototype.slice.call(document.querySelectorAll('.nt-fade')).filter(function (el) { return !/flex|grid/.test(getComputedStyle(el).display); });
     els.forEach(function (el) {
       el._ntShown = false;
       var it = { el: el };
