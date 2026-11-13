@@ -120,8 +120,9 @@ document.addEventListener('DOMContentLoaded', function () {
     map = { c: c, red: tint(c, INKS[0]), blue: tint(c, INKS[1]), w: w, h: h, bw: box.width, bh: box.height, cols: cols, rows: rows, ink: ink, gone: gone };
     holes = []; flying = []; tears = [];
   }
+  /* the layer is 100% wide, which leaves out a page scrollbar, so its pixels are sized to that same width; sized to the whole window instead, the drawing got squeezed into the narrower box and the text slid left, more so the further right it sat */
   function size() {
-    var W = innerWidth * dpr, H = innerHeight * dpr;
+    var de = document.documentElement, W = Math.round((de.clientWidth || innerWidth) * dpr), H = Math.round((de.clientHeight || innerHeight) * dpr);
     if (layer.width !== W || layer.height !== H) { layer.width = W; layer.height = H; }
   }
   function start() {
