@@ -56,6 +56,10 @@
     var pt=pin.querySelector('.personal_text');
     var morphLabel=morpher(pt.children[0]),morphText=morpher(pt.children[1]);
     wrap.appendChild(pin);
+    /* phones: the facts sit 3.5rem higher, so the five-line ones stay in the upper part of the screen; fact four gets 1.5rem more room on each side, which rewraps it so its last word does not sit alone on a line */
+    var css=document.createElement('style');
+    css.textContent='@media (max-width:767px){.nt-personal{padding-top:calc(38vh - 3.5rem) !important}.nt-personal[data-nt-fact="4"] .personal_text > :last-child{padding-left:1.5rem;padding-right:1.5rem;box-sizing:border-box}}';
+    document.head.appendChild(css);
     wrap.classList.add('nt-personal-on');
 
     /* each fact takes over once its photo's top edge has come a fifth of the way up the screen (SWITCH_AT is measured from the top, so 0.8); -1 until the first photo gets there */
@@ -67,6 +71,7 @@
       if(idx===cur)return;
       cur=idx;
       var f=idx<0?{label:'',text:''}:facts[idx];
+      pin.setAttribute('data-nt-fact',idx+1);
       morphLabel(f.label);morphText(f.text);
     }
     /* checks every frame only while the page is moving: scrolling, resizing, or for a moment after, while Webflow's interactions finish easing things into place. At rest it does nothing */
