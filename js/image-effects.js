@@ -366,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* reveal once the image is START_PX onto the screen */
   var ioIn = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) { if (en.isIntersecting && en.target._ntUnit) reveal(en.target._ntUnit); });
+    entries.forEach(function (en) { if (en.isIntersecting && en.target._ntUnit && !en.target.closest('.nt-hold')) reveal(en.target._ntUnit); });
   }, { rootMargin: '0px 0px -' + START_PX + 'px 0px' });
 
   /* reset once it is fully back below the screen, so it plays again next time */
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* carousel slides: glitch in as each one drifts EDGE_PX in from the side, and reset once it slides off the other side or below the screen */
   var slideIn = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) { if (en.isIntersecting && en.target._ntUnit) reveal(en.target._ntUnit); });
+    entries.forEach(function (en) { if (en.isIntersecting && en.target._ntUnit && !en.target.closest('.nt-hold')) reveal(en.target._ntUnit); });
   }, { rootMargin: '0px -' + EDGE_PX + 'px -' + START_PX + 'px -' + EDGE_PX + 'px' });
   var slideOut = new IntersectionObserver(function (entries) {
     entries.forEach(function (en) {
@@ -440,6 +440,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (u.slide) { slideIn.observe(u.el); slideOut.observe(u.el); }
         else { ioIn.observe(u.el); ioOut.observe(u.el); }
+      });
+      /* held by the homepage intro: looked at again once let go (js/site-early.js) */
+      (window.__ntRehooks = window.__ntRehooks || []).push(function (el) {
+        var u = el._ntUnit;
+        if (!u || u.inline) return;
+        var io = u.slide ? slideIn : ioIn;
+        io.unobserve(el); io.observe(el);
       });
     });
   });

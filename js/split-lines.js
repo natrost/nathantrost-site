@@ -64,7 +64,7 @@
     setTimeout(check, 1500); setTimeout(check, 4000);
 
     var rise = new IntersectionObserver(function (entries) {
-      entries.filter(function (en) { return en.isIntersecting && !en.target._ntShown; })
+      entries.filter(function (en) { return en.isIntersecting && !en.target._ntShown && !en.target.closest('.nt-hold'); })
         .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left; })
         .forEach(function (en, i) {
           var el = en.target;
@@ -84,6 +84,13 @@
       });
     });
     els.forEach(function (el) { rise.observe(el); sink.observe(el); });
+    /* held by the homepage intro: looked at again once let go (js/site-early.js) */
+    (window.__ntRehooks = window.__ntRehooks || []).push(function (el) { if (els.indexOf(el) >= 0) { rise.unobserve(el); rise.observe(el); } });
   }
+  /* lets the homepage intro show a block's lines at once (it types the "Hi" line out its own way) */
+  window.__ntShowLines = function (el) {
+    el._ntShown = true;
+    if (el._ntLines) { gsap.killTweensOf(el._ntLines); gsap.set(el._ntLines, SHOWN); }
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

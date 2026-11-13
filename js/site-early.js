@@ -90,6 +90,15 @@ if (location.pathname.indexOf('/work/') === 0) document.documentElement.classLis
 
 /* Text reveal on scroll: Instrument Serif text morphs in out of a blur, the same melt as the About page facts, and every other piece of text fades up;
    both replay after scrolling back up past them. It runs as soon as the page content is parsed (trigger below), ahead of the slower Webflow scripts, so text never waits on them */
+/* the homepage's first-visit intro (js/home-intro.js) holds its pieces back with the nt-hold class, then lets each one go at its moment.
+   Each reveal below skips held pieces, and registers a hook here that looks at a piece again once it is let go */
+window.__ntRehooks = window.__ntRehooks || [];
+window.__ntRelease = function (el) {
+  if (!el || !el.classList.contains('nt-hold')) return;
+  el.classList.remove('nt-hold');
+  window.__ntRehooks.forEach(function (f) { try { f(el); } catch (e) {} });
+};
+
 window.__ntTextSetup = function () {
   if (!('IntersectionObserver' in window)) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -100,6 +109,15 @@ window.__ntTextSetup = function () {
   var DURATION = 1100;    /* ms */
   var BUTTON_DELAY = 800; /* ms the end-of-page buttons wait so they melt in once the headline settles */
   var slice = function (list) { return Array.prototype.slice.call(list); };
+  /* the first-visit intro: the homepage's "Hi" line, headline and carousel wait for it (the page head sets nt-intro). If it never starts, everything is let go after a few seconds */
+  if (document.documentElement.classList.contains('nt-intro')) {
+    slice(document.querySelectorAll('.home_feature_wrapper .hometop, .home_feature_wrapper .title_text, .home_feature_wrapper .splide__slide')).forEach(function (el) { el.classList.add('nt-hold'); });
+    setTimeout(function () {
+      if (!document.documentElement.classList.contains('nt-intro') || window.__ntIntroRunning) return;
+      document.documentElement.classList.remove('nt-intro');
+      slice(document.querySelectorAll('.nt-hold')).forEach(window.__ntRelease);
+    }, 5000);
+  }
 
   /* only text set in Instrument Serif melts in, taking the outermost block that uses it */
   var isInstrument = function (el) { return /instrument/i.test(getComputedStyle(el).fontFamily); };
@@ -132,7 +150,7 @@ window.__ntTextSetup = function () {
   if (fades.length) { document.documentElement.classList.add('nt-split-wait'); setTimeout(function () { document.documentElement.classList.remove('nt-split-wait'); }, 4000); }
   /* pieces that come into view together fade in one after another, top to bottom */
   var fadeIn = new IntersectionObserver(function (entries) {
-    entries.filter(function (en) { return en.isIntersecting && !en.target.classList.contains('is-in'); })
+    entries.filter(function (en) { return en.isIntersecting && !en.target.classList.contains('is-in') && !en.target.closest('.nt-hold'); })
       .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left; })
       .forEach(function (en, i) {
         en.target.style.setProperty('--nt-fade-delay', Math.min(i * FADE_STAGGER, 450) + 'ms');
@@ -150,6 +168,7 @@ window.__ntTextSetup = function () {
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {
       fades.forEach(function (el) { el.classList.remove('nt-fade-init'); fadeIn.observe(el); fadeOut.observe(el); });
+      window.__ntRehooks.push(function (el) { if (fades.indexOf(el) >= 0) { fadeIn.unobserve(el); fadeIn.observe(el); } });
     });
   });
   if (!els.length) return;
@@ -231,7 +250,7 @@ window.__ntTextSetup = function () {
 
   var ioIn = new IntersectionObserver(function (entries) {
     entries.forEach(function (en) {
-      if (!en.isIntersecting || en.target.classList.contains('is-in')) return;
+      if (!en.isIntersecting || en.target.classList.contains('is-in') || en.target.closest('.nt-hold')) return;
       en.target.classList.add('is-in');
       play(en.target);
     });
@@ -251,6 +270,7 @@ window.__ntTextSetup = function () {
      it is checked every frame, so it is hidden again the moment its section is back below the screen and never scrolls in already showing */
   var pinned = els.filter(function (el) { return el.closest('.fav_text.about'); });
   els.forEach(function (el) { if (pinned.indexOf(el) === -1) { ioIn.observe(el); ioOut.observe(el); } });
+  window.__ntRehooks.push(function (el) { if (els.indexOf(el) >= 0 && pinned.indexOf(el) === -1) { ioIn.unobserve(el); ioIn.observe(el); } });
   if (!pinned.length) return;
   var SIGNOFF_AT = 0.75;
   function check() {
