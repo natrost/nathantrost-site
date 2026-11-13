@@ -246,16 +246,18 @@ window.__ntTextSetup = function () {
     });
   });
 
-  /* the end-of-page sign-off is pinned mid-screen, so it melts only once it settles there (or reaches the middle), never while it scrolls up;
+  /* the end-of-page sign-off is pinned near the top of the screen, so it melts in on its way there: once its middle has come a quarter of the way up the screen
+     (SIGNOFF_AT, from the top), so there is little empty space before it but it never rides the whole page up;
      it is checked every frame, so it is hidden again the moment its section is back below the screen and never scrolls in already showing */
   var pinned = els.filter(function (el) { return el.closest('.fav_text.about'); });
   els.forEach(function (el) { if (pinned.indexOf(el) === -1) { ioIn.observe(el); ioOut.observe(el); } });
   if (!pinned.length) return;
+  var SIGNOFF_AT = 0.75;
   function check() {
     pinned.forEach(function (el) {
       var s = el.closest('.fav_text.about').getBoundingClientRect(), r = el.getBoundingClientRect();
       if (el.classList.contains('is-in')) { if (s.top >= innerHeight) reset(el); return; }
-      if (r.bottom > 0 && r.top < innerHeight && (s.top <= 1 || r.top + r.height / 2 <= innerHeight * 0.5)) { el.classList.add('is-in'); play(el); }
+      if (r.bottom > 0 && r.top < innerHeight && (s.top <= 1 || r.top + r.height / 2 <= innerHeight * SIGNOFF_AT)) { el.classList.add('is-in'); play(el); }
     });
   }
   /* the frame-by-frame check only runs while the sign-off is on or near the screen; leaving it gets one last check, which hides it again once it is back below the screen */
