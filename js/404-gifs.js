@@ -20,7 +20,7 @@
   ];
   var TOAST = 'https://cdn.prod.website-files.com/665638e0329e026c932efbd5/67f31c489fb8d62bef709555_ChatGPT%20Image%20Apr%204%2C%202025%2C%2004_26_57%20PM-p-500.avif';
   var TOAST_ODDS = 0.3;           /* chance the next one is the toast, when it isn't already up */
-  var EVERY = [1400, 3000];       /* ms between new ones */
+  var EVERY = [1000, 2200];       /* ms between new ones (they take a moment to load, too) */
   var STAY = [2600, 4200];        /* ms each one stays */
   var GAP = 24;                   /* px kept clear around the message and between gifs */
   var IN = { ms: 650, block: 28, tear: 40, flicker: true };
@@ -31,13 +31,18 @@
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function limits() {
     var w = innerWidth;
-    return w < 600 ? { max: 2, w: [120, 165] } : w < 992 ? { max: 2, w: [170, 240] } : { max: 3, w: [200, 310] };
+    return w < 600 ? { max: 2, w: [110, 150] } : w < 992 ? { max: 2, w: [170, 240] } : { max: 3, w: [200, 310] };
   }
-  /* the area they may use: the page's top section (not the nav or the footer), minus the message and buttons */
+  /* the area they may use: the page's top section below the nav (not the footer). The words and buttons themselves stay clear: each line of text is
+     measured tight to its letters, since the boxes around them stretch across the whole screen */
+  var KEEP = '.utility-page-wrap .title_text, .utility-page-wrap h1, .utility-page-wrap .text-block-49, .utility-page-wrap .btn_learn_more';
   function area() {
-    var wrap = document.querySelector('.utility-page-wrap') || document.body, r = wrap.getBoundingClientRect();
-    var msg = document.querySelector('.utility-page-wrap .fav_text') || wrap.firstElementChild, m = msg ? msg.getBoundingClientRect() : null;
-    return { top: Math.max(r.top, 80), bottom: Math.min(r.bottom, innerHeight) - 16, left: 16, right: innerWidth - 16, msg: m };
+    var wrap = document.querySelector('.utility-page-wrap') || document.body, r = wrap.getBoundingClientRect(), clear = [];
+    Array.prototype.forEach.call(document.querySelectorAll(KEEP), function (el) {
+      if (el.matches('.btn_learn_more')) { clear.push(el.getBoundingClientRect()); return; }
+      var rg = document.createRange(); rg.selectNodeContents(el); clear.push(rg.getBoundingClientRect());
+    });
+    return { top: Math.max(r.top, 90), bottom: Math.min(r.bottom, innerHeight) - 16, left: 16, right: innerWidth - 16, clear: clear };
   }
   function hits(a, b) { return a.left < b.right + GAP && a.right + GAP > b.left && a.top < b.bottom + GAP && a.bottom + GAP > b.top; }
   function spot(w, h) {
@@ -45,19 +50,24 @@
     if (A.right - A.left < w || A.bottom - A.top < h) return null;
     for (var i = 0; i < 40; i++) {
       var x = rnd(A.left, A.right - w), y = rnd(A.top, A.bottom - h), box = { left: x, top: y, right: x + w, bottom: y + h };
-      if (A.msg && hits(box, A.msg)) continue;
+      if (A.clear.some(function (c) { return c.width && hits(box, c); })) continue;
       if (live.some(function (g) { return hits(box, g.img.getBoundingClientRect()); })) continue;
       return box;
     }
     return null;
   }
+  /* the gifs come in a shuffled order, and all of them show before any repeats */
+  var deck = [];
   function pick() {
     var up = live.map(function (g) { return g.src; });
     if (up.indexOf(TOAST) < 0 && last !== TOAST && Math.random() < TOAST_ODDS) return TOAST;
-    var free = pool.filter(function (s) { return up.indexOf(s) < 0 && s !== last; });
-    return free[Math.floor(Math.random() * free.length)];
+    if (!deck.length) {
+      deck = pool.slice();
+      for (var i = deck.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
+    }
+    for (var k = 0; k < deck.length; k++) if (up.indexOf(deck[k]) < 0 && deck[k] !== last) return deck.splice(k, 1)[0];
+    return null;
   }
-
   function glitch(img, o) {
     if (window.__ntGlitch) { window.__ntGlitch(img, o); return; }
     img.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: .2 }, { opacity: 1 }], { duration: o.ms }); /* no image-effects: a plain flicker */
@@ -75,7 +85,9 @@
     img.onload = function () {
       clearTimeout(wait);
       if (gone) return;
-      var w = Math.round(rnd(L.w[0], L.w[1])), h = Math.round(w * img.naturalHeight / img.naturalWidth), box = spot(w, h);
+      /* where there isn't room at the size picked, it tries a little smaller (phones have only a strip under the buttons) */
+      var w = Math.round(rnd(L.w[0], L.w[1])), ratio = img.naturalHeight / img.naturalWidth, h, box = null;
+      for (var k = 1; k >= .55 && !box; k -= .15) { w = Math.round(w * (k < 1 ? .85 : 1)); h = Math.round(w * ratio); box = spot(w, h); }
       if (!box) { drop(); return; }
       var s = img.style;
       s.width = w + 'px'; s.height = h + 'px'; s.left = box.left + scrollX + 'px'; s.top = box.top + scrollY + 'px';
