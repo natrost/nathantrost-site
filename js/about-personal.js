@@ -56,9 +56,9 @@
     var pt=pin.querySelector('.personal_text');
     var morphLabel=morpher(pt.children[0]),morphText=morpher(pt.children[1]);
     wrap.appendChild(pin);
-    /* phones: the facts sit 3.5rem higher, so the five-line ones stay in the upper part of the screen; fact four gets 1.5rem more room on each side, which rewraps it so its last word does not sit alone on a line */
+    /* phones: the facts sit 3.5rem higher, so the five-line ones stay in the upper part of the screen; fact four's lines are balanced, so its last word never sits alone on a line (side padding just moved the lone word around) */
     var css=document.createElement('style');
-    css.textContent='@media (max-width:767px){html body .nt-personal{padding-top:calc(38vh - 3.5rem) !important}html body .nt-personal[data-nt-fact="4"] .personal_text > :last-child{padding-left:1.5rem;padding-right:1.5rem;box-sizing:border-box}}';
+    css.textContent='@media (max-width:767px){html body .nt-personal{padding-top:calc(38vh - 3.5rem) !important}html body .nt-personal[data-nt-fact="4"] .personal_text > :last-child > span{text-wrap:balance}}';
     document.head.appendChild(css);
     wrap.classList.add('nt-personal-on');
 
