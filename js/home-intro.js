@@ -31,6 +31,8 @@
   var hi = wrap.querySelector('.hometop'), head = wrap.querySelector('.title_text'), row = wrap.querySelector('.hometext');
   var items = row ? Array.prototype.slice.call(row.children) : [];
   var lines = [], t0 = 0;
+  /* the slides on screen start loading now rather than when they reveal (they are lazy), so they can come in on the beat */
+  Array.prototype.slice.call(wrap.querySelectorAll('.splide__slide img'), 0, 8).forEach(function (img) { if (img.loading === 'lazy') img.loading = 'eager'; });
 
   function at(ms, fn) { setTimeout(fn, Math.max(0, ms - (performance.now() - t0))); }
 
