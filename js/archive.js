@@ -102,6 +102,14 @@
         if (f === 'VP8 ') return (d.getUint16(26, true) & 16383) / (d.getUint16(28, true) & 16383);
         if (f === 'VP8L') { var v = d.getUint32(21, true); return ((v & 16383) + 1) / (((v >> 14) & 16383) + 1); }
       }
+      /* AVIF (what Webflow's image compression makes): the size sits in an "ispe" box near the start; a picture stored in tiles lists the tiles' size too, so the largest one is the whole image */
+      if (tag(4) === 'ftyp') {
+        var bw = 0, bh = 0;
+        for (var j = 8; j + 16 <= u8.length; j++) {
+          if (u8[j] === 105 && tag(j) === 'ispe') { var iw = d.getUint32(j + 8), ih = d.getUint32(j + 12); if (iw * ih > bw * bh) { bw = iw; bh = ih; } }
+        }
+        if (bw && bh) return bw / bh;
+      }
       if (u8[0] === 137 && u8[1] === 80) return d.getUint32(16) / d.getUint32(20);
       if (u8[0] === 255 && u8[1] === 216) {
         for (var i = 2; i + 9 < u8.length;) {
