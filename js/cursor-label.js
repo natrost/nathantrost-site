@@ -1,11 +1,11 @@
-/* Cursor labels: the normal pointer stays, and a small pill (styled like the site's buttons: black with blue text) rides beside it saying what a click will do. "View" on anything that opens a case study,
+/* Cursor labels: the normal pointer stays, and a small word rides beside it (text only, inverted against whatever is behind it, like the nav dots, so it reads on light and dark) saying what a click will do. "View" on anything that opens a case study,
    "Drag" on the carousels, "Open" on the Archive wall's tiles and "Next" on the Archive's opened image. Any element can set its own word with a
    data-cursor attribute in Webflow (data-cursor="Play", say), and data-cursor="" turns the label off inside it. Only with a real mouse or trackpad */
 (function () {
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var OFFSET = 16;      /* px right of and below the pointer */
+  var OFFSET = 14;      /* px right of and below the pointer */
   var FOLLOW = 0.3;     /* how quickly it catches up with the pointer each frame (1 = glued to it) */
   /* the first match wins, checked from the element under the pointer outward */
   var RULES = [
@@ -18,10 +18,10 @@
   var SKIP = 'nav, .w-nav, .main_nav, .main_nav_links, [class*="nt-pj"], footer, .footer, .footer_wrapper';
 
   var css = document.createElement('style');
-  css.textContent = '.nt-cursor{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;padding:7px 11px 6px;background:#000;color:var(--brighter_blue,#18d6ff);box-shadow:0 0 0 1px rgba(242,240,232,.35);' +
-    'font-family:trade-gothic-next-condensed,sans-serif;font-weight:700;font-size:12px;line-height:12px;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;' +
+  css.textContent = '.nt-cursor{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;color:#fff;mix-blend-mode:difference;' +
+    'font-family:trade-gothic-next-condensed,sans-serif;font-weight:700;font-size:13px;line-height:13px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;' +
     'opacity:0;scale:.6;transition:opacity .16s ease,scale .2s cubic-bezier(.2,.9,.3,1.3);will-change:transform}' +
-    '.nt-cursor.is-on{opacity:1;scale:1}html body .nt-cursor{border-radius:999px!important}' + (still ? '.nt-cursor{transition:none;scale:1}' : '');
+    '.nt-cursor.is-on{opacity:1;scale:1}' + (still ? '.nt-cursor{transition:none;scale:1}' : '');
   document.head.appendChild(css);
   var pill = document.createElement('div');
   pill.className = 'nt-cursor'; pill.setAttribute('aria-hidden', 'true');
