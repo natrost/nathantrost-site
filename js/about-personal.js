@@ -58,7 +58,7 @@
     wrap.appendChild(pin);
     /* phones: the facts sit 3.5rem higher, so the five-line ones stay in the upper part of the screen; fact four gets 1.5rem more room on each side, which rewraps it so its last word does not sit alone on a line */
     var css=document.createElement('style');
-    css.textContent='@media (max-width:767px){.nt-personal{padding-top:calc(38vh - 3.5rem) !important}.nt-personal[data-nt-fact="4"] .personal_text > :last-child{padding-left:1.5rem;padding-right:1.5rem;box-sizing:border-box}}';
+    css.textContent='@media (max-width:767px){html body .nt-personal{padding-top:calc(38vh - 3.5rem) !important}html body .nt-personal[data-nt-fact="4"] .personal_text > :last-child{padding-left:1.5rem;padding-right:1.5rem;box-sizing:border-box}}';
     document.head.appendChild(css);
     wrap.classList.add('nt-personal-on');
 
