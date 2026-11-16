@@ -35,7 +35,7 @@
     };
   }
   /* bigger screens: rather than scrolling past, each fact's photo glitches in and holds still at a random spot out toward the screen's edge, clear of the words,
-     and glitches out when the next fact takes over. It may overlap the words, just never sit centred on them. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
+     only while the text is pinned in place, and glitches out when the next fact takes over or the text moves on. It may overlap the words, just never sit centred on them. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
   var EDGE='4rem';     /* from the screen's edge to the photo */
   var MAX_W=480;       /* px: the widest, until it has loaded and its size in the page is known */
   var MAX_H=.7;        /* the tallest a photo gets, as a share of the room between the nav and the bottom */
@@ -47,12 +47,12 @@
     var mq=window.matchMedia('(min-width: 768px)');
     var css=document.createElement('style');
     css.textContent='html.nt-pstill .personal_image_wrapper img{visibility:hidden !important}'+
-      '.nt-pstage{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:-1}'+
+      '.nt-pstage{position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5}'+
       '.nt-pstage img{position:absolute;max-width:none;object-fit:cover;visibility:hidden}.nt-pstage img.is-on{visibility:visible}';
     document.head.appendChild(css);
-    /* the stage rides along inside the pinned text, so it arrives and leaves with it */
+    /* the stage is fixed to the screen, so a photo never moves once it is in; photos show only while the text is pinned in place (behind the text, in front of the section) */
     var box=document.createElement('div');box.className='nt-pstage';box.setAttribute('aria-hidden','true');
-    wrap.insertBefore(box,wrap.firstChild);
+    document.body.appendChild(box);
     var sets=[];
     for(var i=0;i<n;i++){
       var imgs=[].slice.call(marks[i].querySelectorAll('img'));
@@ -72,9 +72,9 @@
       pt.children[0].textContent=window.__ntFacts[i].label;pt.children[1].textContent=window.__ntFacts[i].text;
       var L=1e9,R=-1e9,T=1e9,B=-1e9,w=document.createTreeWalker(pt,NodeFilter.SHOW_TEXT),t,r=document.createRange();
       while((t=w.nextNode())){r.selectNodeContents(t);[].forEach.call(r.getClientRects(),function(q){if(!q.width)return;L=Math.min(L,q.left);R=Math.max(R,q.right);T=Math.min(T,q.top);B=Math.max(B,q.bottom);});}
-      /* as it sits once pinned: the stage rides at the pinned text's top-left corner, so everything is measured from there */
-      var o=box.getBoundingClientRect(),pinTop=parseFloat(getComputedStyle(wrap).top)||0,dy=pin.getBoundingClientRect().top-probe.getBoundingClientRect().top-o.top+pinTop;
-      return {left:L,right:R,top:T+dy,bottom:B+dy,ox:o.left,oy:pinTop};
+      /* as it sits once pinned */
+      var o=wrap.getBoundingClientRect(),dy=pin.getBoundingClientRect().top-probe.getBoundingClientRect().top-o.top+pinTop();
+      return {left:L,right:R,top:T+dy,bottom:B+dy};
     }
     /* each time a fact comes up, its photo lands somewhere new: a random side, out near the screen's edge (EDGE in, plus up to DRIFT more), at a random height and a
        random size close to its size in the page. It may overlap the words, but never with them running through its middle. A pair (fact three) takes one side each.
@@ -99,7 +99,7 @@
         for(var j=0;j<R.ys.length&&y===null;j++){var t=top+span*R.ys[j];if(!bad(t))y=t;}
         /* nowhere clear at that height: as far from the words as it can get */
         if(y===null)y=(tb.top+tb.bottom)/2-top>bot-(tb.top+tb.bottom)/2?top:bot-h;
-        var s=p.img.style;s.width=Math.round(w)+'px';s.height=Math.round(h)+'px';s.left=Math.round(x-tb.ox)+'px';s.top=Math.round(y-tb.oy)+'px';
+        var s=p.img.style;s.width=Math.round(w)+'px';s.height=Math.round(h)+'px';s.left=Math.round(x)+'px';s.top=Math.round(y)+'px';
       });
     }
     function hide(i){
@@ -126,10 +126,21 @@
         if(im.complete&&im.naturalWidth)go();else im.addEventListener('load',go,{once:true});
       });
     }
-    function check(){document.documentElement.classList.toggle('nt-pstill',mq.matches);if(!mq.matches&&on>=0){hide(on);on=-1;}}
+    function pinTop(){return parseFloat(getComputedStyle(wrap).top)||0;}
+    /* the text is pinned when it sits at its sticky spot (it is still rising into place, or has moved on, otherwise) */
+    function pinned(){return Math.abs(wrap.getBoundingClientRect().top-pinTop())<2;}
+    var want=-1;
+    function sync(){show(pinned()?want:-1);}
+    /* the hidden scrolling photos are held (nt-hold), so the site's reveal glitch never plays on them as they pass; phones let them go again */
+    var holder=marks[0].parentNode;
+    function check(){
+      document.documentElement.classList.toggle('nt-pstill',mq.matches);
+      if(mq.matches)holder.classList.add('nt-hold');
+      else{if(window.__ntRelease)window.__ntRelease(holder);else holder.classList.remove('nt-hold');if(on>=0){hide(on);on=-1;}}
+    }
     check();
     var rt=0;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){check();if(on>=0)lay(on);},150);});
-    return {show:show};
+    return {show:function(i){want=i;sync();},sync:sync};
   }
   function init(){
     var wrap=document.querySelector('.personal_text_wrapper');
@@ -166,6 +177,7 @@
     var SWITCH_AT=0.8;
     var cur=-2;
     function update(){
+      if(stage)stage.sync();
       var mid=innerHeight*SWITCH_AT,idx=-1;
       for(var i=0;i<n;i++){if(marks[i].getBoundingClientRect().top<mid)idx=i;}
       if(idx===cur)return;
