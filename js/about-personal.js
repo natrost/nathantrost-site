@@ -53,25 +53,21 @@
     /* the stage is fixed to the screen, so a photo never moves once it is in; photos show only while the text is pinned in place (behind the text, in front of the section) */
     var box=document.createElement('div');box.className='nt-pstage';box.setAttribute('aria-hidden','true');
     document.body.appendChild(box);
-    /* everything is cut to the section's black: the photos, and the glitch's own layers (the site's image effects draw those on the page, outside the stage) */
-    var sec=wrap.closest('.personal_wrapper_2')||marks[0].closest('section')||wrap.parentNode,tape=[],clipRaf=0;
+    /* everything is cut to the section's black: the photos, and the glitch's own layers (the site's image effects draw those on the page, so they are moved into the stage) */
+    var sec=wrap.closest('.personal_wrapper_2')||marks[0].closest('section')||wrap.parentNode,catchUntil=0,watching=0;
     function clip(){
       var r=sec.getBoundingClientRect(),vh=innerHeight,t=Math.max(0,r.top),b=Math.min(vh,r.bottom);
       box.style.clipPath='inset('+Math.round(t)+'px 0 '+Math.round(Math.max(0,vh-b))+'px 0)';
-      tape=tape.filter(function(c){
-        if(!c.isConnected)return false;
-        var q=c.getBoundingClientRect();
-        c.style.clipPath='inset('+Math.max(0,Math.round(t-q.top))+'px 0 '+Math.max(0,Math.round(q.bottom-b))+'px 0)';
-        return true;
-      });
-      if(tape.length&&!clipRaf)clipRaf=requestAnimationFrame(function(){clipRaf=0;clip();});
     }
-    /* picks up the glitch layers a photo's glitch adds to the page */
+    var catcher=new MutationObserver(function(list){
+      if(performance.now()>catchUntil){catcher.disconnect();watching=0;return;}
+      list.forEach(function(m){[].forEach.call(m.addedNodes,function(c){if(c.tagName==='CANVAS')box.appendChild(c);});});
+    });
     function glitchIt(im,o){
-      var before=[].slice.call(document.body.children,-6);
+      /* any glitch layer the site's image effects add to the page in the next moment is ours: it moves into the stage, so it sits under the words and is cut to the section with the screenshots */
+      catchUntil=performance.now()+1200;
+      if(!watching){watching=1;catcher.observe(document.body,{childList:true});}
       window.__ntGlitch(im,o);
-      var grab=function(){[].slice.call(document.body.children,-6).forEach(function(c){if(c.tagName==='CANVAS'&&before.indexOf(c)<0&&tape.indexOf(c)<0)tape.push(c);});clip();};
-      grab();if(!im.complete)im.addEventListener('load',function(){setTimeout(grab,0);},{once:true});
     }
     var sets=[];
     for(var i=0;i<n;i++){

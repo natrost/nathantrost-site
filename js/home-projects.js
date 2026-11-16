@@ -39,6 +39,127 @@
       })(t0);
     };
   }
+
+  /* bigger screens: rather than floating past, each project's screenshots glitch in and hold still at random spots out toward the screen's edges once the stage is pinned,
+     and glitch out when the next project takes over. They may overlap each other a little (OVERLAP) and the headline's edges, but never sit centred on the words, and they
+     stay off the button and the project labels. They are only ever seen on the section: as it scrolls away they are cut off at its edge. The floating screenshots stay
+     in the page, hidden, so the scroll still runs as before. Phones keep the floating screenshots */
+  var S_EDGE='4rem';   /* from the screen's edge to the nearest screenshots */
+  var S_DRIFT=64;      /* px: how much further in than S_EDGE a screenshot may land, on its first tries */
+  var S_SIZE=[.85,1];  /* each screenshot's size, as a random share of its size in the page */
+  var S_MAX_H=.6;      /* the tallest a screenshot gets, as a share of the room between the nav and the bottom */
+  var S_TOP=96;        /* px: screenshots stay below the nav */
+  var OVERLAP=.3;      /* the most of the smaller screenshot two may share */
+  var S_CLEAR=16;      /* px kept clear around the button and the labels */
+  var S_IN={ms:650,block:28,tear:40,flicker:true},S_OUT={ms:320,block:16,tear:26};
+  function stills(wrap,groups,title,btn,dotWrap,stick){
+    var mq=window.matchMedia('(min-width: 768px)'),n=groups.length;
+    var css=document.createElement('style');
+    css.textContent='html.nt-hstill .favorites_wrapper_1 .fav_images img{visibility:hidden !important}'+
+      '.nt-hstage{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:hidden;pointer-events:none;z-index:40}'+
+      '.nt-hstage img{position:absolute;max-width:none;object-fit:cover;visibility:hidden}.nt-hstage img.is-on{visibility:visible}';
+    document.head.appendChild(css);
+    /* fixed to the screen so a screenshot never moves once it is in; it sits in the section just under the title stage, so the words stay on top */
+    var box=document.createElement('div');box.className='nt-hstage';box.setAttribute('aria-hidden','true');wrap.insertBefore(box,stick.parentNode);
+    var sets=groups.map(function(g){return g.imgs.map(function(o){var c=document.createElement('img');c.alt='';c.decoding='async';c.src=o.currentSrc||o.src;return {img:c,src:o};});});
+    var sec=wrap,catchUntil=0,watching=0;
+    function clip(){
+      var r=sec.getBoundingClientRect(),vh=innerHeight,t=Math.max(0,r.top),b=Math.min(vh,r.bottom);
+      box.style.clipPath='inset('+Math.round(t)+'px 0 '+Math.round(Math.max(0,vh-b))+'px 0)';
+    }
+    var catcher=new MutationObserver(function(list){
+      if(performance.now()>catchUntil){catcher.disconnect();watching=0;return;}
+      list.forEach(function(m){[].forEach.call(m.addedNodes,function(c){if(c.tagName==='CANVAS')box.appendChild(c);});});
+    });
+    function glitchIt(im,o){
+      /* any glitch layer the site's image effects add to the page in the next moment is ours: it moves into the stage, so it sits under the words and is cut to the section with the screenshots */
+      catchUntil=performance.now()+1200;
+      if(!watching){watching=1;catcher.observe(document.body,{childList:true});}
+      window.__ntGlitch(im,o);
+    }
+    function edge(){var t=document.createElement('div');t.style.width=S_EDGE;box.appendChild(t);var v=t.getBoundingClientRect().width;t.remove();return v;}
+    function tight(el){
+      if(!el)return null;
+      var L=1e9,R=-1e9,T=1e9,B=-1e9,w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),t,r=document.createRange();
+      while((t=w.nextNode())){r.selectNodeContents(t);[].forEach.call(r.getClientRects(),function(q){if(!q.width)return;L=Math.min(L,q.left);R=Math.max(R,q.right);T=Math.min(T,q.top);B=Math.max(B,q.bottom);});}
+      return R>L?{left:L,right:R,top:T,bottom:B}:null;
+    }
+    function grow(r,m){return r?{left:r.left-m,right:r.right+m,top:r.top-m,bottom:r.bottom+m}:null;}
+    function area(a,b){var w=Math.min(a.right,b.right)-Math.max(a.left,b.left),h=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);return w>0&&h>0?w*h:0;}
+    /* each time a project comes up its screenshots are dealt new spots: sides alternate from a random start, and each one tries random spots near its edge first, then
+       anywhere, keeping the one that breaks the fewest rules. The roll is kept, so a resize only refits it */
+    function roll(i){
+      var first=Math.random()<.5?0:1;
+      sets[i].forEach(function(p,k){var tries=[];for(var j=0;j<120;j++)tries.push([Math.random(),Math.random()]);p.r={side:(k+first)%2,size:S_SIZE[0]+Math.random()*(S_SIZE[1]-S_SIZE[0]),tries:tries};});
+    }
+    function lay(i){
+      var e=edge(),vw=document.documentElement.clientWidth,vh=innerHeight,top=Math.max(e,S_TOP),bot=vh-e;
+      var words=[tight(title.querySelector('.work_samples_text')),tight(title.querySelector('.title_text'))].filter(Boolean);
+      var keep=[btn&&grow(btn.getBoundingClientRect(),S_CLEAR),grow(dotWrap.getBoundingClientRect(),S_CLEAR)].filter(function(r){return r&&r.right>r.left;});
+      var placed=[];
+      sets[i].forEach(function(p){
+        var R=p.r,o=p.src,nw=o.naturalWidth||p.img.naturalWidth||16,nh=o.naturalHeight||p.img.naturalHeight||10,ratio=nh/nw;
+        var w=Math.min((o.offsetWidth||440)*R.size,vw*.4,(bot-top)*S_MAX_H/ratio),h=w*ratio;
+        var best=null,bestBad=1e9;
+        for(var j=0;j<R.tries.length&&bestBad>0;j++){
+          var a=R.tries[j][0],b=R.tries[j][1],x;
+          if(j<80)x=R.side===0?e+S_DRIFT*a:vw-e-w-S_DRIFT*a;
+          else x=e+(vw-2*e-w)*a;
+          var y=top+Math.max(0,bot-top-h)*b,box={left:x,top:y,right:x+w,bottom:y+h};
+          var mid={left:x+w/3,right:x+w*2/3,top:y+h/3,bottom:y+h*2/3},bad=0;
+          words.forEach(function(t){if(area(mid,t)>0)bad+=10;});
+          keep.forEach(function(k){if(area(box,k)>0)bad+=10;});
+          placed.forEach(function(q){var s=area(box,q)/Math.min(w*h,(q.right-q.left)*(q.bottom-q.top));if(s>OVERLAP)bad+=1+s;});
+          if(j>=80)bad+=.5;
+          if(bad<bestBad){bestBad=bad;best=box;}
+        }
+        placed.push(best);
+        var s=p.img.style;s.width=Math.round(w)+'px';s.height=Math.round(h)+'px';s.left=Math.round(best.left)+'px';s.top=Math.round(best.top)+'px';
+      });
+    }
+    var on=-1,want=-1;
+    function hide(i){
+      if(i<0)return;
+      sets[i].forEach(function(p){
+        var im=p.img;if(!im.parentNode)return;
+        if(window.__ntGlitch&&!reduce){glitchIt(im,S_OUT);setTimeout(function(){im.classList.remove('is-on');},S_OUT.ms*.45);setTimeout(function(){if(on!==i)im.remove();},S_OUT.ms+200);}
+        else im.remove();
+      });
+    }
+    function ready(i){return sets[i].every(function(p){return p.img.complete&&p.img.naturalWidth;});}
+    function show(i){
+      if(!mq.matches||i===on)return;
+      var was=on;on=i;hide(was);
+      if(i<0)return;
+      roll(i);
+      /* all of a project's screenshots are placed together, once they have all loaded, so none of them lands on another */
+      var go=function(){
+        if(on!==i||!ready(i))return;
+        sets[i].forEach(function(p){p.img.remove();p.img.classList.remove('is-on');box.appendChild(p.img);});
+        lay(i);
+        sets[i].forEach(function(p,k){setTimeout(function(){if(on!==i)return;p.img.classList.add('is-on');if(window.__ntGlitch&&!reduce)glitchIt(p.img,S_IN);},k*90);});
+      };
+      if(ready(i))go();else sets[i].forEach(function(p){p.img.addEventListener('load',go,{once:true});});
+    }
+    /* screenshots come in once the stage is pinned, and stay as the section scrolls away (cut to it), until it has gone */
+    function pinned(){return stick.getBoundingClientRect().top<2&&wrap.getBoundingClientRect().bottom>0;}
+    /* the first-visit intro lets go of everything held on the page when it ends, these included, so they are held again as the page moves (they are far below the intro) */
+    function hold(){if(mq.matches&&!document.documentElement.classList.contains('nt-intro'))groups.forEach(function(g){if(g.block)g.block.classList.add('nt-hold');});}
+    function sync(){hold();clip();show(pinned()?want:-1);}
+    /* the hidden floating screenshots are held (nt-hold), so the site's reveal glitch never plays on them as they pass; phones let them go again */
+    function check(){
+      document.documentElement.classList.toggle('nt-hstill',mq.matches);
+      groups.forEach(function(g){
+        if(!g.block)return;
+        if(mq.matches)g.block.classList.add('nt-hold');
+        else if(window.__ntRelease)window.__ntRelease(g.block);else g.block.classList.remove('nt-hold');
+      });
+      if(!mq.matches&&on>=0){hide(on);on=-1;}
+    }
+    check();
+    var rt=0;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){check();if(on>=0&&ready(on))lay(on);},150);});
+    return {show:function(i){want=i;sync();},sync:sync};
+  }
   function init(){
     var wrap=document.querySelector('.favorites_wrapper_1');
     if(!wrap||wrap.querySelector('.nt-stage'))return;
@@ -201,15 +322,19 @@
       })(performance.now());
     }
 
+    var still=stills(wrap,texts.slice(0,n).map(function(t){var b=t.nextElementSibling;return {block:b,imgs:b?[].slice.call(b.querySelectorAll('img')):[]};}),title,btn,dotWrap,stage.firstChild);
+
     /* -1 until the first project scrolls up to 60% of the screen, so the first title melts in too */
     var cur=-2;
     function update(){
+      still.sync();
       if(jumping>=0)return;
       var mid=innerHeight*0.6,idx=-1;
       for(var i=0;i<n;i++){if(texts[i].getBoundingClientRect().top<mid)idx=i;}
       show(idx);
     }
     function show(idx){
+      still.show(idx);
       if(idx===cur)return;
       if(cur>=0){blurs[cur].classList.remove('is-active');stageCards[cur].classList.remove('is-active');dots[cur].classList.remove('is-active');dots[cur].removeAttribute('aria-current');}
       cur=idx;
