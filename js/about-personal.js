@@ -83,7 +83,7 @@
     /* where a fact's words actually sit (each line measured tight to its letters), from a hidden copy so the fact on screen is left alone */
     var probe=null;
     function textBox(i){
-      if(!probe){probe=pin.cloneNode(true);probe.removeAttribute('data-nt-fact');probe.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;pointer-events:none';probe.setAttribute('aria-hidden','true');wrap.appendChild(probe);}
+      if(!probe){probe=pin.cloneNode(true);probe.removeAttribute('data-nt-fact');probe.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;pointer-events:none';probe.setAttribute('aria-hidden','true');var pr=probe.querySelector('.nt-pring');if(pr)pr.remove();wrap.appendChild(probe);}
       var pt=probe.querySelector('.personal_text');
       pt.children[0].textContent=window.__ntFacts[i].label;pt.children[1].textContent=window.__ntFacts[i].text;
       var L=1e9,R=-1e9,T=1e9,B=-1e9,w=document.createTreeWalker(pt,NodeFilter.SHOW_TEXT),t,r=document.createRange();
@@ -187,6 +187,30 @@
     document.head.appendChild(css);
     wrap.classList.add('nt-personal-on');
 
+    /* a small ring above the fact's number, the size and stroke of the main nav's circles, that draws itself around as you scroll through the fact, so it shows how far
+       there is to go now the photos hold still. A faint full ring sits under it as the track */
+    var RING=12,RING_W=2,RING_TRACK=.25,r0=(RING-RING_W)/2,circ=2*Math.PI*r0;
+    var ring=document.createElement('div');ring.className='nt-pring';ring.setAttribute('aria-hidden','true');
+    ring.innerHTML='<svg width="'+RING+'" height="'+RING+'" viewBox="0 0 '+RING+' '+RING+'"><circle cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" opacity="'+RING_TRACK+'"/>'+
+      '<circle class="nt-pring-arc" cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+circ.toFixed(2)+'" transform="rotate(-90 '+RING/2+' '+RING/2+')"/></svg>';
+    pt.insertBefore(ring,pt.firstChild);
+    var arc=ring.querySelector('.nt-pring-arc');
+    var ringCss=document.createElement('style');
+    /* the page's own rules style the first thing in the fact (its number) and put 24px under it; the ring now comes first, so the number gets those rules here */
+    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 0 14px !important;line-height:0;opacity:0;transition:opacity .5s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1}'+
+      'html body .nt-personal .personal_text > .nt-pring + *{position:static !important;margin:0 0 24px !important}';
+    document.head.appendChild(ringCss);
+    /* how far through the current fact: from the moment it takes over to the moment the next one does (the last one runs until the text moves on) */
+    function ringTo(idx){
+      ring.classList.toggle('is-on',idx>=0);
+      if(idx<0)return;
+      var mid=innerHeight*SWITCH_AT,a=marks[idx].getBoundingClientRect().top-mid,b;
+      if(idx<n-1)b=marks[idx+1].getBoundingClientRect().top-mid;
+      else b=wrap.parentNode.getBoundingClientRect().bottom-(parseFloat(getComputedStyle(wrap).top)||0);
+      var f=b>a?Math.max(0,Math.min(1,-a/(b-a))):1;
+      arc.setAttribute('stroke-dashoffset',(circ*(1-f)).toFixed(2));
+    }
+
     var stage=still(wrap,pin,marks,n);
 
     /* each fact takes over once its photo's top edge has come a fifth of the way up the screen (SWITCH_AT is measured from the top, so 0.8); -1 until the first photo gets there */
@@ -196,6 +220,7 @@
       if(stage)stage.sync();
       var mid=innerHeight*SWITCH_AT,idx=-1;
       for(var i=0;i<n;i++){if(marks[i].getBoundingClientRect().top<mid)idx=i;}
+      ringTo(idx);
       if(idx===cur)return;
       cur=idx;
       var f=idx<0?{label:'',text:''}:facts[idx];
