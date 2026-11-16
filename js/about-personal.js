@@ -35,7 +35,7 @@
     };
   }
   /* bigger screens: rather than scrolling past, each fact's photo glitches in and holds still at a random spot out toward the screen's edge, clear of the words,
-     only while the text is pinned in place, and glitches out when the next fact takes over or the text moves on. It may overlap the words, just never sit centred on them. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
+     once the text is pinned in place, and glitches out when the next fact takes over. Photos are only ever seen on the section's black: as it scrolls away they are cut off at its edge. It may overlap the words, just never sit centred on them. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
   var EDGE='4rem';     /* from the screen's edge to the photo */
   var MAX_W=480;       /* px: the widest, until it has loaded and its size in the page is known */
   var MAX_H=.7;        /* the tallest a photo gets, as a share of the room between the nav and the bottom */
@@ -47,12 +47,32 @@
     var mq=window.matchMedia('(min-width: 768px)');
     var css=document.createElement('style');
     css.textContent='html.nt-pstill .personal_image_wrapper img{visibility:hidden !important}'+
-      '.nt-pstage{position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5}'+
+      '.nt-pstage{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:hidden;pointer-events:none;z-index:5}'+
       '.nt-pstage img{position:absolute;max-width:none;object-fit:cover;visibility:hidden}.nt-pstage img.is-on{visibility:visible}';
     document.head.appendChild(css);
     /* the stage is fixed to the screen, so a photo never moves once it is in; photos show only while the text is pinned in place (behind the text, in front of the section) */
     var box=document.createElement('div');box.className='nt-pstage';box.setAttribute('aria-hidden','true');
     document.body.appendChild(box);
+    /* everything is cut to the section's black: the photos, and the glitch's own layers (the site's image effects draw those on the page, outside the stage) */
+    var sec=wrap.closest('.personal_wrapper_2')||marks[0].closest('section')||wrap.parentNode,tape=[],clipRaf=0;
+    function clip(){
+      var r=sec.getBoundingClientRect(),vh=innerHeight,t=Math.max(0,r.top),b=Math.min(vh,r.bottom);
+      box.style.clipPath='inset('+Math.round(t)+'px 0 '+Math.round(Math.max(0,vh-b))+'px 0)';
+      tape=tape.filter(function(c){
+        if(!c.isConnected)return false;
+        var q=c.getBoundingClientRect();
+        c.style.clipPath='inset('+Math.max(0,Math.round(t-q.top))+'px 0 '+Math.max(0,Math.round(q.bottom-b))+'px 0)';
+        return true;
+      });
+      if(tape.length&&!clipRaf)clipRaf=requestAnimationFrame(function(){clipRaf=0;clip();});
+    }
+    /* picks up the glitch layers a photo's glitch adds to the page */
+    function glitchIt(im,o){
+      var before=[].slice.call(document.body.children,-6);
+      window.__ntGlitch(im,o);
+      var grab=function(){[].slice.call(document.body.children,-6).forEach(function(c){if(c.tagName==='CANVAS'&&before.indexOf(c)<0&&tape.indexOf(c)<0)tape.push(c);});clip();};
+      grab();if(!im.complete)im.addEventListener('load',function(){setTimeout(grab,0);},{once:true});
+    }
     var sets=[];
     for(var i=0;i<n;i++){
       var imgs=[].slice.call(marks[i].querySelectorAll('img'));
@@ -106,7 +126,7 @@
       if(i<0)return;
       sets[i].forEach(function(p){
         var im=p.img;if(!im.parentNode)return;
-        if(window.__ntGlitch&&!reduce){window.__ntGlitch(im,OUT);timers.push(setTimeout(function(){im.classList.remove('is-on');},OUT.ms*.45),setTimeout(function(){if(on!==i)im.remove();},OUT.ms+200));}
+        if(window.__ntGlitch&&!reduce){glitchIt(im,OUT);timers.push(setTimeout(function(){im.classList.remove('is-on');},OUT.ms*.45),setTimeout(function(){if(on!==i)im.remove();},OUT.ms+200));}
         else im.remove();
       });
     }
@@ -121,16 +141,16 @@
         var go=function(){
           if(on!==i)return;
           im.remove();im.classList.remove('is-on');box.appendChild(im);lay(i);
-          requestAnimationFrame(function(){if(on!==i)return;im.classList.add('is-on');if(window.__ntGlitch&&!reduce)window.__ntGlitch(im,IN);});
+          requestAnimationFrame(function(){if(on!==i)return;im.classList.add('is-on');if(window.__ntGlitch&&!reduce)glitchIt(im,IN);});
         };
         if(im.complete&&im.naturalWidth)go();else im.addEventListener('load',go,{once:true});
       });
     }
     function pinTop(){return parseFloat(getComputedStyle(wrap).top)||0;}
-    /* the text is pinned when it sits at its sticky spot (it is still rising into place, or has moved on, otherwise) */
-    function pinned(){return Math.abs(wrap.getBoundingClientRect().top-pinTop())<2;}
+    /* photos come in once the text is pinned at its sticky spot, and stay as the section scrolls away (cut to its black), until it has gone */
+    function pinned(){return wrap.getBoundingClientRect().top<pinTop()+2&&sec.getBoundingClientRect().bottom>0;}
     var want=-1;
-    function sync(){show(pinned()?want:-1);}
+    function sync(){clip();show(pinned()?want:-1);}
     /* the hidden scrolling photos are held (nt-hold), so the site's reveal glitch never plays on them as they pass; phones let them go again */
     var holder=marks[0].parentNode;
     function check(){
