@@ -35,13 +35,14 @@
     };
   }
   /* bigger screens: rather than scrolling past, each fact's photo glitches in and holds still at a random spot out toward the screen's edge, clear of the words,
-     once the text is pinned in place, and glitches out when the next fact takes over. Photos are only ever seen on the section's black: as it scrolls away they are cut off at its edge. It may overlap the words, just never sit centred on them. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
-  var EDGE='4rem';     /* from the screen's edge to the photo */
+     once the text is pinned in place, and glitches out when the next fact takes over. Photos are only ever seen on the section's black: as it scrolls away they are cut off at its edge. It may overlap the words, just never sit centred on them, and about half go above the words. The scrolling photos stay in the page, hidden, as the markers that say when each fact takes over. Phones keep the scrolling photos */
+  var EDGE='4rem';     /* the furthest a photo sits in from the screen's edge */
   var MAX_W=480;       /* px: the widest, until it has loaded and its size in the page is known */
   var MAX_H=.7;        /* the tallest a photo gets, as a share of the room between the nav and the bottom */
   var TOP=96;          /* px: photos stay below the nav */
   var SIZE=[.85,1];    /* each photo's size, as a random share of its size in the page */
-  var DRIFT=48;        /* px: the furthest in from EDGE a photo may land */
+  var UP=.5;           /* the chance a single photo goes above the words */
+  var FLUSH=.3;        /* the share of photos that sit right against the screen's edge */
   var IN={ms:650,block:28,tear:40,flicker:true},OUT={ms:320,block:16,tear:26};
   function still(wrap,pin,marks,n){
     var mq=window.matchMedia('(min-width: 768px)');
@@ -92,12 +93,13 @@
       var o=wrap.getBoundingClientRect(),dy=pin.getBoundingClientRect().top-probe.getBoundingClientRect().top-o.top+pinTop();
       return {left:L,right:R,top:T+dy,bottom:B+dy};
     }
-    /* each time a fact comes up, its photo lands somewhere new: a random side, out near the screen's edge (EDGE in, plus up to DRIFT more), at a random height and a
+    /* each time a fact comes up, its photo lands somewhere new: a random side, anywhere from flush against the screen's edge to EDGE in, at a random height (about half above the words) and a
        random size close to its size in the page. It may overlap the words, but never with them running through its middle. A pair (fact three) takes one side each.
        The roll is kept, so a resize only refits it */
     function roll(i){
       var flip=Math.random()<.5;
-      sets[i].forEach(function(p,k){p.r={side:sets[i].length>1?(k+(flip?1:0))%2:(Math.random()<.5?0:1),size:SIZE[0]+Math.random()*(SIZE[1]-SIZE[0]),x:Math.random(),ys:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map(Math.random)};});
+      /* about half the photos go above the words (UP); a pair splits, one above and one below */
+      sets[i].forEach(function(p,k){p.r={up:sets[i].length>1?(k===0)===flip:Math.random()<UP,side:sets[i].length>1?(k+(flip?1:0))%2:(Math.random()<.5?0:1),size:SIZE[0]+Math.random()*(SIZE[1]-SIZE[0]),x:Math.random(),ys:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map(Math.random)};});
     }
     function lay(i){
       var e=edge(),vw=document.documentElement.clientWidth,vh=innerHeight,tb=textBox(i);
@@ -105,13 +107,18 @@
       sets[i].forEach(function(p,k){
         var R=p.r,r=p.src.getBoundingClientRect(),nw=p.src.naturalWidth||r.width||1,nh=p.src.naturalHeight||r.height||1,ratio=nh/nw;
         var w=Math.min((r.width||MAX_W)*R.size,vw*.4,(bot-top)*MAX_H/ratio,(bot-top)/ratio),h=w*ratio;
-        var x=R.side===0?e+DRIFT*R.x:vw-e-w-DRIFT*R.x;
+        /* above the words: as big as fits with only its lower third reaching the words */
+        if(R.up){var fitH=(tb.top-top)*1.5;if(h>fitH){h=Math.max(fitH,0);w=h/ratio;}}
+        /* how far in from the screen's edge: flush against it now and then (FLUSH), otherwise anywhere up to EDGE */
+        var dx=R.x<FLUSH?0:e*(R.x-FLUSH)/(1-FLUSH);
+        var x=R.side===0?dx:vw-w-dx;
         /* the words may cross the photo's outer parts, but not its middle (the middle third each way) */
         function bad(y){
           var mx0=x+w/3,mx1=x+w*2/3,my0=y+h/3,my1=y+h*2/3;
           return tb.right>mx0&&tb.left<mx1&&tb.bottom>my0&&tb.top<my1;
         }
         var y=null,span=Math.max(0,bot-top-h);
+        if(R.up)y=top+Math.max(0,tb.top-h*2/3-top)*R.ys[0];
         for(var j=0;j<R.ys.length&&y===null;j++){var t=top+span*R.ys[j];if(!bad(t))y=t;}
         /* nowhere clear at that height: as far from the words as it can get */
         if(y===null)y=(tb.top+tb.bottom)/2-top>bot-(tb.top+tb.bottom)/2?top:bot-h;
