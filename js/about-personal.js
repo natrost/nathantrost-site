@@ -119,6 +119,8 @@
         }
         var y=null,span=Math.max(0,bot-top-h);
         if(R.up)y=top+Math.max(0,tb.top-h*2/3-top)*R.ys[0];
+        /* the other half of a pair goes below: only its upper third may reach the words */
+        else if(sets[i].length>1){var lo=Math.min(bot-h,Math.max(top,tb.bottom-h/3));y=lo+Math.max(0,bot-h-lo)*R.ys[0];}
         for(var j=0;j<R.ys.length&&y===null;j++){var t=top+span*R.ys[j];if(!bad(t))y=t;}
         /* nowhere clear at that height: as far from the words as it can get */
         if(y===null)y=(tb.top+tb.bottom)/2-top>bot-(tb.top+tb.bottom)/2?top:bot-h;
