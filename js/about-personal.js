@@ -198,6 +198,8 @@
 
     /* a small ring above the fact's number, the size and stroke of the main nav's circles, that draws itself around as you scroll through the fact, so it shows how far
        there is to go now the photos hold still. A faint full ring sits under it as the track */
+    /* it fades in with the fact's first melt rather than ahead of it (its opacity is !important because the page's own code holds everything in the fact at full opacity): it waits RING_IN[0] ms, while the words are still a blur, then fades in over RING_IN[1] ms */
+    var RING_IN=[450,800];
     var RING=12,RING_W=2,RING_TRACK=.25,r0=(RING-RING_W)/2,circ=2*Math.PI*r0;
     var ring=document.createElement('div');ring.className='nt-pring';ring.setAttribute('aria-hidden','true');
     ring.innerHTML='<svg width="'+RING+'" height="'+RING+'" viewBox="0 0 '+RING+' '+RING+'"><circle cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" opacity="'+RING_TRACK+'"/>'+
@@ -206,7 +208,7 @@
     var arc=ring.querySelector('.nt-pring-arc');
     var ringCss=document.createElement('style');
     /* the page's own rules style the first thing in the fact (its number) and put 24px under it; the ring now comes first, so the number gets those rules here */
-    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 0 14px !important;line-height:0;opacity:0;transition:opacity .5s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1}'+
+    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 0 14px !important;line-height:0;opacity:0 !important;transition:opacity .4s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1 !important;transition:opacity '+RING_IN[1]+'ms ease '+RING_IN[0]+'ms}'+
       'html body .nt-personal .personal_text > .nt-pring + *{position:static !important;margin:0 0 24px !important}';
     document.head.appendChild(ringCss);
     /* how far through the current fact: from the moment it takes over to the moment the next one does (the last one runs until the text moves on) */
