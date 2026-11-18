@@ -6,7 +6,8 @@
      4. the three details (Based in, Available, email) rise in as the line reaches each one
      5. the carousel's slides glitch in one at a time, each with a slight rise
    The big-carousel version (html.nt-intro-big, set by the homepage head; for now only with ?intro=big in the address) starts instead with the carousels
-   three times their size in the middle of the screen, racing past, then shrinking down into place while steps 1 to 4 play.
+   three times their size in the middle of the screen, racing past, then shrinking down into place without letting up, and coasting down to their usual
+   pace once they are in place. Steps 1 to 4 play as the shrinking carousels uncover each piece, so the text is seen coming in.
    Every other visit to the homepage gets the usual reveals. The site's reveals hold these pieces back until they are let go here (js/site-early.js) */
 (function () {
   var root = document.documentElement;
@@ -31,10 +32,11 @@
   var BIG_SCALE = 3;       /* how much bigger the carousels start */
   var BIG_HOLD = 900;      /* ms they race past at full size before shrinking */
   var BIG_SHRINK = 1600;   /* ms the shrink into place takes */
-  var BIG_BOOST = 70;      /* how many times their usual pace they start at; it eases back to the usual pace by the end of the shrink */
+  var BIG_SPEED = 150;     /* how many times their usual on-screen pace they race at while big */
+  var BIG_COAST = 1400;    /* ms after the shrink that they keep coasting down to their usual pace, so the motion never stops and restarts */
+  var TEXT_GAP = 280;      /* ms at least between the "Hi" line, the headline and the divider starting, when the carousels uncover them at once */
   var BIG_WAIT = 2000;     /* ms at most to wait for the sharper images before starting anyway */
   var BIG_EASE = 'cubic-bezier(.65, 0, .35, 1)';
-  if (BIG) { TYPE_AT = BIG_HOLD - 100; HEAD_AT = BIG_HOLD + 250; LINE_AT = BIG_HOLD + 800; }   /* the text plays while the carousels shrink */
   var ITEM_EASE = 'cubic-bezier(.16, 1, .3, 1)';
 
   var wrap = document.querySelector('.home_feature_wrapper');
@@ -168,12 +170,24 @@
     shots.style.transformOrigin = '50% 50%';
     shots.style.transform = big;
     Array.prototype.forEach.call(shots.querySelectorAll('.splide__slide.nt-hold'), function (s) { window.__ntRelease && window.__ntRelease(s); });
-    /* the race: full speed while big, easing back to the usual pace as they shrink */
-    var end = BIG_HOLD + BIG_SHRINK;
+    /* the race, measured on screen: full speed while big, then one long, smooth slow-down through the shrink and past it, to the usual pace.
+       The carousels' own speed is divided by how big they are showing, so shrinking does not slow them down by itself */
+    var natW = r.width, slow = BIG_SHRINK + BIG_COAST;
+    /* the text starts as the carousels' top edge passes below each piece (or once they have landed, whichever comes first) */
+    var marks = [
+      { el: hi, fn: type },
+      { el: head, fn: function () { window.__ntRelease && window.__ntRelease(head); } },
+      { el: row, fn: function () { draw(); setTimeout(finish, LINE_MS + ITEM_MS + 400); } }
+    ], next = 0, lastAt = -1e9;
+    marks.forEach(function (m) { var b = m.el && m.el.getBoundingClientRect(); m.y = b ? b.top + b.height * 0.6 : 0; });
     (function boost() {
-      var f = Math.min(1, (performance.now() - t0) / end), k = 1 + (BIG_BOOST - 1) * (1 - f) * (1 - f) * (1 - f);
-      roots.forEach(function (rt) { rt._ntBoost = k; });
-      if (f < 1) requestAnimationFrame(boost); else roots.forEach(function (rt) { rt._ntBoost = 1; });
+      var now = performance.now() - t0, b = shots.getBoundingClientRect(), shown = Math.max(1, b.width / natW);
+      var g = Math.max(0, Math.min(1, (now - BIG_HOLD) / slow)), m = 1 + (BIG_SPEED - 1) * (1 - g) * (1 - g);
+      roots.forEach(function (rt) { rt._ntBoost = m / shown; });
+      if (next < marks.length && now - lastAt >= TEXT_GAP && (b.top > marks[next].y || now > BIG_HOLD + BIG_SHRINK)) {
+        lastAt = now; marks[next++].fn();
+      }
+      if (g < 1 || next < marks.length) requestAnimationFrame(boost); else roots.forEach(function (rt) { rt._ntBoost = 1; });
     })();
     at(BIG_HOLD, function () {
       var a = shots.animate ? shots.animate([{ transform: big }, { transform: 'none' }], { duration: BIG_SHRINK, easing: BIG_EASE }) : null;
@@ -187,11 +201,7 @@
     t0 = performance.now();
     if (BIG && shots) {
       bigStart();
-      at(TYPE_AT, type);
-      at(HEAD_AT, function () { window.__ntRelease && window.__ntRelease(head); });
-      at(LINE_AT, draw);
-      at(BIG_HOLD + BIG_SHRINK + 300, finish);
-      at(TYPE_AT + 2000, function () { window.__ntRelease && window.__ntRelease(hi); });
+      at(BIG_HOLD + BIG_SHRINK + 2000, function () { window.__ntRelease && window.__ntRelease(hi); });
       return;
     }
     at(TYPE_AT, type);
