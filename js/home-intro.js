@@ -35,6 +35,7 @@
   var BIG_SPEED = 150;     /* how many times their usual on-screen pace they race at while big */
   var BIG_COAST = 1400;    /* ms after the shrink that they keep coasting down to their usual pace, so the motion never stops and restarts */
   var BLUR_MAX = 18;       /* px of sideways motion blur on screen at full race speed; it fades with the speed */
+  var BLUR_ON = !window.matchMedia('(pointer: coarse)').matches;  /* not on phones and tablets: the blur filter is redrawn every frame, too heavy for them while racing */
   var BLUR_STEPS = [1.5, 3, 5, 8, 12, 17, 22, 28, 36];  /* the blur strengths it steps between, in the carousels' own px (fixed filters, which every browser redraws smoothly) */
   var TEXT_GAP = 280;      /* ms at least between the "Hi" line, the headline and the divider starting, when the carousels uncover them at once */
   var BIG_WAIT = 2000;     /* ms at most to wait for the sharper images before starting anyway */
@@ -190,6 +191,7 @@
     document.body.appendChild(fx.firstChild);
     var fxSvg = document.body.lastChild;
     function motionBlur(m, shown) {
+      if (!BLUR_ON) return;
       var want = BLUR_MAX * (m - 1) / (BIG_SPEED - 1) / shown, at = -1;
       for (var i = 0; i < BLUR_STEPS.length; i++) if (want >= BLUR_STEPS[i]) at = i;
       if (at === blurAt) return;

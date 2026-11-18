@@ -23,6 +23,10 @@
   var OUT_MS = 700;      /* ms the name takes to drop away and the sand to fade */
   var FONT_WAIT = 1500;  /* ms at most to wait for Instrument Serif before showing the number anyway */
   var EASE = 'cubic-bezier(.65, 0, .35, 1)';
+  /* phones and tablets get a lighter melt: the numbers blur and fade through each other as browser animations, which the phone's graphics chip runs
+     on its own, smoothly, even while the page is still loading. The liquid pooling (an SVG filter redrawn every frame) is too heavy for them */
+  var LITE = window.matchMedia('(pointer: coarse)').matches;
+  var LITE_BLUR = 0.12;  /* the lighter melt's blur, as a share of the number's size */
 
   var d = document.documentElement;
   d.classList.add('nt-intro', 'nt-intro-big', 'nt-loading');
@@ -76,6 +80,7 @@
   /* the site's melt is tuned for headline-sized text (about 48px); the blur grows with the number so it melts just as much at this size */
   var MELT_REF = 48, MELT_CAP = 3;
   function melt(text, done) {
+    if (LITE) { meltLite(text, done); return; }
     var old = cur, n = document.createElement('span'), t0 = performance.now();
     /* capped, since very large blurs are slow to draw on phones (Safari especially), and a melt that cannot keep up just jumps to its end */
     var S = Math.max(1, Math.min(MELT_CAP, (parseFloat(getComputedStyle(num).fontSize) || MELT_REF) / MELT_REF));
@@ -90,6 +95,17 @@
       old.remove(); n.style.filter = ''; n.style.opacity = ''; num.style.filter = '';
       if (done) done();
     })(t0);
+  }
+
+  function meltLite(text, done) {
+    var old = cur, n = document.createElement('span');
+    n.textContent = text; num.appendChild(n); cur = n;
+    var b = ((parseFloat(getComputedStyle(num).fontSize) || 200) * LITE_BLUR).toFixed(1) + 'px';
+    if (old.animate) {
+      old.animate([{ filter: 'blur(0px)', opacity: 1 }, { filter: 'blur(' + b + ')', opacity: 0 }], { duration: MELT, easing: 'ease-in', fill: 'forwards' });
+      n.animate([{ filter: 'blur(' + b + ')', opacity: 0 }, { filter: 'blur(0px)', opacity: 1 }], { duration: MELT, easing: 'ease-out' });
+    }
+    setTimeout(function () { old.remove(); if (done) done(); }, MELT);
   }
 
   /* what is loaded: the page itself, then the intro's images (js/home-intro.js reports those) */
