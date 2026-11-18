@@ -1,6 +1,6 @@
 /* Homepage carousels and the Archive wall: hovering an image shows the project's name just above the pointer, in the main nav's type, inverted against whatever is behind it
    (mix-blend-mode: difference), so it reads on light and dark images. The name is read from the project the image links to on the page
-   (In the Stands' title, or the additional project's eyebrow), or on the Archive from the tile's data-name (set by js/archive.js from the Archives collection),
+   (In the Stands' title, or the additional project's eyebrow), or on the Archive from the tile's project (the Archives collection's names, as js/archive.js lists them),
    so it follows whatever is written in Webflow. On the Archive it shows only on the wall, not once an image is open. Only with a real mouse or trackpad */
 (function () {
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
@@ -8,7 +8,7 @@
 
   var GAP = 14;        /* px between the bottom of the name and the pointer's tip */
   var FOLLOW = 0.3;    /* how quickly it catches up with the pointer each frame (1 = glued to it) */
-  var SLIDE = '.splide__slide a[href^="#"]', TILE = '.nt-wall:not(.is-open) .nt-tile[data-name]', AREA = '.splide, .nt-wall';
+  var SLIDE = '.splide__slide a[href^="#"]', TILE = '.nt-wall:not(.is-open) .nt-tile', AREA = '.splide, .nt-wall';
 
   var css = document.createElement('style');
   css.textContent = '.nt-carousel-label{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;color:#fff;mix-blend-mode:difference;' +
@@ -31,10 +31,17 @@
     }
     return (names[h] = n ? n.textContent.replace(/\s+/g, ' ').trim() : '');
   }
+  /* a wall tile's name: its data-name, or else the project list's button for the same project (the list is built when the wall is) */
+  function tileName(t) {
+    var n = t.getAttribute('data-name');
+    if (n) return n;
+    var b = [].find.call(document.querySelectorAll('.nt-project'), function (b) { return String(b._p) === t.getAttribute('data-p'); });
+    return b ? b.textContent.trim() : '';
+  }
   function word(el) {
     if (!el || !el.closest) return '';
     var t = el.closest(TILE);
-    if (t) return t.getAttribute('data-name');
+    if (t) return tileName(t);
     var a = el.closest(SLIDE);
     return a ? nameOf(a) : '';
   }
