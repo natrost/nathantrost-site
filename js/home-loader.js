@@ -14,12 +14,12 @@
     }
   } catch (e) { return; }
 
-  var MELT = 520;        /* ms each change of number takes to melt */
-  var GAP = 40;          /* ms between one melt ending and the next starting */
-  var STEP = 0.6;        /* how much of the way to the real percent each change goes */
-  var MIN_STEP = 12;     /* smallest jump between numbers, so it never crawls one by one */
-  var MAX_STEP = 45;     /* largest jump, so even a page that loads at once counts up through a few numbers */
-  var HOLD = 260;        /* ms 100 stays before the loader leaves */
+  var MELT = 340;        /* ms each change of number takes to melt */
+  var GAP = 20;          /* ms between one melt ending and the next starting */
+  var STEP = 0.75;       /* how much of the way to the real percent each change goes */
+  var MIN_STEP = 20;     /* smallest jump between numbers, so it never crawls one by one */
+  var MAX_STEP = 60;     /* largest jump, so even a page that loads at once counts up through a few numbers */
+  var HOLD = 160;        /* ms 100 stays before the loader leaves */
   var OUT_MS = 700;      /* ms the name takes to drop away and the sand to fade */
   var FONT_WAIT = 1500;  /* ms at most to wait for Instrument Serif before showing the number anyway */
   var EASE = 'cubic-bezier(.65, 0, .35, 1)';
