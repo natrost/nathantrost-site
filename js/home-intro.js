@@ -34,6 +34,8 @@
   var BIG_SHRINK = 1600;   /* ms the shrink into place takes */
   var BIG_SPEED = 150;     /* how many times their usual on-screen pace they race at while big */
   var BIG_COAST = 1400;    /* ms after the shrink that they keep coasting down to their usual pace, so the motion never stops and restarts */
+  var BLUR_MAX = 18;       /* px of sideways motion blur on screen at full race speed; it fades with the speed */
+  var BLUR_STEPS = [1.5, 3, 5, 8, 12, 17, 22, 28, 36];  /* the blur strengths it steps between, in the carousels' own px (fixed filters, which every browser redraws smoothly) */
   var TEXT_GAP = 280;      /* ms at least between the "Hi" line, the headline and the divider starting, when the carousels uncover them at once */
   var BIG_WAIT = 2000;     /* ms at most to wait for the sharper images before starting anyway */
   var LOADER_WAIT = 6000;  /* the same, when the loader is up (js/home-loader.js), since it shows how far along they are */
@@ -179,6 +181,22 @@
     /* the race, measured on screen: full speed while big, then one long, smooth slow-down through the shrink and past it, to the usual pace.
        The carousels' own speed is divided by how big they are showing, so shrinking does not slow them down by itself */
     var natW = r.width, slow = BIG_SHRINK + BIG_COAST;
+    /* the motion blur: a sideways-only blur on each carousel's strip, picked from a few fixed strengths to match the on-screen speed */
+    var tracks = Array.prototype.slice.call(shots.querySelectorAll('.splide__track')), blurAt = -1;
+    var fx = document.createElement('div');
+    fx.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true">' + BLUR_STEPS.map(function (b, i) {
+      return '<filter id="nt-mb-' + i + '" x="-5%" y="0" width="110%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="' + b + ' 0"/></filter>';
+    }).join('') + '</svg>';
+    document.body.appendChild(fx.firstChild);
+    var fxSvg = document.body.lastChild;
+    function motionBlur(m, shown) {
+      var want = BLUR_MAX * (m - 1) / (BIG_SPEED - 1) / shown, at = -1;
+      for (var i = 0; i < BLUR_STEPS.length; i++) if (want >= BLUR_STEPS[i]) at = i;
+      if (at === blurAt) return;
+      blurAt = at;
+      tracks.forEach(function (t) { t.style.filter = at < 0 ? '' : 'url(#nt-mb-' + at + ')'; });
+      if (at < 0 && fxSvg.parentNode && performance.now() - t0 > BIG_HOLD) { fxSvg.remove(); }
+    }
     /* the text starts as the carousels' top edge passes below each piece (or once they have landed, whichever comes first) */
     var marks = [
       { el: hi, fn: type },
@@ -190,6 +208,7 @@
       var now = performance.now() - t0, b = shots.getBoundingClientRect(), shown = Math.max(1, b.width / natW);
       var g = Math.max(0, Math.min(1, (now - BIG_HOLD) / slow)), m = 1 + (BIG_SPEED - 1) * (1 - g) * (1 - g);
       roots.forEach(function (rt) { rt._ntBoost = m / shown; });
+      motionBlur(m, shown);
       if (next < marks.length && now - lastAt >= TEXT_GAP && (b.top > marks[next].y || now > BIG_HOLD + BIG_SHRINK)) {
         lastAt = now; marks[next++].fn();
       }
