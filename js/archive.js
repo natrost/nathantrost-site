@@ -205,6 +205,7 @@
           el.type = 'button'; el.setAttribute('aria-label', t.im.alt || projects[t.im.p].text.textContent.trim().slice(0, 60));
           el.style.width = w + 'px'; el.style.height = Math.round(t.h) + 'px';
           el.dataset.p = t.im.p;
+          el.dataset.name = projects[t.im.p].name;   /* the name that rides above the pointer on rollover (js/carousel-label.js) */
           img.alt = ''; img.draggable = false;
           var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, shown: null, asked: false };
           el._tile = tile; tiles.push(tile);

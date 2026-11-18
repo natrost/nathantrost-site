@@ -1,13 +1,14 @@
-/* Homepage carousels: hovering an image shows the project's name just above the pointer, in the main nav's type, inverted against whatever is behind it
+/* Homepage carousels and the Archive wall: hovering an image shows the project's name just above the pointer, in the main nav's type, inverted against whatever is behind it
    (mix-blend-mode: difference), so it reads on light and dark images. The name is read from the project the image links to on the page
-   (In the Stands' title, or the additional project's eyebrow), so it follows whatever is written in Webflow. Only with a real mouse or trackpad */
+   (In the Stands' title, or the additional project's eyebrow), or on the Archive from the tile's data-name (set by js/archive.js from the Archives collection),
+   so it follows whatever is written in Webflow. On the Archive it shows only on the wall, not once an image is open. Only with a real mouse or trackpad */
 (function () {
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var GAP = 14;        /* px between the bottom of the name and the pointer's tip */
   var FOLLOW = 0.3;    /* how quickly it catches up with the pointer each frame (1 = glued to it) */
-  var SLIDE = '.splide__slide a[href^="#"]';
+  var SLIDE = '.splide__slide a[href^="#"]', TILE = '.nt-wall:not(.is-open) .nt-tile[data-name]', AREA = '.splide, .nt-wall';
 
   var css = document.createElement('style');
   css.textContent = '.nt-carousel-label{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;color:#fff;mix-blend-mode:difference;' +
@@ -31,7 +32,10 @@
     return (names[h] = n ? n.textContent.replace(/\s+/g, ' ').trim() : '');
   }
   function word(el) {
-    var a = el && el.closest && el.closest(SLIDE);
+    if (!el || !el.closest) return '';
+    var t = el.closest(TILE);
+    if (t) return t.getAttribute('data-name');
+    var a = el.closest(SLIDE);
     return a ? nameOf(a) : '';
   }
 
@@ -54,7 +58,7 @@
     } else tag.classList.remove('is-on');
     shown = w;
   }
-  /* every frame while the pointer is over a carousel: the carousel drifts under a still pointer, so the image beneath it is checked again */
+  /* every frame while the pointer is over a carousel or the wall: they move under a still pointer, so the image beneath it is checked again */
   var over = false;
   function frame() {
     raf = 0;
@@ -71,11 +75,11 @@
   document.addEventListener('pointermove', function (e) {
     if (e.pointerType && e.pointerType !== 'mouse') { over = false; set(''); return; }
     mx = e.clientX; my = e.clientY;
-    over = !!(e.target.closest && e.target.closest('.splide'));
+    over = !!(e.target.closest && e.target.closest(AREA));
     if (!over) set('');
     wake();
   }, { passive: true });
-  document.addEventListener('scroll', function () { if (mx > -100) { over = !!document.elementFromPoint(mx, my)?.closest('.splide'); if (!over) set(''); wake(); } }, { passive: true, capture: true });
+  document.addEventListener('scroll', function () { if (mx > -100) { var el = document.elementFromPoint(mx, my); over = !!(el && el.closest(AREA)); if (!over) set(''); wake(); } }, { passive: true, capture: true });
   document.documentElement.addEventListener('mouseleave', function () { over = false; set(''); });
   addEventListener('blur', function () { over = false; set(''); });
 })();
