@@ -36,6 +36,7 @@
   var BIG_COAST = 1400;    /* ms after the shrink that they keep coasting down to their usual pace, so the motion never stops and restarts */
   var TEXT_GAP = 280;      /* ms at least between the "Hi" line, the headline and the divider starting, when the carousels uncover them at once */
   var BIG_WAIT = 2000;     /* ms at most to wait for the sharper images before starting anyway */
+  var LOADER_WAIT = 6000;  /* the same, when the loader is up (js/home-loader.js), since it shows how far along they are */
   var BIG_EASE = 'cubic-bezier(.65, 0, .35, 1)';
   var ITEM_EASE = 'cubic-bezier(.16, 1, .3, 1)';
 
@@ -151,7 +152,8 @@
   function bigReady(cb) {
     /* the images on screen at three times the size need sharper files: the browser is told how wide they will show, and the intro waits for them (or BIG_WAIT) */
     var imgs = Array.prototype.slice.call(shots.querySelectorAll('.splide__slide img'), 0, 12), left = imgs.length, done = false;
-    function one() { if (--left <= 0) go(); }
+    var total = left, loader = window.__ntLoader;
+    function one() { left--; if (loader) loader.progress((total - left) / total); if (left <= 0) go(); }
     function go() { if (!done) { done = true; cb(); } }
     imgs.forEach(function (img) {
       if (img.loading === 'lazy') img.loading = 'eager';
@@ -160,7 +162,7 @@
       img.addEventListener('load', one, { once: true }); img.addEventListener('error', one, { once: true });
     });
     if (!imgs.length) go();
-    setTimeout(go, BIG_WAIT);
+    setTimeout(go, loader ? LOADER_WAIT : BIG_WAIT);
   }
   function bigStart() {
     shots.style.transform = 'none';
@@ -216,7 +218,7 @@
   }
   /* starts once the fonts are in (so the letters are measured in the right typeface), or after a second regardless */
   var started = false;
-  function go() { if (!started) { started = true; if (BIG && shots) bigReady(run); else run(); } }
+  function go() { if (!started) { started = true; if (BIG && shots) bigReady(function () { if (window.__ntLoader) window.__ntLoader.ready(run); else run(); }); else run(); } }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(go);
   setTimeout(go, 1000);
 })();
