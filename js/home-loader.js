@@ -2,10 +2,16 @@
    put when the loader leaves; The Work and About Me wait), the percent loaded in large Instrument Serif in the middle, and the big "Nathan Trost"
    along the bottom, running off both sides. Each new percent melts into the next, the same melt as the additional projects and personal facts.
    When it reaches 100 the number melts away, the name drops off the bottom and the sand fades, uncovering the carousels as they race in.
-   For now it runs only with ?intro=big in the address (it also turns that intro on). It loads in the homepage head, before the page itself */
+   It plays with the same rules as the first-visit intro it opens: only when the homepage is the first page of a visit, arriving from outside the site,
+   once per visit (the browser tab's session), and never with reduced motion. ?intro=big in the address plays it every time, to try it out.
+   It loads in the homepage head, before the page itself, and turns the big-carousel intro on (js/home-intro.js) */
 (function () {
   try {
-    if (location.pathname !== '/' || !/[?&]intro=big\b/.test(location.search) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (location.pathname !== '/' || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+    if (!/[?&]intro=big\b/.test(location.search)) {
+      if (sessionStorage.getItem('nt-intro')) return;
+      if (document.referrer && new URL(document.referrer).hostname === location.hostname) return;
+    }
   } catch (e) { return; }
 
   var MELT = 520;        /* ms each change of number takes to melt */

@@ -5,7 +5,7 @@
      3. the divider line draws in from left to right
      4. the three details (Based in, Available, email) rise in as the line reaches each one
      5. the carousel's slides glitch in one at a time, each with a slight rise
-   The big-carousel version (html.nt-intro-big, set by the homepage head; for now only with ?intro=big in the address) starts instead with the carousels
+   The big-carousel version (html.nt-intro-big, set by the homepage loader, js/home-loader.js, on the same first visits) starts instead with the carousels
    three times their size in the middle of the screen, racing past, then shrinking down into place without letting up, and coasting down to their usual
    pace once they are in place. Steps 1 to 4 play as the shrinking carousels uncover each piece, so the text is seen coming in.
    Every other visit to the homepage gets the usual reveals. The site's reveals hold these pieces back until they are let go here (js/site-early.js) */
