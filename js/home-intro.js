@@ -149,15 +149,19 @@
      then they shrink back into their place in the page while the rest of the intro plays */
   var shots = wrap.querySelector('.scrolling_screenshots');
   var roots = shots ? Array.prototype.slice.call(shots.querySelectorAll('.splide')) : [];
+  var PHONE_W = 640;      /* px: at or below this width the intro waits for fewer images */
+  var BIG_IMGS = 12;       /* images the intro waits for on bigger screens */
+  var PHONE_IMGS = 6;      /* and on phones, where only a slide or two of each row shows at three times the size */
   function bigReady(cb) {
-    /* the images on screen at three times the size need sharper files: the browser is told how wide they will show, and the intro waits for them (or BIG_WAIT) */
-    var imgs = Array.prototype.slice.call(shots.querySelectorAll('.splide__slide img'), 0, 12), left = imgs.length, done = false;
+    /* the lean version: the carousels use the same image files the page always loads (no sharper copies for the big moment, which would add about
+       a megabyte), and the intro waits for the first of them to arrive */
+    var phone = innerWidth <= PHONE_W;
+    var imgs = Array.prototype.slice.call(shots.querySelectorAll('.splide__slide img'), 0, phone ? PHONE_IMGS : BIG_IMGS), left = imgs.length, done = false;
     var total = left, loader = window.__ntLoader;
     function one() { left--; if (loader) loader.progress((total - left) / total); if (left <= 0) go(); }
     function go() { if (!done) { done = true; cb(); } }
     imgs.forEach(function (img) {
       if (img.loading === 'lazy') img.loading = 'eager';
-      if (img.srcset) img.sizes = innerWidth <= 640 ? '150vw' : '75vw';
       if (img.complete && img.naturalWidth) { one(); return; }
       img.addEventListener('load', one, { once: true }); img.addEventListener('error', one, { once: true });
     });

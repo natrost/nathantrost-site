@@ -68,10 +68,11 @@
   })();
 
   /* the site's melt is tuned for headline-sized text (about 48px); the blur grows with the number so it melts just as much at this size */
-  var MELT_REF = 48;
+  var MELT_REF = 48, MELT_CAP = 3;
   function melt(text, done) {
     var old = cur, n = document.createElement('span'), t0 = performance.now();
-    var S = Math.max(1, (parseFloat(getComputedStyle(num).fontSize) || MELT_REF) / MELT_REF);
+    /* capped, since very large blurs are slow to draw on phones (Safari especially), and a melt that cannot keep up just jumps to its end */
+    var S = Math.max(1, Math.min(MELT_CAP, (parseFloat(getComputedStyle(num).fontSize) || MELT_REF) / MELT_REF));
     n.textContent = text; num.appendChild(n); cur = n;
     (function step(now) {
       var f = Math.max(0, Math.min(1, (now - t0) / MELT)), k = Math.sin(Math.PI * f), g = 1 - f;
