@@ -8,7 +8,7 @@
     if (location.pathname !== '/' || !/[?&]intro=big\b/.test(location.search) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   } catch (e) { return; }
 
-  var MELT = 420;        /* ms each change of number takes to melt */
+  var MELT = 520;        /* ms each change of number takes to melt */
   var GAP = 40;          /* ms between one melt ending and the next starting */
   var STEP = 0.6;        /* how much of the way to the real percent each change goes */
   var MIN_STEP = 12;     /* smallest jump between numbers, so it never crawls one by one */
@@ -67,15 +67,18 @@
     requestAnimationFrame(font);
   })();
 
+  /* the site's melt is tuned for headline-sized text (about 48px); the blur grows with the number so it melts just as much at this size */
+  var MELT_REF = 48;
   function melt(text, done) {
     var old = cur, n = document.createElement('span'), t0 = performance.now();
+    var S = Math.max(1, (parseFloat(getComputedStyle(num).fontSize) || MELT_REF) / MELT_REF);
     n.textContent = text; num.appendChild(n); cur = n;
     (function step(now) {
       var f = Math.max(0, Math.min(1, (now - t0) / MELT)), k = Math.sin(Math.PI * f), g = 1 - f;
       matrix.setAttribute('values', '1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 ' + (1 + k * 10).toFixed(2) + ' ' + (-k * 4).toFixed(2));
-      num.style.filter = 'url(#' + gooId + ') blur(' + (1.4 * k).toFixed(2) + 'px)';
-      n.style.filter = 'blur(' + Math.min(3 / Math.max(f, 0.001) - 3, 30).toFixed(2) + 'px)'; n.style.opacity = Math.pow(f, 0.4);
-      old.style.filter = 'blur(' + Math.min(3 / Math.max(g, 0.001) - 3, 30).toFixed(2) + 'px)'; old.style.opacity = Math.pow(g, 0.4);
+      num.style.filter = 'url(#' + gooId + ') blur(' + (1.4 * k * S).toFixed(2) + 'px)';
+      n.style.filter = 'blur(' + (S * Math.min(3 / Math.max(f, 0.001) - 3, 30)).toFixed(2) + 'px)'; n.style.opacity = Math.pow(f, 0.4);
+      old.style.filter = 'blur(' + (S * Math.min(3 / Math.max(g, 0.001) - 3, 30)).toFixed(2) + 'px)'; old.style.opacity = Math.pow(g, 0.4);
       if (f < 1) { requestAnimationFrame(step); return; }
       old.remove(); n.style.filter = ''; n.style.opacity = ''; num.style.filter = '';
       if (done) done();
