@@ -497,7 +497,7 @@ html.nt-wall-on body .nt-wall-controls > .nt-wall-arrow.is-next { order: 4; }
 html.nt-wall-on body .nt-wall-controls > .nt-wall-skip.is-next { order: 5; }
 html.nt-wall-on body .nt-wall.has-many .nt-wall-controls::after { content: "IMAGES"; order: 3; flex: none; margin: 0 4px; white-space: nowrap; pointer-events: none; font-family: trade-gothic-next-compressed, trade-gothic-next-condensed, sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; letter-spacing: .5px; text-transform: uppercase; color: #000; }
 
-/* case study agency links (Piston, Magnetic Creative): bright blue, and rolling over grows a solid 3px underline in from the left, like the footer links */
+/* case study agency links (Piston, Magnetic Creative): bright blue, and rolling over grows a solid 3px underline in from the left, like the footer links, 3px below the text */
 html body a.detail_text.agency { position: relative; color: var(--brighter_blue, #18d6ff); text-decoration: none; }
-html body a.detail_text.agency::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: currentColor; pointer-events: none; -webkit-clip-path: inset(0 100% 0 0); clip-path: inset(0 100% 0 0); transition: -webkit-clip-path .35s cubic-bezier(.65, 0, .35, 1), clip-path .35s cubic-bezier(.65, 0, .35, 1); }
+html body a.detail_text.agency::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + .625em); height: 3px; background: currentColor; pointer-events: none; -webkit-clip-path: inset(0 100% 0 0); clip-path: inset(0 100% 0 0); transition: -webkit-clip-path .35s cubic-bezier(.65, 0, .35, 1), clip-path .35s cubic-bezier(.65, 0, .35, 1); }
 html body a.detail_text.agency:hover::after, html body a.detail_text.agency:focus-visible::after { -webkit-clip-path: inset(0); clip-path: inset(0); }
