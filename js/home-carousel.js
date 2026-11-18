@@ -54,7 +54,8 @@
         } else {
           momentum = 0;
         }
-        if (!reduce) x += dir * speed * dt;
+        /* root._ntBoost speeds the drift up for a moment (the homepage intro's fast run-through); 1 is the usual pace */
+        if (!reduce) x += dir * speed * dt * (root._ntBoost || 1);
       }
       x = wrap(x);
       list.style.transform = 'translate3d(' + x + 'px,0,0)';

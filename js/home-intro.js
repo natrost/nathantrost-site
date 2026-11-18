@@ -5,6 +5,8 @@
      3. the divider line draws in from left to right
      4. the three details (Based in, Available, email) rise in as the line reaches each one
      5. the carousel's slides glitch in one at a time, each with a slight rise
+   The big-carousel version (html.nt-intro-big, set by the homepage head; for now only with ?intro=big in the address) starts instead with the carousels
+   three times their size in the middle of the screen, racing past, then shrinking down into place while steps 1 to 4 play.
    Every other visit to the homepage gets the usual reveals. The site's reveals hold these pieces back until they are let go here (js/site-early.js) */
 (function () {
   var root = document.documentElement;
@@ -24,6 +26,15 @@
   var SLIDE_MS = 700;    /* ms each slide takes to rise */
   var RISE = 18;         /* px each slide rises */
   var LINE_EASE = 'cubic-bezier(.65, 0, .35, 1)';
+  /* the big-carousel version */
+  var BIG = root.classList.contains('nt-intro-big');
+  var BIG_SCALE = 3;       /* how much bigger the carousels start */
+  var BIG_HOLD = 900;      /* ms they race past at full size before shrinking */
+  var BIG_SHRINK = 1600;   /* ms the shrink into place takes */
+  var BIG_BOOST = 70;      /* how many times their usual pace they start at; it eases back to the usual pace by the end of the shrink */
+  var BIG_WAIT = 2000;     /* ms at most to wait for the sharper images before starting anyway */
+  var BIG_EASE = 'cubic-bezier(.65, 0, .35, 1)';
+  if (BIG) { TYPE_AT = BIG_HOLD - 100; HEAD_AT = BIG_HOLD + 250; LINE_AT = BIG_HOLD + 800; }   /* the text plays while the carousels shrink */
   var ITEM_EASE = 'cubic-bezier(.16, 1, .3, 1)';
 
   var wrap = document.querySelector('.home_feature_wrapper');
@@ -131,8 +142,58 @@
     items.forEach(function (it) { it.classList.remove('nt-intro-in'); });
   }
 
+  /* the big-carousel version: the carousels are scaled up around the middle of the screen, every slide is let go at once, and they race past;
+     then they shrink back into their place in the page while the rest of the intro plays */
+  var shots = wrap.querySelector('.scrolling_screenshots');
+  var roots = shots ? Array.prototype.slice.call(shots.querySelectorAll('.splide')) : [];
+  function bigReady(cb) {
+    /* the images on screen at three times the size need sharper files: the browser is told how wide they will show, and the intro waits for them (or BIG_WAIT) */
+    var imgs = Array.prototype.slice.call(shots.querySelectorAll('.splide__slide img'), 0, 12), left = imgs.length, done = false;
+    function one() { if (--left <= 0) go(); }
+    function go() { if (!done) { done = true; cb(); } }
+    imgs.forEach(function (img) {
+      if (img.loading === 'lazy') img.loading = 'eager';
+      if (img.srcset) img.sizes = innerWidth <= 640 ? '150vw' : '75vw';
+      if (img.complete && img.naturalWidth) { one(); return; }
+      img.addEventListener('load', one, { once: true }); img.addEventListener('error', one, { once: true });
+    });
+    if (!imgs.length) go();
+    setTimeout(go, BIG_WAIT);
+  }
+  function bigStart() {
+    shots.style.transform = 'none';
+    var r = shots.getBoundingClientRect();
+    var dx = innerWidth / 2 - (r.left + r.width / 2), dy = innerHeight / 2 - (r.top + r.height / 2);
+    var big = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px) scale(' + BIG_SCALE + ')';
+    shots.style.transformOrigin = '50% 50%';
+    shots.style.transform = big;
+    Array.prototype.forEach.call(shots.querySelectorAll('.splide__slide.nt-hold'), function (s) { window.__ntRelease && window.__ntRelease(s); });
+    /* the race: full speed while big, easing back to the usual pace as they shrink */
+    var end = BIG_HOLD + BIG_SHRINK;
+    (function boost() {
+      var f = Math.min(1, (performance.now() - t0) / end), k = 1 + (BIG_BOOST - 1) * (1 - f) * (1 - f) * (1 - f);
+      roots.forEach(function (rt) { rt._ntBoost = k; });
+      if (f < 1) requestAnimationFrame(boost); else roots.forEach(function (rt) { rt._ntBoost = 1; });
+    })();
+    at(BIG_HOLD, function () {
+      var a = shots.animate ? shots.animate([{ transform: big }, { transform: 'none' }], { duration: BIG_SHRINK, easing: BIG_EASE }) : null;
+      shots.style.transform = '';
+      function settle() { shots.style.transformOrigin = ''; root.classList.remove('nt-intro-big'); }
+      if (a) a.onfinish = settle; else settle();
+    });
+  }
+
   function run() {
     t0 = performance.now();
+    if (BIG && shots) {
+      bigStart();
+      at(TYPE_AT, type);
+      at(HEAD_AT, function () { window.__ntRelease && window.__ntRelease(head); });
+      at(LINE_AT, draw);
+      at(BIG_HOLD + BIG_SHRINK + 300, finish);
+      at(TYPE_AT + 2000, function () { window.__ntRelease && window.__ntRelease(hi); });
+      return;
+    }
     at(TYPE_AT, type);
     at(HEAD_AT, function () { window.__ntRelease && window.__ntRelease(head); });
     at(LINE_AT, draw);
@@ -145,7 +206,7 @@
   }
   /* starts once the fonts are in (so the letters are measured in the right typeface), or after a second regardless */
   var started = false;
-  function go() { if (!started) { started = true; run(); } }
+  function go() { if (!started) { started = true; if (BIG && shots) bigReady(run); else run(); } }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(go);
   setTimeout(go, 1000);
 })();
