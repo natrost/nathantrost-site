@@ -47,14 +47,16 @@
       list.className = 'nt-pj-list';
       list.id = 'nt-pj-list';
       list.setAttribute('aria-label', 'Projects');
+      /* the project you're on is already named in the toggle at the top, so the list only offers the others */
+      var rows = 0;
       PROJECTS.forEach(function (p) {
+        if (p === here) return;
         var a = document.createElement('a');
         a.href = p.path;
         a.textContent = p.name;
-        if (p === here) { a.className = 'is-current'; a.setAttribute('aria-current', 'page'); }
-        list.appendChild(a);
+        list.appendChild(a); rows++;
       });
-      box.style.setProperty('--nt-pj-h', (44 + 40 * PROJECTS.length) + 'px');
+      box.style.setProperty('--nt-pj-h', (44 + 40 * rows) + 'px');
       box.appendChild(toggle);
       box.appendChild(list);
       menu.appendChild(box);
