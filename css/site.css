@@ -508,3 +508,11 @@ html body a.detail_text.agency:hover::after, html body a.detail_text.agency:focu
 
 /* case studies: no X. Visitors arrive from the carousels, the project buttons, the dropdown and Next and Prev, so there is no one place to close back to; the dropdown takes the X's room in the bar */
 html body .nt-pj > a.close_btn { display: none !important; }
+
+/* About Qualcomm photo: fixed so it reveals as the page scrolls, but sized and placed to frame exactly as it did when it scrolled (cover inside the right 40% column, 80% across). A fixed background is sized to the window, so without this it covered the whole screen and the right side was cropped off. Below 992px the photo sits under the text and scrolls normally (phones ignore fixed backgrounds anyway). */
+@media (min-width: 992px) {
+  html body .qualcomm_wrapper .div-block-86 { background-attachment: fixed; background-size: max(40vw, 133.34vh) auto; background-position: calc(92vw - .8 * max(40vw, 133.34vh)) 50%; }
+}
+@media (max-width: 991px) {
+  html body .qualcomm_wrapper .div-block-86 { background-attachment: scroll; }
+}
