@@ -20,7 +20,7 @@
   tag.className = 'nt-carousel-label'; tag.setAttribute('aria-hidden', 'true');
 
   /* the case studies, by address; a new one not listed here shows its address as words (/work/new-project reads NEW PROJECT) */
-  var WORK = { 'in-the-stands': 'In the Stands', 'in-the-stands-shop': 'In the Stands Shop', 'qualcomm-game-studios': 'Qualcomm Game Studios', 'island-way': 'Island Way', 'nexgrill': 'Nexgrill', 'rubios': 'Rubios' };
+  var WORK = { 'in-the-stands': 'In the Stands', 'in-the-stands-shop': 'In the Stands Shop', 'qualcomm-game-studios': 'Qualcomm Game Studios', 'island-way': 'Island Way', 'nexgrill': 'Nexgrill', 'rubios': 'Rubio\'s' };
   var names = {};
   function nameOf(a) {
     var h = a.getAttribute('href') || '';
