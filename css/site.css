@@ -290,7 +290,7 @@ html.nt-case body .overview_text_wrapper { background-image: none !important; }
 .nav_the_work, .nav_the_work:hover, .nav_the_work *,
 .nav_about_me, .nav_about_me:hover, .nav_about_me *,
 .main_nav_links, .main_nav_links:hover { text-decoration: none !important; }
-/* rolling over a label grows a solid 3px underline under its words, like the footer links, blended with them: The Work's in from the left, About Me's in from the right, each from its own edge of the page */
+/* rolling over a label grows a solid 3px underline under its words, like the footer links, blended with them: The Work's in from the left, About Me's in from the right, each from its own edge of the page. Rolling off, it carries on the same way and shrinks away toward the far end (the line's anchor swaps ends at once, and only its length animates) */
 .nav_the_work .main_nav_links::after, .nav_about_me .main_nav_links::after {
   content: "";
   position: absolute;
@@ -300,21 +300,22 @@ html.nt-case body .overview_text_wrapper { background-image: none !important; }
   height: 3px;
   background-color: currentColor;
   pointer-events: none;
-  -webkit-clip-path: inset(0 100% 0 0);
-  clip-path: inset(0 100% 0 0);
-  transition: -webkit-clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1), clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
-.nav_about_me .main_nav_links::after { -webkit-clip-path: inset(0 0 0 100%); clip-path: inset(0 0 0 100%); }
+.nav_about_me .main_nav_links::after { transform-origin: left center; }
 .nav_the_work:hover .main_nav_links::after, .nav_about_me:hover .main_nav_links::after,
 .nav_the_work:focus-visible .main_nav_links::after, .nav_about_me:focus-visible .main_nav_links::after {
-  -webkit-clip-path: inset(0 0 0 0);
-  clip-path: inset(0 0 0 0);
+  transform: none;
+  transform-origin: left center;
 }
+.nav_about_me:hover .main_nav_links::after, .nav_about_me:focus-visible .main_nav_links::after { transform-origin: right center; }
 @media (prefers-reduced-motion: reduce) {
   .nav_the_work .main_nav_links::after, .nav_about_me .main_nav_links::after { transition: none; }
 }
 
-/* footer text links: a solid 3px underline grows in from the left on rollover, in the link's own color, 3px below the text. The logo and LinkedIn icon have no text, so they are left out; on the email link it sits under the address, not its copy icon.
+/* footer text links: a solid 3px underline grows in from the left on rollover and shrinks away to the right on rolling off, in the link's own color, 3px below the text. The logo and LinkedIn icon have no text, so they are left out; on the email link it sits under the address, not its copy icon.
    Webflow sets a permanent underline on the block holding the page links, which would sit there all the time, so that is turned off.
    The text is centered in its line, and its baseline is .375em below that center at both text sizes and on phones, so the line is placed from the center */
 .projectfooter_logo .div-block-155 { text-decoration: none !important; }
@@ -330,14 +331,14 @@ html.nt-case body .overview_text_wrapper { background-image: none !important; }
   height: 3px;
   background-color: currentColor;
   pointer-events: none;
-  -webkit-clip-path: inset(0 100% 0 0);
-  clip-path: inset(0 100% 0 0);
-  transition: -webkit-clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1), clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
 .projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer):hover::after,
 .fs-copyclip_button_footer:hover .alt_nav_items-copy::after {
-  -webkit-clip-path: inset(0 0 0 0);
-  clip-path: inset(0 0 0 0);
+  transform: none;
+  transform-origin: left center;
 }
 @media (prefers-reduced-motion: reduce) {
   .projectfooter_logo a:not(.nt_logo, .linked_footer, .fs-copyclip_button_footer)::after,
@@ -381,13 +382,16 @@ html.nt-work body .project_nav::after { font-size: 14px; letter-spacing: .5px; }
 html.nt-work body .project_nav.prev::after { content: "PREV PROJECT"; }
 html.nt-work body .project_nav.next::after { content: "NEXT PROJECT"; }
 html.nt-work body .project_links:not(.top) .smaller_project_title { position: relative; display: block; margin: 0; padding: 0; background: none; font-family: trade-gothic-next-condensed, sans-serif; font-size: 1.25rem; font-weight: 700; line-height: 1.2; letter-spacing: normal; color: #000; }
-html.nt-work body .project_links:not(.top) .smaller_project_title::after, html.nt-work body .smaller_project_title.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: currentColor; clip-path: inset(0 100% 0 0); transition: clip-path .35s cubic-bezier(.65, 0, .35, 1); }
-html.nt-work body .project_links.next .smaller_project_title::after { clip-path: inset(0 0 0 100%); }
+html.nt-work body .project_links:not(.top) .smaller_project_title::after, html.nt-work body .smaller_project_title.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: currentColor; transform: scaleX(0); transform-origin: right center; transition: transform .35s cubic-bezier(.65, 0, .35, 1); }
+/* Next's grows in from the right instead, so it shrinks away to the left */
+html.nt-work body .project_links.next .smaller_project_title::after { transform-origin: left center; }
 @media (hover: hover) {
-  html.nt-work body .project_links:hover .smaller_project_title::after { clip-path: inset(0); }
+  html.nt-work body .project_links:hover .smaller_project_title::after { transform: none; transform-origin: left center; }
+  html.nt-work body .project_links.next:hover .smaller_project_title::after { transform-origin: right center; }
 }
 html.nt-work body .project_links:focus-visible { outline: 0; }
-html.nt-work body .project_links:focus-visible .smaller_project_title::after { clip-path: inset(0); }
+html.nt-work body .project_links:focus-visible .smaller_project_title::after { transform: none; transform-origin: left center; }
+html.nt-work body .project_links.next:focus-visible .smaller_project_title::after { transform-origin: right center; }
 /* Top floats at the bottom center of the screen, but only once the hero is scrolled past, fading in and out (the script below). It has no height of its own and sits just before the Next/Prev bar, so at the end of the page it stops 2rem above that bar. The link is lifted 2rem inside the holder for that gap, and the holder's sticky offset takes the 2rem back so it still floats 28px from the bottom of the screen */
 .nt-pj-top { position: sticky; bottom: calc(28px - 2rem); z-index: 200; height: 0; margin: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
 .nt-pj-top.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
@@ -395,8 +399,8 @@ html.nt-work body .nt-pj-top .project_links.top { position: absolute; left: 50%;
 /* Top has no pill: white letters in difference blend, so they show up dark on the sand and light over images and dark sections */
 .nt-pj-top { mix-blend-mode: difference; }
 html.nt-work body .smaller_project_title.top { position: relative; display: block; height: auto; margin: 0; padding: 0 0 2px; background: none; pointer-events: auto; font-family: trade-gothic-next-condensed, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: .5px; text-transform: uppercase; color: #fff; transition: none; }
-@media (hover: hover) { html.nt-work body .project_links.top:hover .smaller_project_title.top::after { clip-path: inset(0); } }
-html.nt-work body .project_links.top:focus-visible .smaller_project_title.top::after { clip-path: inset(0); }
+@media (hover: hover) { html.nt-work body .project_links.top:hover .smaller_project_title.top::after { transform: none; transform-origin: left center; } }
+html.nt-work body .project_links.top:focus-visible .smaller_project_title.top::after { transform: none; transform-origin: left center; }
 html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-events: none; }
 @media (max-width: 767px) {
   html.nt-work body .project_links_wrapper { padding: 36px 24px 12px; }
@@ -497,10 +501,10 @@ html.nt-wall-on body .nt-wall-controls > .nt-wall-arrow.is-next { order: 4; }
 html.nt-wall-on body .nt-wall-controls > .nt-wall-skip.is-next { order: 5; }
 html.nt-wall-on body .nt-wall.has-many .nt-wall-controls::after { content: "IMAGES"; order: 3; flex: none; margin: 0 4px; white-space: nowrap; pointer-events: none; font-family: trade-gothic-next-compressed, trade-gothic-next-condensed, sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; letter-spacing: .5px; text-transform: uppercase; color: #000; }
 
-/* case study agency links (Piston, Magnetic Creative): bright blue, and rolling over grows a solid 3px underline in from the left, like the footer links, 3px below the text */
+/* case study agency links (Piston, Magnetic Creative): bright blue, and rolling over grows a solid 3px underline in from the left and rolling off shrinks it away to the right, like the footer links, 3px below the text */
 html body a.detail_text.agency { position: relative; color: var(--brighter_blue, #18d6ff); text-decoration: none; }
-html body a.detail_text.agency::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + .625em); height: 3px; background: currentColor; pointer-events: none; -webkit-clip-path: inset(0 100% 0 0); clip-path: inset(0 100% 0 0); transition: -webkit-clip-path .35s cubic-bezier(.65, 0, .35, 1), clip-path .35s cubic-bezier(.65, 0, .35, 1); }
-html body a.detail_text.agency:hover::after, html body a.detail_text.agency:focus-visible::after { -webkit-clip-path: inset(0); clip-path: inset(0); }
+html body a.detail_text.agency::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + .625em); height: 3px; background: currentColor; pointer-events: none; transform: scaleX(0); transform-origin: right center; transition: transform .35s cubic-bezier(.65, 0, .35, 1); }
+html body a.detail_text.agency:hover::after, html body a.detail_text.agency:focus-visible::after { transform: none; transform-origin: left center; }
 
 /* case studies: no X. Visitors arrive from the carousels, the project buttons, the dropdown and Next and Prev, so there is no one place to close back to; the dropdown takes the X's room in the bar */
 html body .nt-pj > a.close_btn { display: none !important; }
