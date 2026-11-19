@@ -516,3 +516,9 @@ html body .nt-pj > a.close_btn { display: none !important; }
 @media (max-width: 991px) {
   html body .qualcomm_wrapper .div-block-86 { background-attachment: scroll; }
 }
+
+/* Headline typeface: Wayfinder CF Thin (Adobe Fonts) in place of Instrument Serif everywhere Webflow sets Instrument, plus the homepage loader's number. To go back, delete this block */
+html body h1, html body h3, html body h4, html body .home_feature_title, html body .work_title, html body .dot_wrapper, html body .heading-5, html body .section_title.work_detail, html body .section_title.how_i, html body .title_text, html body .work_samples_text.fav, html body .about_feature_text, html body .outcome_title {
+  font-family: "wayfinder-cf", serif; font-weight: 100; font-style: normal;
+}
+html body .nt-loader-num { font-family: "wayfinder-cf", serif !important; font-weight: 100 !important; }
