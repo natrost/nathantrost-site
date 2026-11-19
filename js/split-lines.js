@@ -38,18 +38,47 @@
   var pending = 0;
   function checkSoon() { clearTimeout(pending); pending = setTimeout(check, 60); }
 
+  /* SplitText turns line breaks into line ends but drops the blank lines that two or more in a row make, so paragraphs ran together.
+     Before splitting, note how each paragraph after such a run begins and how many blank lines came before it; after each split the
+     line that begins that way gets the same gap back as a top margin */
+  function norm(s) { return s.replace(/\s+/g, ' ').trim(); }
+  function paragraphs(el) {
+    var out = [], run = 0, walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT), n, grab = null;
+    while ((n = walk.nextNode())) {
+      if (n.nodeName === 'BR') { if (grab) { out.push(grab); grab = null; } run++; continue; }
+      if (n.nodeType !== 3 || !norm(n.data)) continue;
+      if (run > 1 && !grab) grab = { start: '', gap: run - 1 };
+      if (grab) { grab.start = norm(grab.start + ' ' + n.data); if (grab.start.length >= 24) { out.push(grab); grab = null; } }
+      run = 0;
+    }
+    if (grab) out.push(grab);
+    return out;
+  }
+  function addGaps(el, lines, paras) {
+    var cs = getComputedStyle(el), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2, from = 0;
+    lines.forEach(function (l) { l.style.marginTop = ''; });
+    paras.forEach(function (p) {
+      var want = p.start.slice(0, 24);
+      for (var i = Math.max(from, 1); i < lines.length; i++) {
+        var t = norm(lines[i].textContent), k = Math.min(want.length, t.length);
+        if (k >= 6 && t.slice(0, k) === want.slice(0, k)) { lines[i].style.marginTop = (p.gap * lh) + 'px'; from = i + 1; return; }
+      }
+    });
+  }
+
   function start() {
     /* a flex or grid box would lay each split line out as its own item (a case study's client line came out one word per row), so those keep the plain whole-block fade */
     var els = Array.prototype.slice.call(document.querySelectorAll('.nt-fade')).filter(function (el) { return !/flex|grid/.test(getComputedStyle(el).display); });
     els.forEach(function (el) {
       el._ntShown = false;
-      var it = { el: el };
+      var it = { el: el }, paras = paragraphs(el);
       it.split = SplitText.create(el, {
         type: 'lines', linesClass: 'nt-line', autoSplit: true,
         onSplit: function (self) {
           if (it.plain) return;
           el._ntLines = self.lines;
           el.classList.add('nt-lines');
+          if (paras.length) addGaps(el, self.lines, paras);
           gsap.set(self.lines, el._ntShown ? SHOWN : HIDDEN);
         }
       });
