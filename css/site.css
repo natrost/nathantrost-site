@@ -501,3 +501,6 @@ html.nt-wall-on body .nt-wall.has-many .nt-wall-controls::after { content: "IMAG
 html body a.detail_text.agency { position: relative; color: var(--brighter_blue, #18d6ff); text-decoration: none; }
 html body a.detail_text.agency::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + .625em); height: 3px; background: currentColor; pointer-events: none; -webkit-clip-path: inset(0 100% 0 0); clip-path: inset(0 100% 0 0); transition: -webkit-clip-path .35s cubic-bezier(.65, 0, .35, 1), clip-path .35s cubic-bezier(.65, 0, .35, 1); }
 html body a.detail_text.agency:hover::after, html body a.detail_text.agency:focus-visible::after { -webkit-clip-path: inset(0); clip-path: inset(0); }
+
+/* case studies: no X. Visitors arrive from the carousels, the project buttons, the dropdown and Next and Prev, so there is no one place to close back to; the dropdown takes the X's room in the bar */
+html body .nt-pj > a.close_btn { display: none !important; }
