@@ -122,8 +122,8 @@ window.__ntTextSetup = function () {
     }, 5000);
   }
 
-  /* only text set in the headline typeface (Instrument Serif, or Wayfinder CF while it is being tried) melts in, taking the outermost block that uses it */
-  var isInstrument = function (el) { return /instrument|wayfinder/i.test(getComputedStyle(el).fontFamily); };
+  /* only text set in the headline typeface (Instrument Serif, or Wayfinder CF or URW DIN while they are being tried) melts in, taking the outermost block that uses it */
+  var isInstrument = function (el) { return /instrument|wayfinder|urw-din/i.test(getComputedStyle(el).fontFamily); };
   var hasText = function (el) { return slice(el.childNodes).some(function (n) { return n.nodeType === 3 && n.textContent.trim(); }); };
   var els = [];
   slice(document.body.querySelectorAll('*')).forEach(function (el) {

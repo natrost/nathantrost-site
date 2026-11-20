@@ -517,11 +517,11 @@ html body .nt-pj > a.close_btn { display: none !important; }
   html body .qualcomm_wrapper .div-block-86 { background-attachment: scroll; }
 }
 
-/* Headline typeface: Wayfinder CF Thin (Adobe Fonts) in place of Instrument Serif everywhere Webflow sets Instrument, plus the homepage loader's number. To go back, delete this block */
+/* Headline typeface: URW DIN Semi Condensed Black (Adobe Fonts) in place of Instrument Serif everywhere Webflow sets Instrument, plus the homepage loader's number. To go back, delete this block */
 html body h1, html body h3, html body h4, html body .home_feature_title, html body .work_title, html body .dot_wrapper, html body .heading-5, html body .section_title.work_detail, html body .section_title.how_i, html body .title_text, html body .work_samples_text.fav, html body .work_samples_text.fav[class], html body .about_feature_text, html body .outcome_title {
-  font-family: "wayfinder-cf", serif; font-weight: 100; font-style: normal;
+  font-family: "urw-din-semi-condensed", sans-serif; font-weight: 900; font-style: normal;
 }
-html body .nt-loader-num { font-family: "wayfinder-cf", serif !important; font-weight: 100 !important; }
+html body .nt-loader-num { font-family: "urw-din-semi-condensed", sans-serif !important; font-weight: 900 !important; }
 
 /* About intro runs the full width of the page (inside the 32px side padding) instead of stopping at 1000px */
 html body .about_feature_text { max-width: none; width: 100%; }
