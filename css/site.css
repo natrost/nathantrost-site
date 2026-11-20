@@ -574,7 +574,7 @@ html.nt-bgfade-ready .home_feature_wrapper :is(.hometext, .home_feature_sub, .ho
 html.nt-bg-dark .home_feature_wrapper :is(.hometext, .home_feature_sub, .home_feature_sub *, .hometop, .hometop *) { color: #f2f0e8 !important; border-color: rgba(242, 240, 232, .25) !important; }
 html.nt-bg-dark .home_feature_wrapper .alt_nav_items.email { color: #18d6ff !important; }
 @media (prefers-reduced-motion: reduce) { html.nt-bgfade-ready .nt-bgfade-color, html.nt-bgfade-ready .nt-bgfade .nt-bgfade-img { transition: none; } }
-html.nt-bg-dark .nt-bg-flip, html.nt-bg-dark .nt-bg-flip * { color: #f2f0e8 !important; }
+html.nt-bg-dark .nt-bg-flip, html.nt-bg-dark .nt-bg-flip * { color: #f2f0e8 !important; border-color: rgba(255, 255, 255, .14) !important; }
 html body .nt-bg-hide { opacity: 0 !important; pointer-events: none !important; }
 html.nt-bgfade-ready body .nt-bg-hide { transition: opacity .6s ease !important; }
 html.nt-bgfade-on:not(.nt-bg-dark) .nt-bg-flipdark, html.nt-bgfade-on:not(.nt-bg-dark) .nt-bg-flipdark * { color: #000 !important; border-color: rgba(0, 0, 0, .14) !important; }

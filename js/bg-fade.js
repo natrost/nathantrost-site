@@ -10,20 +10,19 @@
     { is: '.home_feature_wrapper .scrolling_screenshots', base: { bg: SAND }, zones: [
       { el: '.scrolling_screenshots', bg: BLACK, line: .45 },
       { el: '.favorites_wrapper_1', bg: BLACK, img: '.nt-blurbg', line: .45 },
-      { el: '.favorites_wrapper_2', bg: SAND, line: .45, solid: 1, hide: '.favorites_wrapper_1 > .nt-stage, .nt-hstage, .nt-dots' }
+      { el: '.favorites_wrapper_2', bg: SAND, line: .45, hide: '.favorites_wrapper_1 > .nt-stage, .nt-hstage, .nt-dots' }
     ], clear: '.inthestands_wrapper, .favorites_wrapper_1, .favorites_wrapper_2' },
     /* About: the intro photo has its own fade (about-hero.js); then sand, white for Qualcomm and capabilities, black for the personal facts, sand for the sign-off */
     { is: '.about_feature_text', base: { bg: SAND }, zones: [
       { el: '.qualcomm_wrapper', bg: WHITE, line: .5 },
       { el: '.section_text_wrapper.capabilities', bg: WHITE, line: .5 },
       { el: '.personal_wrapper_2', bg: BLACK, line: .5 },
-      { el: '.favorites_wrapper_2', bg: SAND, line: .5, solid: 1, hide: '.personal_text_wrapper, .nt-pstage' }
+      { el: '.favorites_wrapper_2', bg: SAND, line: .5, hide: '.personal_text_wrapper, .nt-pstage' }
     ], flip: '.section_text_wrapper.capabilities', clear: '.professionalwrapper, .section_text_wrapper.clients, .qualcomm_wrapper, .section_text_wrapper.capabilities, .personal_wrapper_2, .favorites_wrapper_2' },
-    /* project pages: the blurred project image behind the header and first section, then sand as soon as "Here's how I did it" comes into view (or, on a page without it, as that section's end comes up past the middle of the screen) */
+    /* project pages: the blurred project image behind the header and first section, then sand as that section's end comes up past the middle of the screen. The next section's text and divider stay light until then, so they read on the dark image as they come up */
     { is: 'html.nt-case', base: { bg: BLACK, img: '.nt-case-bg' }, zones: [
-      { el: '.how_i_did_it_wrapper', bg: SAND, line: .85 },
       { el: '.nt-case-intro', edge: 'bottom', bg: SAND, line: .5 }
-    ], flipDark: '.work_feature_wrapper, .details_div, .detail_scroller, .overview_text_wrapper, .nt-case-intro' }
+    ], flip: '.nt-case-intro + *', flipDark: '.work_feature_wrapper, .details_div, .detail_scroller, .overview_text_wrapper, .nt-case-intro' }
   ];
   function init() {
     var page = null;
