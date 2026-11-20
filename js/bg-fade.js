@@ -22,7 +22,7 @@
     /* project pages: the blurred project image behind the header and first section, then sand as that section's end comes up past the middle of the screen */
     { is: 'html.nt-case', base: { bg: BLACK, img: '.nt-case-bg' }, zones: [
       { el: '.nt-case-intro', edge: 'bottom', bg: SAND, line: .5 }
-    ] }
+    ], flipDark: '.work_feature_wrapper, .details_div, .detail_scroller, .overview_text_wrapper, .nt-case-intro' }
   ];
   function init() {
     var page = null;
@@ -36,6 +36,8 @@
     document.body.insertBefore(layer, document.body.firstChild);
     /* text in "flip" turns light whenever the background is dark, so the end of a light section stays readable as the page turns black under it */
     if (page.flip) [].forEach.call(document.querySelectorAll(page.flip), function (e) { e.classList.add('nt-bg-flip'); });
+    /* and the other way: the light text of a dark section turns dark once the page has gone light under it */
+    if (page.flipDark) [].forEach.call(document.querySelectorAll(page.flipDark), function (e) { e.classList.add('nt-bg-flipdark'); });
     if (page.clear) [].forEach.call(document.querySelectorAll(page.clear), function (e) { e.classList.add('nt-bg-clear'); });
     page.zones.forEach(function (z) { z.node = document.querySelector(z.el); });
     /* image backgrounds are made by other scripts, some after this one, so each is picked up and moved into the layer once it exists */
