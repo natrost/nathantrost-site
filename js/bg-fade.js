@@ -31,6 +31,7 @@
     var root = document.documentElement;
     var layer = document.createElement('div'), color = document.createElement('div');
     layer.className = 'nt-bgfade'; layer.setAttribute('aria-hidden', 'true');
+    root.classList.add('nt-bgfade-on');
     color.className = 'nt-bgfade-color';
     layer.appendChild(color);
     document.body.insertBefore(layer, document.body.firstChild);
@@ -77,9 +78,10 @@
     }
     /* transitions only after the first paint, so the page never fades in from the wrong colour */
     update();
-    requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.add('nt-bgfade-ready'); }); });
+    setTimeout(function () { root.classList.add('nt-bgfade-ready'); }, 60);
     var raf = 0;
-    function soon() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; update(); }); }
+    /* on the next frame, or shortly after in a tab that is not drawing frames */
+    function soon() { if (raf) return; raf = 1; var run = function () { if (!raf) return; raf = 0; update(); }; requestAnimationFrame(run); setTimeout(run, 120); }
     addEventListener('scroll', soon, { passive: true });
     addEventListener('resize', soon);
     addEventListener('load', function () { last = ''; update(); });
