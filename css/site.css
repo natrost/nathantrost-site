@@ -527,3 +527,24 @@ html .nt-loader-num { font-family: var(--nt-head-font) !important; font-weight: 
 
 /* About intro runs the full width of the page (inside the 32px side padding) instead of stopping at 1000px */
 html body .about_feature_text { max-width: none; width: 100%; }
+
+/* homepage: the In the Stands related project headlines are a size down from the other project headlines (phones and tablets already use 3rem) */
+html body .inthestands_wrapper .related_project .work_samples_text.fav { font-size: 3rem; line-height: 3.4rem; }
+
+/* end-of-page sign-off: its headlines invert whatever passes behind them. They sit in a twin of the pinned sign-off laid over the original (js/signoff-blend.js), white, so on the sand they read near-black and over the photos they flip their colours */
+html body .fav_text.about.nt-blend { mix-blend-mode: difference; z-index: 23; }
+html body .fav_text.about.nt-blend, html body .fav_text.about.nt-blend * { pointer-events: none !important; }
+html body .fav_text.about.nt-blend .title_text, html body .fav_text.about.nt-blend .work_samples_text { color: #fff !important; }
+html body .nt-blend-hold { visibility: hidden !important; }
+
+/* About intro: bigger on desktop, with bigger gifs; the second sentence (wrapped by about-hero.js) is set in the condensed regular for a change of voice */
+@media (min-width: 992px) {
+  html body .about_feature_text { font-size: 6rem; line-height: 6.4rem; }
+  html body .about_feature_text .textinlay_img { height: 80px; }
+}
+html body .about_feature_text .nt-intro-alt { font-family: "trade-gothic-next-condensed", sans-serif; font-weight: 400; font-style: normal; }
+
+/* About intro photo: a full-screen layer fixed behind the page that fades out as you scroll on to the next section (about-hero.js sets --nt-hero-o).
+   The intro block keeps the photo set on it, since the load glitch reads it from there, but no longer paints it itself */
+html body .feature_wrapper:has(.about_feature_text) { background-size: 0 0 !important; }
+html body .feature_wrapper:has(.about_feature_text)::before { content: ""; position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; z-index: -2; pointer-events: none; background-image: inherit; background-size: cover; background-position: 50% 50%; background-repeat: no-repeat; opacity: var(--nt-hero-o, 1); }

@@ -86,7 +86,7 @@
     function textBox(i){
       if(!probe){probe=pin.cloneNode(true);probe.removeAttribute('data-nt-fact');probe.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;pointer-events:none';probe.setAttribute('aria-hidden','true');var pr=probe.querySelector('.nt-pring');if(pr)pr.remove();wrap.appendChild(probe);}
       var pt=probe.querySelector('.personal_text');
-      pt.children[0].textContent=window.__ntFacts[i].label;pt.children[1].textContent=window.__ntFacts[i].text;
+      pt.children[0].textContent=String(i+1);pt.children[1].textContent=window.__ntFacts[i].text;
       var L=1e9,R=-1e9,T=1e9,B=-1e9,w=document.createTreeWalker(pt,NodeFilter.SHOW_TEXT),t,r=document.createRange();
       while((t=w.nextNode())){r.selectNodeContents(t);[].forEach.call(r.getClientRects(),function(q){if(!q.width)return;L=Math.min(L,q.left);R=Math.max(R,q.right);T=Math.min(T,q.top);B=Math.max(B,q.bottom);});}
       /* as it sits once pinned */
@@ -196,20 +196,20 @@
     document.head.appendChild(css);
     wrap.classList.add('nt-personal-on');
 
-    /* a small ring above the fact's number, the size and stroke of the main nav's circles, that draws itself around as you scroll through the fact, so it shows how far
+    /* the fact's number (1, 2, 3...) sits inside an 80px ring, with the stroke of the main nav's circles, that draws itself around as you scroll through the fact, so it shows how far
        there is to go now the photos hold still. A faint full ring sits under it as the track */
     /* it fades in with the fact's first melt rather than ahead of it (its opacity is !important because the page's own code holds everything in the fact at full opacity): it waits RING_IN[0] ms, while the words are still a blur, then fades in over RING_IN[1] ms */
     var RING_IN=[450,800];
-    var RING=12,RING_W=2,RING_TRACK=.25,r0=(RING-RING_W)/2,circ=2*Math.PI*r0;
+    var RING=80,RING_W=2,RING_TRACK=.25,r0=(RING-RING_W)/2,circ=2*Math.PI*r0;
     var ring=document.createElement('div');ring.className='nt-pring';ring.setAttribute('aria-hidden','true');
     ring.innerHTML='<svg width="'+RING+'" height="'+RING+'" viewBox="0 0 '+RING+' '+RING+'"><circle cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" opacity="'+RING_TRACK+'"/>'+
       '<circle class="nt-pring-arc" cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+circ.toFixed(2)+'" transform="rotate(-90 '+RING/2+' '+RING/2+')"/></svg>';
     pt.insertBefore(ring,pt.firstChild);
     var arc=ring.querySelector('.nt-pring-arc');
     var ringCss=document.createElement('style');
-    /* the page's own rules style the first thing in the fact (its number) and put 24px under it; the ring now comes first, so the number gets those rules here */
-    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 0 14px !important;line-height:0;opacity:0 !important;transition:opacity .4s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1 !important;transition:opacity '+RING_IN[1]+'ms ease '+RING_IN[0]+'ms}'+
-      'html body .nt-personal .personal_text > .nt-pring + *{position:static !important;margin:0 0 24px !important}';
+    /* the page's own rules style the first thing in the fact (its number) and put 24px under it; the ring now comes first, and the number is pulled up into the middle of it */
+    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 !important;line-height:0;opacity:0 !important;transition:opacity .4s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1 !important;transition:opacity '+RING_IN[1]+'ms ease '+RING_IN[0]+'ms}'+
+      'html body .nt-personal .personal_text > .nt-pring + *{position:relative !important;margin:-'+RING+'px 0 24px !important;height:'+RING+'px;align-content:center;align-items:center}';
     document.head.appendChild(ringCss);
     /* how far through the current fact: from the moment it takes over to the moment the next one does (the last one runs until the text moves on) */
     function ringTo(idx){
@@ -236,7 +236,7 @@
       cur=idx;
       var f=idx<0?{label:'',text:''}:facts[idx];
       pin.setAttribute('data-nt-fact',idx+1);
-      morphLabel(f.label);morphText(f.text);
+      morphLabel(idx<0?'':String(idx+1));morphText(f.text);
       if(stage)stage.show(idx);
     }
     /* checks every frame only while the page is moving: scrolling, resizing, or for a moment after, while Webflow's interactions finish easing things into place. At rest it does nothing */

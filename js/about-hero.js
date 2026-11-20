@@ -1,3 +1,31 @@
+/* About intro: the second sentence (everything after the first gif) is wrapped so site.css can set it in the condensed regular. Done straight away, before the melt or the pixel explosion read the text */
+(function () {
+  var t = document.querySelector('.about_feature_text'), gif = t && t.querySelector('.textinlay_img');
+  if (!gif || t.querySelector('.nt-intro-alt')) return;
+  var span = document.createElement('span'), n = gif.nextSibling;
+  span.className = 'nt-intro-alt';
+  while (n && !(n.nodeType === 1 && n.tagName === 'IMG')) { var next = n.nextSibling; span.appendChild(n); n = next; }
+  gif.parentNode.insertBefore(span, n);
+})();
+
+/* About intro photo: it sits on a full-screen layer fixed behind the page (site.css) and fades out as you scroll on to the next section, reaching nothing just as "Professional" (which overlaps the intro's bottom 40px) reaches the top of the screen */
+(function () {
+  var wrap = document.querySelector('.feature_wrapper');
+  if (!wrap || !wrap.querySelector('.about_feature_text')) return;
+  var raf = 0, last = -1;
+  function set() {
+    raf = 0;
+    var end = Math.max(1, wrap.offsetTop + wrap.offsetHeight - 40), o = Math.max(0, Math.min(1, 1 - (window.scrollY || 0) / end));
+    if (o === last) return;
+    last = o;
+    wrap.style.setProperty('--nt-hero-o', o.toFixed(3));
+  }
+  function soon() { if (!raf) raf = requestAnimationFrame(set); }
+  addEventListener('scroll', soon, { passive: true });
+  addEventListener('resize', soon);
+  set();
+})();
+
 /* About page intro photo: as the page loads, the photo comes in as a VHS signal failure that settles into the clean picture, in a new mix each visit: scan lines drift and wave, the red and blue pull apart, bands tear sideways and streak, the odd row drops out. It plays once; the photo has no rollover. It is drawn on a canvas behind the intro's text, so the text stays readable, and the canvas clears back to the photo afterward. Reduced motion never sets any of this up.
    The image and its overlay colour are read from whatever is set on the block in Webflow, so changing them in the Designer needs no change here */
 document.addEventListener('DOMContentLoaded', function () {
