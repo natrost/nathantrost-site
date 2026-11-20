@@ -522,3 +522,6 @@ html body h1, html body h3, html body h4, html body .home_feature_title, html bo
   font-family: "wayfinder-cf", serif; font-weight: 100; font-style: normal;
 }
 html body .nt-loader-num { font-family: "wayfinder-cf", serif !important; font-weight: 100 !important; }
+
+/* About intro runs the full width of the page (inside the 32px side padding) instead of stopping at 1000px */
+html body .about_feature_text { max-width: none; width: 100%; }
