@@ -580,3 +580,7 @@ html.nt-bgfade-ready body .nt-bg-hide { transition: opacity .6s ease !important;
 html.nt-bgfade-on:not(.nt-bg-dark) .nt-bg-flipdark, html.nt-bgfade-on:not(.nt-bg-dark) .nt-bg-flipdark * { color: #000 !important; border-color: rgba(0, 0, 0, .14) !important; }
 /* the sign-off no longer forms a layer of its own, so its inverting headlines blend with the page behind them from the start rather than with the empty section (which left them white until the sand had faded in) */
 html body .favorites_wrapper_2.nt-bg-clear { z-index: auto !important; }
+/* homepage loader: the name sits back at 20%, and the counting number is half its old size (the loader lives outside the page body, so these start from html) */
+html .nt-loader-name.is-on { opacity: .2 !important; }
+html .nt-loader-num { font-size: min(15.625vw, calc((100vh - 27.75vw) / 2)) !important; }
+@media (orientation: portrait) { html .nt-loader-num { font-size: min(26vw, calc((100vh - 35.75vw) / 2)) !important; } }
