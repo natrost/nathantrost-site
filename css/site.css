@@ -552,3 +552,6 @@ html body .feature_wrapper:has(.about_feature_text)::before { content: ""; posit
 html body:has(.about_feature_text) .professionalwrapper, html body:has(.about_feature_text) .section_text_wrapper.clients { background-color: transparent !important; background-image: none !important; }
 /* the paper grain over the photo goes with it: full-screen and fading out together, so it has no edge either (the page's own grain is underneath once they have gone) */
 html body .feature_wrapper:has(.about_feature_text)::after { position: fixed; left: 0; top: 0; right: auto; bottom: auto; width: 100%; height: 100vh; height: 100lvh; opacity: var(--nt-hero-o, 1); }
+/* the client logos drop their white with a darken blend, which only reaches as far as the nearest layer behind them. With those sections now see-through, the clients block blends as a whole with the page instead (and "Professional" no longer forms a layer of its own, so the page is what the block blends with); the white Qualcomm section is left as it is */
+html body:has(.about_feature_text) .professionalwrapper { z-index: auto !important; }
+html body:has(.about_feature_text) .section_text_wrapper.clients { mix-blend-mode: darken; }
