@@ -7,18 +7,18 @@
   var SAND = '#f2f0e8', BLACK = '#000', WHITE = '#fff';
   var PAGES = [
     /* homepage: sand, then black as the screenshot carousels come about 55% of the way up, then the additional projects' backdrops (starting with Qualcomm's), then sand for the sign-off */
-    { is: '.home_feature_wrapper .scrolling_screenshots', base: { bg: SAND }, flip: 1, zones: [
+    { is: '.home_feature_wrapper .scrolling_screenshots', base: { bg: SAND }, zones: [
       { el: '.scrolling_screenshots', bg: BLACK, line: .45 },
       { el: '.favorites_wrapper_1', bg: BLACK, img: '.nt-blurbg', line: .45 },
-      { el: '.favorites_wrapper_2', bg: SAND, line: .45, solid: 1 }
+      { el: '.favorites_wrapper_2', bg: SAND, line: .45, solid: 1, hide: '.favorites_wrapper_1 > .nt-stage, .nt-hstage, .nt-dots' }
     ], clear: '.inthestands_wrapper, .favorites_wrapper_1, .favorites_wrapper_2' },
     /* About: the intro photo has its own fade (about-hero.js); then sand, white for Qualcomm, sand again for capabilities, black for the personal facts, sand for the sign-off */
     { is: '.about_feature_text', base: { bg: SAND }, zones: [
       { el: '.qualcomm_wrapper', bg: WHITE, line: .5 },
       { el: '.section_text_wrapper.capabilities', bg: SAND, line: .5 },
       { el: '.personal_wrapper_2', bg: BLACK, line: .5 },
-      { el: '.favorites_wrapper_2', bg: SAND, line: .5, solid: 1 }
-    ], clear: '.professionalwrapper, .section_text_wrapper.clients, .qualcomm_wrapper, .section_text_wrapper.capabilities, .personal_wrapper_2, .favorites_wrapper_2' },
+      { el: '.favorites_wrapper_2', bg: SAND, line: .5, solid: 1, hide: '.personal_text_wrapper, .nt-pstage' }
+    ], flip: '.section_text_wrapper.capabilities', clear: '.professionalwrapper, .section_text_wrapper.clients, .qualcomm_wrapper, .section_text_wrapper.capabilities, .personal_wrapper_2, .favorites_wrapper_2' },
     /* project pages: the blurred project image behind the header and first section, then sand as that section's end comes up past the middle of the screen */
     { is: 'html.nt-case', base: { bg: BLACK, img: '.nt-case-bg' }, zones: [
       { el: '.nt-case-intro', edge: 'bottom', bg: SAND, line: .5 }
@@ -34,6 +34,8 @@
     color.className = 'nt-bgfade-color';
     layer.appendChild(color);
     document.body.insertBefore(layer, document.body.firstChild);
+    /* text in "flip" turns light whenever the background is dark, so the end of a light section stays readable as the page turns black under it */
+    if (page.flip) [].forEach.call(document.querySelectorAll(page.flip), function (e) { e.classList.add('nt-bg-flip'); });
     if (page.clear) [].forEach.call(document.querySelectorAll(page.clear), function (e) { e.classList.add('nt-bg-clear'); });
     page.zones.forEach(function (z) { z.node = document.querySelector(z.el); });
     /* image backgrounds are made by other scripts, some after this one, so each is picked up and moved into the layer once it exists */
@@ -63,7 +65,9 @@
       color.style.backgroundColor = s.bg;
       var dark = s.bg === BLACK;
       layer.classList.toggle('is-dark', dark);
-      if (page.flip) root.classList.toggle('nt-bg-dark', dark);
+      root.classList.toggle('nt-bg-dark', dark);
+      /* a zone with "hide" fades those things out while it (or a later zone) is on: what was pinned in the section before, so it never hangs over the new background as that section scrolls away */
+      page.zones.forEach(function (z, i) { if (z.hide) [].forEach.call(document.querySelectorAll(z.hide), function (e) { e.classList.toggle('nt-bg-hide', idx >= i); }); });
       Object.keys(imgs).forEach(function (k) { imgs[k].classList.toggle('is-shown', k === s.img); });
       /* a "solid" section fades its own sand back in alongside the layer once it has taken over. The sign-off needs it: its headlines invert what is behind them, and they can only see
          as far as their own section, so it has to have the sand in it */
