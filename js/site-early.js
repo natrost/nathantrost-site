@@ -122,8 +122,8 @@ window.__ntTextSetup = function () {
     }, 5000);
   }
 
-  /* only text set in the headline typeface (Instrument Serif, or Wayfinder CF or URW DIN while they are being tried) melts in, taking the outermost block that uses it */
-  var isInstrument = function (el) { return /instrument|wayfinder|urw-din/i.test(getComputedStyle(el).fontFamily); };
+  /* only text set in the headline typeface (Instrument Serif, or whichever font site.css is trying, which marks its headlines with --nt-headline) melts in, taking the outermost block that uses it */
+  var isInstrument = function (el) { var c = getComputedStyle(el); return /instrument/i.test(c.fontFamily) || c.getPropertyValue('--nt-headline').trim() === '1'; };
   var hasText = function (el) { return slice(el.childNodes).some(function (n) { return n.nodeType === 3 && n.textContent.trim(); }); };
   var els = [];
   slice(document.body.querySelectorAll('*')).forEach(function (el) {
