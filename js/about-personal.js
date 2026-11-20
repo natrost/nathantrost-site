@@ -204,12 +204,13 @@
     var ring=document.createElement('div');ring.className='nt-pring';ring.setAttribute('aria-hidden','true');
     ring.innerHTML='<svg width="'+RING+'" height="'+RING+'" viewBox="0 0 '+RING+' '+RING+'"><circle cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" opacity="'+RING_TRACK+'"/>'+
       '<circle class="nt-pring-arc" cx="'+RING/2+'" cy="'+RING/2+'" r="'+r0+'" fill="none" stroke="currentColor" stroke-width="'+RING_W+'" stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+circ.toFixed(2)+'" transform="rotate(-90 '+RING/2+' '+RING/2+')"/></svg>';
-    pt.insertBefore(ring,pt.firstChild);
+    /* the ring goes inside the number, sharing its one grid cell, so the number sits in the middle of it */
+    pt.children[0].insertBefore(ring,pt.children[0].firstChild);
     var arc=ring.querySelector('.nt-pring-arc');
     var ringCss=document.createElement('style');
-    /* the page's own rules style the first thing in the fact (its number) and put 24px under it; the ring now comes first, and the number is pulled up into the middle of it */
-    ringCss.textContent='html body .nt-personal .personal_text > .nt-pring{display:flex;justify-content:center;color:#fff;margin:0 !important;line-height:0;opacity:0 !important;transition:opacity .4s ease}html body .nt-personal .personal_text > .nt-pring.is-on{opacity:1 !important;transition:opacity '+RING_IN[1]+'ms ease '+RING_IN[0]+'ms}'+
-      'html body .nt-personal .personal_text > .nt-pring + *{position:relative !important;margin:-'+RING+'px 0 24px !important;height:'+RING+'px;align-content:center;align-items:center}';
+    /* the number is a grid with its old and new text stacked in one cell (for the melt); the ring takes that same cell, behind them */
+    ringCss.textContent='html body .nt-personal .nt-pring{grid-area:1/1 !important;display:flex;justify-content:center;align-self:center;color:#fff;margin:0 !important;line-height:0;opacity:0 !important;transition:opacity .4s ease}html body .nt-personal .nt-pring.is-on{opacity:1 !important;transition:opacity '+RING_IN[1]+'ms ease '+RING_IN[0]+'ms}'+
+      'html body .nt-personal .personal_text > :first-child{align-items:center !important}';
     document.head.appendChild(ringCss);
     /* how far through the current fact: from the moment it takes over to the moment the next one does (the last one runs until the text moves on) */
     function ringTo(idx){
