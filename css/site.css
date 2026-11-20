@@ -548,3 +548,5 @@ html body .about_feature_text .nt-intro-alt { font-family: "trade-gothic-next-co
    The intro block keeps the photo set on it, since the load glitch reads it from there, but no longer paints it itself */
 html body .feature_wrapper:has(.about_feature_text) { background-size: 0 0 !important; }
 html body .feature_wrapper:has(.about_feature_text)::before { content: ""; position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; z-index: -2; pointer-events: none; background-image: inherit; background-size: cover; background-position: 50% 50%; background-repeat: no-repeat; opacity: var(--nt-hero-o, 1); }
+/* and the sections that scroll up over it are see-through, so the photo simply fades into the page's sand rather than having a solid block slide up over it. The page behind them is the same sand and grain, so once the photo has gone they look just as before */
+html body:has(.about_feature_text) .professionalwrapper, html body:has(.about_feature_text) .section_text_wrapper.clients { background-color: transparent !important; background-image: none !important; }
