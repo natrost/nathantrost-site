@@ -1,6 +1,6 @@
 /* Homepage loader, ahead of the big-carousel intro (js/home-intro.js). Laid out like the end card: the logo at the top (the nav's own logo, which stays
-   put when the loader leaves; The Work and About Me wait), the percent loaded in large Instrument Serif in the middle, and the big "Nathan Trost"
-   along the bottom, running off both sides. Each new percent melts into the next, the same melt as the additional projects and personal facts.
+   put when the loader leaves; The Work and About Me wait), the percent loaded in large type in the middle, and the big "Nathan Trost"
+   along the bottom, edge to edge. Each new percent melts into the next, the same melt as the additional projects and personal facts.
    When it reaches 100 the number melts away, the name drops off the bottom and the sand fades, uncovering the carousels as they race in.
    It plays with the same rules as the first-visit intro it opens: only when the homepage is the first page of a visit, arriving from outside the site,
    once per visit (the browser tab's session), and never with reduced motion. ?intro=big in the address plays it every time, to try it out.
@@ -44,12 +44,12 @@
     '.nt-loader{position:fixed;inset:0;z-index:799;overflow:hidden;background:#f2f0e8;pointer-events:auto;transition:background-color ' + OUT_MS + 'ms ease}' +
     '.nt-loader.is-out{background-color:rgba(242,240,232,0);pointer-events:none}' +
     /* the number fills the space between the logo and the name, centered: 500px on a 1600px-wide screen, as in the end card. Taller screens get a bigger one */
-    '.nt-loader-num{position:absolute;left:0;right:0;top:7.3vw;bottom:16.75vw;display:grid;place-items:center;color:#000;font-family:instrument-serif,serif;font-weight:400;font-size:min(31.25vw,calc(100vh - 26vw));line-height:1;font-variant-numeric:lining-nums;opacity:0;transition:opacity .3s ease}' +
+    '.nt-loader-num{position:absolute;left:0;right:0;top:7.3vw;bottom:18.46vw;display:grid;place-items:center;color:#000;font-family:instrument-serif,serif;font-weight:400;font-size:min(31.25vw,calc(100vh - 27.75vw));line-height:1;font-variant-numeric:lining-nums;opacity:0;transition:opacity .3s ease}' +
     '.nt-loader-num.is-on{opacity:1}' +
     '.nt-loader-num>span{grid-area:1/1;white-space:nowrap}' +
-    '@media (orientation:portrait){.nt-loader-num{font-size:min(52vw,calc(100vh - 34vw))}}' +
-    /* the name: 1641 by 283 on a 1600 by 900 end card, 28px past the left edge and 15px past the bottom */
-    '.nt-loader-name{position:absolute;left:-1.75vw;bottom:-.94vw;width:102.56vw;height:auto;max-width:none;display:block;opacity:0;transition:opacity .3s ease,transform ' + OUT_MS + 'ms ' + EASE + '}' +
+    '@media (orientation:portrait){.nt-loader-num{font-size:min(52vw,calc(100vh - 35.75vw))}}' +
+    /* the name runs the full width of the screen along the bottom (its artwork is 459.73 by 84.85, so it is 18.46% of the width tall) */
+    '.nt-loader-name{position:absolute;left:0;bottom:0;width:100vw;height:auto;max-width:none;display:block;opacity:0;transition:opacity .3s ease,transform ' + OUT_MS + 'ms ' + EASE + '}' +
     '.nt-loader-name.is-on{opacity:1}' +
     '.nt-loader.is-out .nt-loader-name{transform:translateY(110%)}';
   (document.head || d).appendChild(css);
