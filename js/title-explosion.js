@@ -246,7 +246,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (o >= 1 && s > 0) g.drawImage(l, (w - o) * dpr, y * dpr, o * dpr, h * dpr, w, y, o, h);
     if (o >= 1 && s < 0) g.drawImage(l, 0, y * dpr, o * dpr, h * dpr, -o, y, o, h);
   }
-  /* the text, with the rows near the cursor out of sync: each row is drawn on its own, with its coloured ghosts either side */
+  function smooth(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+  /* the text, with the rows near the cursor out of sync: each row is drawn on its own, with its coloured ghosts either side.
+     Everything fades out softly toward the edge of the disturbance, and that edge wanders from row to row, so there is never a straight line where the tape trouble stops */
   function paintText(ox, oy, now) {
     var band = REACH * 1.2, top = Math.max(0, Math.floor(y - band - oy)), bot = Math.min(map.h, Math.ceil(y + band - oy)), RH = 2;
     if (bot <= top) { ctx.drawImage(map.c, ox, oy, map.w, map.h); return; }
@@ -254,19 +256,32 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bot < map.h) ctx.drawImage(map.c, 0, bot * dpr, map.c.width, (map.h - bot) * dpr, ox, oy + bot, map.w, map.h - bot);
     var f = Math.floor(now / 50), k = Math.min(1, energy * 1.6);
     for (var r = top; r < bot; r += RH) {
-      var h = Math.min(RH, map.h - r), n = Math.min(1, (1 - Math.abs(r + oy - y) / band) * 2) * k;
+      var h = Math.min(RH, map.h - r), reach = band * (.75 + .25 * (wob(r, 18, mix.seed) + 1) / 2), n = smooth((1 - Math.abs(r + oy - y) / reach) * 1.6) * k;
       var s = (wob(r, 5, f + mix.seed) * mix.tear + wob(r, 30, f * .4 + mix.seed) * 2 + Math.sin(r * mix.freq + now * .012) * mix.wave) * n, g = mix.slip * n;
       if (n > .02) { ctx.drawImage(map.red, 0, r * dpr, map.c.width, h * dpr, ox + s - g, oy + r, map.w, h); ctx.drawImage(map.blue, 0, r * dpr, map.c.width, h * dpr, ox + s + g, oy + r, map.w, h); }
       ctx.drawImage(map.c, 0, r * dpr, map.c.width, h * dpr, ox + s, oy + r, map.w, h);
     }
     /* streaks of signal, then the scan lines cutting through it all */
+    /* streaks fade the further they are from the cursor */
     for (var i = 0; i < mix.lines * k; i++) {
+      var sy = y + rnd(-band, band);
+      ctx.globalAlpha = smooth((1 - Math.abs(sy - y) / band) * 1.5) * (.4 + Math.random() * .6);
       ctx.fillStyle = Math.random() < .5 ? color : INKS[Math.floor(rnd(0, 3))];
-      ctx.fillRect(x + rnd(-REACH, REACH), y + rnd(-band, band), rnd(30, REACH * 1.5), Math.random() < .7 ? 1 : 2);
+      ctx.fillRect(x + rnd(-REACH, REACH), sy, rnd(30, REACH * 1.5), Math.random() < .7 ? 1 : 2);
     }
+    ctx.globalAlpha = 1;
+    /* the scan lines: a soft patch around the cursor rather than a full-width block. Each line fades out at both ends and toward the top and bottom of the patch, and its length and centre drift a little from line to line, so the patch has a ragged, uneven edge */
     if (k > .02) {
-      ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,' + (.4 * k) + ')';
-      for (var l = Math.floor((oy + top) / 3) * 3; l < oy + bot; l += 3) ctx.fillRect(ox, l, map.w, 1);
+      ctx.globalCompositeOperation = 'destination-out';
+      for (var l = Math.floor((oy + top) / 3) * 3; l < oy + bot; l += 3) {
+        var v = smooth((1 - Math.abs(l - y) / (band * (.7 + .3 * (wob(l, 14, mix.seed + f * .15) + 1) / 2))) * 1.4);
+        if (v < .02) continue;
+        var hw = REACH * (1.15 + .45 * wob(l, 9, mix.seed + 7)), cx = x + wob(l, 24, mix.seed + 3) * REACH * .25, a = .4 * k * v;
+        var grad = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0);
+        grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(.5, 'rgba(0,0,0,' + a.toFixed(3) + ')'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(Math.max(ox, cx - hw), l, Math.min(ox + map.w, cx + hw) - Math.max(ox, cx - hw), 1);
+      }
       ctx.globalCompositeOperation = 'source-over';
     }
   }
