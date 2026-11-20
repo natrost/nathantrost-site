@@ -5,12 +5,12 @@
 .w-lightbox-close {background-image: url(https://uploads-ssl.webflow.com/665638e0329e026c932efbd5/66b7d9402e3e75a374b75fc5_close.svg);}
 
 /* a very faint paper grain: a warm grain plus a few far-apart flecks. Only for sections that paint their own solid sand: it is semi-transparent, so on a see-through section it doubles and reads darker. The fourth row of each colour matrix sets the strength: grain first, then flecks */
-html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .feature_wrapper:has(.nt-px-canvas)::after {
+html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .feature_wrapper:has(.nt-px-canvas)::after, html body .nt-bgfade-color {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .24  0 0 0 0 .19  0 0 0 0 .11  .1 0 0 0 -.035'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .08  2 0 0 0 -1.56'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E");
   background-size: 600px 600px;
 }
 /* the same grain in a pale colour for the dark areas, where dark specks would not show, and a little weaker because specks stand out more on black. The backdrops behind the homepage projects and project page headers carry it on their dark veil, so it sits over the image and under the text */
-html body .inthestands_wrapper, html body .personal_wrapper_2, html body .nt-footer-under, html body .nt-blurbg .nt-stick:after, html body .nt-case-stick::after {
+html body .inthestands_wrapper, html body .personal_wrapper_2, html body .nt-footer-under, html body .nt-blurbg .nt-stick:after, html body .nt-case-stick::after, html body .nt-bgfade.is-dark .nt-bgfade-color {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  .07 0 0 0 -.025'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95  0 0 0 0 .92  0 0 0 0 .84  1.2 0 0 0 -.95'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E") !important;
   background-size: 600px 600px !important;
 }
@@ -555,3 +555,22 @@ html body .feature_wrapper:has(.about_feature_text)::after { position: fixed; le
 /* the client logos drop their white with a darken blend, which only reaches as far as the nearest layer behind them. With those sections now see-through, the clients block blends as a whole with the page instead (and "Professional" no longer forms a layer of its own, so the page is what the block blends with); the white Qualcomm section is left as it is */
 html body:has(.about_feature_text) .professionalwrapper { z-index: auto !important; }
 html body:has(.about_feature_text) .section_text_wrapper.clients { mix-blend-mode: darken; }
+
+/* full-screen background fades (js/bg-fade.js): one layer fixed behind the page crossfades between backgrounds, and the sections it covers are see-through. It carries the paper grain: dark specks on light, pale ones on black */
+.nt-bgfade { position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; z-index: -1; pointer-events: none; overflow: hidden; }
+.nt-bgfade-color { position: absolute; inset: 0; background-color: #f2f0e8; }
+html body .nt-bgfade.is-dark .nt-bgfade-color { background-size: 600px 600px !important; }
+html body .nt-bg-clear:not(.nt-bg-solid) { background-color: transparent !important; background-image: none !important; }
+html.nt-bgfade-ready body .nt-bg-clear { transition: background-color .9s ease; }
+/* image backgrounds moved into the layer fill the screen and fade in and out */
+html body .nt-bgfade .nt-bgfade-img { position: absolute !important; inset: 0 !important; width: auto !important; height: auto !important; z-index: auto !important; opacity: 0; }
+html body .nt-bgfade .nt-bgfade-img.is-shown { opacity: 1; }
+/* the homepage backdrop shows Qualcomm's image until the first project takes over */
+html body .nt-bgfade .nt-blurbg:not(:has(.nt-blurbg-layer.is-active)) .nt-blurbg-layer:first-child { opacity: 1; }
+html.nt-bgfade-ready .nt-bgfade-color { transition: background-color .9s ease; }
+html.nt-bgfade-ready .nt-bgfade .nt-bgfade-img { transition: opacity .9s ease; }
+/* homepage: the intro's details, still on screen as the page turns black, turn light with it */
+html.nt-bgfade-ready .home_feature_wrapper :is(.hometext, .home_feature_sub, .home_feature_sub *, .hometop, .hometop *) { transition: color .9s ease, border-color .9s ease; }
+html.nt-bg-dark .home_feature_wrapper :is(.hometext, .home_feature_sub, .home_feature_sub *, .hometop, .hometop *) { color: #f2f0e8 !important; border-color: rgba(242, 240, 232, .25) !important; }
+html.nt-bg-dark .home_feature_wrapper .alt_nav_items.email { color: #18d6ff !important; }
+@media (prefers-reduced-motion: reduce) { html.nt-bgfade-ready .nt-bgfade-color, html.nt-bgfade-ready .nt-bgfade .nt-bgfade-img { transition: none; } }
