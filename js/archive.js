@@ -24,6 +24,11 @@
     var ELASTIC_LAG = 0.45;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
     var ELASTIC_K = 0.00013, ELASTIC_C = 0.009; /* the spring and its damping, per ms: light damping, so it swings back past its place by about half as far as it trailed, then settles in about a second */
     var ELASTIC_MAX = 90;    /* px: no image trails further than this, so neighbours never run into each other */
+    /* moving, each image tips back a little along the way it travels, as if the air pushed its leading edge away, and levels out as it slows; with the elastic feel it also rocks with its spring */
+    var TILT = 3.2, TILT_MAX = 7; /* degrees of tip per px/ms of speed, and the most it ever tips */
+    var TILT_DEPTH = 1600;        /* px: the perspective the tips are seen in; nearer makes them look deeper */
+    /* a hard throw blurs the wall slightly, as a camera would; it fades in from BLUR_FROM to BLUR_AT px/ms and is never more than BLUR_MAX px. Gentle drags stay sharp */
+    var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 2.2;
     var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
     var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
     var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
@@ -88,6 +93,7 @@
 
     var wall = make('div', 'nt-wall', document.body);
     var field = make('div', 'nt-wall-field', wall);
+    if (!reduce) field.style.perspective = TILT_DEPTH + 'px';
     var big = make('div', 'nt-big', wall), bigImg = make('img', '', big);
     var bar = make('div', 'nt-big-bar', wall), barThumb = make('div', 'nt-big-bar-thumb', bar);
     var textBox = make('div', 'nt-wall-text', wall);
@@ -220,7 +226,7 @@
           el.dataset.p = t.im.p;
           el.dataset.name = projects[t.im.p].name;   /* the name that rides above the pointer on rollover (js/carousel-label.js) */
           img.alt = ''; img.draggable = false;
-          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, ox: 0, oy: 0, ex: 0, ey: 0, shown: null, asked: false };
+          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, ox: 0, oy: 0, ex: 0, ey: 0, rot: '', shown: null, asked: false };
           el._tile = tile; tiles.push(tile);
         });
       });
@@ -279,6 +285,10 @@
     function putTile(t, x, y, mx, my) {
         t.sx = x; t.sy = y;
         t.el.style.translate = x + 'px ' + y + 'px';
+        /* the tip: about the line across the image's direction of travel, so the leading edge leans away */
+        var rx = gvx + t.ex, ry = gvy + t.ey, rv = Math.sqrt(rx * rx + ry * ry), deg = Math.min(TILT_MAX, rv * TILT), rot = '';
+        if (!reduce && deg > 0.05) rot = (-ry / rv).toFixed(3) + ' ' + (rx / rv).toFixed(3) + ' 0 ' + deg.toFixed(2) + 'deg';
+        if (rot !== t.rot) { t.rot = rot; t.el.style.rotate = rot; }
         var seen = x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
         if (seen !== t.shown) { t.shown = seen; t.el.style.visibility = seen || t.hold ? '' : 'hidden'; }
         if (!t.asked && x < boxW + mx + 400 && x + t.w > -mx - 400 && y < boxH + my + 400 && y + t.h > -my - 400) loadTile(t);
@@ -299,6 +309,11 @@
     }
     var vx = 0, vy = 0, raf = 0, last = 0, moving = false, dragging = false;
     var spread = 0, speed = 0, lastPX = null, lastPY = null;
+    var gvx = 0, gvy = 0, blurNow = '';   /* the wall's own speed, px per ms, smoothed, for the tip and the blur */
+    function setBlur(px) {
+      var b = px > 0.05 ? 'blur(' + px.toFixed(1) + 'px)' : '';
+      if (b !== blurNow) { blurNow = b; field.style.filter = b; }
+    }
     /* where the spread centres: the pointer or finger, last seen over the wall; before anyone points, the middle of the screen. While the wall coasts on after a throw it stays where it was let go */
     var ptrX = innerWidth / 2, ptrY = innerHeight / 2;
     function aim(e) { var b = wall.getBoundingClientRect(); ptrX = e.clientX - b.left; ptrY = e.clientY - b.top; }
@@ -321,10 +336,16 @@
         spread += (target - spread) * (1 - Math.exp(-dt / (target > spread ? SPREAD_IN : SPREAD_OUT)));
       }
       lastPX = panX; lastPY = panY;
+      if (!reduce && dt > 0) {
+        var kv = 1 - Math.exp(-dt / 60);
+        gvx += (Math.max(-6, Math.min(6, dpx / dt)) - gvx) * kv; gvy += (Math.max(-6, Math.min(6, dpy / dt)) - gvy) * kv;
+        var gs = Math.sqrt(gvx * gvx + gvy * gvy), bf = Math.max(0, Math.min(1, (gs - BLUR_FROM) / (BLUR_AT - BLUR_FROM)));
+        setBlur(BLUR_MAX * bf * bf * (3 - 2 * bf));
+      }
       apply(reduce ? 0 : dt, dpx, dpy);
-      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || spread > 0.0005 || speed > 0.02 || restless > 0.3) { raf = requestAnimationFrame(tick); return; }
-      vx = vy = 0; raf = 0; speed = 0; lastPX = null;
-      if (spread) { spread = 0; apply(); }
+      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || spread > 0.0005 || speed > 0.02 || restless > 0.3 || Math.abs(gvx) + Math.abs(gvy) > 0.01) { raf = requestAnimationFrame(tick); return; }
+      vx = vy = 0; raf = 0; speed = 0; lastPX = null; gvx = gvy = 0; setBlur(0);
+      spread = 0; apply();
       setMoving(false);
     }
     function coast() { setMoving(true); if (!raf) { last = performance.now(); if (lastPX === null) { lastPX = panX; lastPY = panY; } raf = requestAnimationFrame(tick); } }
