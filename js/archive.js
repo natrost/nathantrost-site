@@ -531,9 +531,26 @@
     skipPrev.addEventListener('click', function () { stepProject(-1); });
     skipNext.addEventListener('click', function () { stepProject(1); });
     /* on phones the description is folded away under More Info, which opens it down over the image and turns into Close Info. The opened panel reaches as far as the image's bottom and scrolls if it is longer */
-    var moreBtn = null;
+    var moreBtn = null, moreSplit = null;
+    /* opening it, the description's lines fade in one after another, each drifting up a few pixels, as the panel opens beneath them, the way body copy comes in across the site (js/split-lines.js), rather than being uncovered top to bottom like a blind. Closing, they fade out together first. Without GSAP the description fades in as one */
+    function moreLines(on) {
+      var body = textBox.querySelector('.nt-more-body > *');
+      if (!body || reduce) return;
+      if (window.gsap && window.SplitText) {
+        if (on) {
+          if (moreSplit) moreSplit.revert();
+          moreSplit = SplitText.create(body, { type: 'lines', linesClass: 'nt-more-line' });
+          gsap.fromTo(moreSplit.lines, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power2.out', stagger: 0.07, delay: 0.08, overwrite: true });
+        } else if (moreSplit) {
+          gsap.to(moreSplit.lines, { opacity: 0, duration: 0.2, ease: 'power1.out', overwrite: true });
+        }
+      } else if (on && body.animate) {
+        body.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.16, 1, .3, 1)', delay: 80, fill: 'backwards' });
+      }
+    }
     function setMore(on) {
       if (!moreBtn) return;
+      moreLines(on);
       textBox.classList.toggle('is-more', on);
       moreBtn.textContent = on ? 'Close Info −' : 'More Info +';
       moreBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -546,6 +563,7 @@
       var p = projects[pi];
       currentProject = pi;
       textBox.classList.remove('is-more');
+      if (moreSplit) { if (window.gsap) gsap.killTweensOf(moreSplit.lines); moreSplit = null; }
       textBox.textContent = ''; textBox.scrollTop = 0;
       var copy = p.text.cloneNode(true), desc = copy.querySelector('.rich-text-block, .w-richtext');
       textBox.appendChild(copy);
