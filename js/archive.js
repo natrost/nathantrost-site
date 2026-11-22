@@ -13,6 +13,10 @@
     var MAX_SPEED = 6;     /* fastest coast on release, in px per ms */
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
+    var SPREAD = 0.14;     /* moving fast, the images drift apart: at full speed each sits this much further from the middle of the screen (14%), so the gaps open up, and they draw back together as the wall slows */
+    var SPREAD_AT = 2.2;   /* the speed, in px per ms, at which the spread is full; it eases in and out on the way there (smoothstep), never in a straight line */
+    var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
+    var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
     var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
     var INTRO_MS = 2600;   /* how long the whole sweep takes, easing in and out */
     var ZOOM_AT = 0.3;     /* the zoom joins in this far into the sweep, and both finish together */
@@ -230,6 +234,8 @@
       tiles.forEach(function (t) {
         /* tiles wrap around a stretch that starts above and left of the screen by as much as the zoom shows there, so a zoomed-out wall is filled to its edges */
         var x = mod(t.x + panX + step + mx, worldW) - step - mx, y = mod(t.y + panY + t.h + my, worldH) - t.h - my;
+        /* the spread: each image is pushed out from the middle of the screen in proportion to how far it already is, so every gap widens a little and the wall stays whole */
+        if (spread > 0.0001) { x = boxW / 2 + (x + t.w / 2 - boxW / 2) * (1 + spread) - t.w / 2; y = boxH / 2 + (y + t.h / 2 - boxH / 2) * (1 + spread) - t.h / 2; }
         t.sx = x; t.sy = y;
         t.el.style.translate = x + 'px ' + y + 'px';
         var seen = x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
@@ -252,6 +258,7 @@
       t.img.src = t.im.src;
     }
     var vx = 0, vy = 0, raf = 0, last = 0, moving = false, dragging = false;
+    var spread = 0, speed = 0, lastPX = null, lastPY = null;
     function setMoving(on) { if (on !== moving) { moving = on; wall.classList.toggle('is-moving', on); } }
     function tick(now) {
       var dt = Math.min(now - last, 50); last = now;
@@ -260,11 +267,21 @@
         var k = Math.pow(FRICTION, dt / 1000);
         vx *= k; vy *= k;
       }
+      /* how fast the wall is really moving, however it is being moved (drag, coast or scroll wheel), smoothed so the spread does not flicker */
+      if (!reduce && dt > 0 && lastPX !== null) {
+        var inst = Math.min(6, Math.sqrt((panX - lastPX) * (panX - lastPX) + (panY - lastPY) * (panY - lastPY)) / dt);
+        speed += (inst - speed) * (1 - Math.exp(-dt / 70));
+        var f = Math.min(1, speed / SPREAD_AT), target = SPREAD * f * f * (3 - 2 * f);
+        spread += (target - spread) * (1 - Math.exp(-dt / (target > spread ? SPREAD_IN : SPREAD_OUT)));
+      }
+      lastPX = panX; lastPY = panY;
       apply();
-      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01) { raf = requestAnimationFrame(tick); return; }
-      vx = vy = 0; raf = 0; setMoving(false);
+      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || spread > 0.0005 || speed > 0.02) { raf = requestAnimationFrame(tick); return; }
+      vx = vy = 0; raf = 0; speed = 0; lastPX = null;
+      if (spread) { spread = 0; apply(); }
+      setMoving(false);
     }
-    function coast() { setMoving(true); if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+    function coast() { setMoving(true); if (!raf) { last = performance.now(); if (lastPX === null) { lastPX = panX; lastPY = panY; } raf = requestAnimationFrame(tick); } }
     function kick() { hideTitle(); coast(); }
     /* on load the wall gets a throw of its own, once there is something to see; the title stays, as nobody has touched anything yet, and any touch, scroll or key press calls it off */
     var touched = false;
@@ -368,6 +385,7 @@
       if (e.target.closest && e.target.closest('.nt-big, .nt-wall-text, .nt-wall-thumbs, .nt-wall-projects')) return;
       e.preventDefault();
       if (openTile) return;
+      if (!raf) { lastPX = panX; lastPY = panY; }
       vx = vy = 0; panX -= e.deltaX; panY -= e.deltaY; kick();
     }, { passive: false });
 
