@@ -13,7 +13,8 @@
     var MAX_SPEED = 6;     /* fastest coast on release, in px per ms */
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
-    var SPREAD = 0.14;     /* moving fast, the images drift apart: at full speed each sits this much further from the middle of the screen (14%), so the gaps open up, and they draw back together as the wall slows */
+    var SPREAD = 0.18;     /* moving fast, the images around the pointer (or finger) drift apart: at full speed the gaps right by it open up this much (18%), and they draw back together as the wall slows */
+    var SPREAD_R = 500;    /* px: how far from the pointer the gaps open. Beyond it the gaps fade back to normal and the rest of the wall just eases outward as one piece, so images never squeeze into each other */
     var SPREAD_AT = 2.2;   /* the speed, in px per ms, at which the spread is full; it eases in and out on the way there (smoothstep), never in a straight line */
     var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
     var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
@@ -234,8 +235,11 @@
       tiles.forEach(function (t) {
         /* tiles wrap around a stretch that starts above and left of the screen by as much as the zoom shows there, so a zoomed-out wall is filled to its edges */
         var x = mod(t.x + panX + step + mx, worldW) - step - mx, y = mod(t.y + panY + t.h + my, worldH) - t.h - my;
-        /* the spread: each image is pushed out from the middle of the screen in proportion to how far it already is, so every gap widens a little and the wall stays whole */
-        if (spread > 0.0001) { x = boxW / 2 + (x + t.w / 2 - boxW / 2) * (1 + spread) - t.w / 2; y = boxH / 2 + (y + t.h / 2 - boxH / 2) * (1 + spread) - t.h / 2; }
+        /* the spread: each image is pushed away from the pointer. The push grows with distance close in, so the gaps there widen, then levels off by SPREAD_R, so further out the gaps stay as they are. The push never shrinks with distance, so no image ever closes on its neighbour */
+        if (spread > 0.0001) {
+          var dx = x + t.w / 2 - ptrX, dy = y + t.h / 2 - ptrY, r = Math.sqrt(dx * dx + dy * dy);
+          if (r > 0.5) { var push = spread / Math.sqrt(1 + (r / SPREAD_R) * (r / SPREAD_R)); x += dx * push; y += dy * push; }
+        }
         t.sx = x; t.sy = y;
         t.el.style.translate = x + 'px ' + y + 'px';
         var seen = x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
@@ -259,6 +263,11 @@
     }
     var vx = 0, vy = 0, raf = 0, last = 0, moving = false, dragging = false;
     var spread = 0, speed = 0, lastPX = null, lastPY = null;
+    /* where the spread centres: the pointer or finger, last seen over the wall; before anyone points, the middle of the screen. While the wall coasts on after a throw it stays where it was let go */
+    var ptrX = innerWidth / 2, ptrY = innerHeight / 2;
+    function aim(e) { var b = wall.getBoundingClientRect(); ptrX = e.clientX - b.left; ptrY = e.clientY - b.top; }
+    wall.addEventListener('pointermove', aim, { passive: true });
+    wall.addEventListener('pointerdown', aim, { passive: true });
     function setMoving(on) { if (on !== moving) { moving = on; wall.classList.toggle('is-moving', on); } }
     function tick(now) {
       var dt = Math.min(now - last, 50); last = now;
@@ -386,6 +395,7 @@
       e.preventDefault();
       if (openTile) return;
       if (!raf) { lastPX = panX; lastPY = panY; }
+      aim(e);
       vx = vy = 0; panX -= e.deltaX; panY -= e.deltaY; kick();
     }, { passive: false });
 
