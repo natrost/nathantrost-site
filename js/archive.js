@@ -21,8 +21,8 @@
        and when the wall slows they catch up on springs, overshooting a touch before they settle */
     var ELASTIC = /[?&]physics=elastic\b/.test(location.search);
     var ELASTIC_R = 420;     /* px: around the pointer the sheet is stiff; by about this far out the images start to trail */
-    var ELASTIC_LAG = 0.32;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
-    var ELASTIC_K = 0.00013, ELASTIC_C = 0.0125; /* the spring and its damping, per ms: it swings back in about half a second, overshooting a few px once */
+    var ELASTIC_LAG = 0.45;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
+    var ELASTIC_K = 0.00013, ELASTIC_C = 0.009; /* the spring and its damping, per ms: light damping, so it swings back past its place by about half as far as it trailed, then settles in about a second */
     var ELASTIC_MAX = 90;    /* px: no image trails further than this, so neighbours never run into each other */
     var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
     var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
