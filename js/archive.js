@@ -17,6 +17,13 @@
     var SPREAD_R = 500;    /* px: how far from the pointer the gaps open. Just beyond it the gaps narrow a little to make up the room (never by more than a third of a gap, so images never touch), and further out the wall does not move at all */
     var SPREAD_AT = 1.6;   /* the speed, in px per ms, at which the spread is full. It rises quickly from a standstill and eases off near the top (ease-out), so a gentle trackpad swipe already opens the gaps a little */
     var SPREAD_LAG = 110, SPREAD_LAG_FAR = 0.16; /* each image eases to its place on its own: those by the pointer in about 110ms, and every px further out adds 0.16ms, so the movement ripples outward instead of the whole wall shifting at once */
+    /* a second feel to compare, on with ?physics=elastic in the address: the wall acts like an elastic sheet. The images under the pointer or finger stay fixed to it, those further away trail behind the movement, the further the more,
+       and when the wall slows they catch up on springs, overshooting a touch before they settle */
+    var ELASTIC = /[?&]physics=elastic\b/.test(location.search);
+    var ELASTIC_R = 420;     /* px: around the pointer the sheet is stiff; by about this far out the images start to trail */
+    var ELASTIC_LAG = 0.32;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
+    var ELASTIC_K = 0.00013, ELASTIC_C = 0.0125; /* the spring and its damping, per ms: it swings back in about half a second, overshooting a few px once */
+    var ELASTIC_MAX = 90;    /* px: no image trails further than this, so neighbours never run into each other */
     var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
     var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
     var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
@@ -213,7 +220,7 @@
           el.dataset.p = t.im.p;
           el.dataset.name = projects[t.im.p].name;   /* the name that rides above the pointer on rollover (js/carousel-label.js) */
           img.alt = ''; img.draggable = false;
-          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, ox: 0, oy: 0, shown: null, asked: false };
+          var tile = { el: el, img: img, im: t.im, x: k * step, y: t.y, w: w, h: t.h, sx: 0, sy: 0, ox: 0, oy: 0, ex: 0, ey: 0, shown: null, asked: false };
           el._tile = tile; tiles.push(tile);
         });
       });
@@ -232,7 +239,7 @@
       field.style.scale = z === 1 ? '' : z;
     }
     var restless = 0;   /* how far, in px, the furthest image still has to ease; the wall keeps animating until they have all settled */
-    function apply(dt) {
+    function apply(dt, dpx, dpy) {
       restless = 0;
       var mx = boxW * (1 / zoom - 1) / 2, my = boxH * (1 / zoom - 1) / 2;
       tiles.forEach(function (t) {
@@ -241,6 +248,7 @@
         /* the spread: each image is pushed away from the pointer by a bell-shaped amount, largest about SPREAD_R out and fading to nothing well beyond it, so the gaps open around the pointer and the far side of the wall stays put.
            Each image then eases toward that place on its own, the far ones a little later, rather than jumping to it */
         var dx = x + t.w / 2 - ptrX, dy = y + t.h / 2 - ptrY, d2 = dx * dx + dy * dy, u = d2 / (2 * SPREAD_R * SPREAD_R);
+        if (ELASTIC) { elastic(t, d2, dt, dpx || 0, dpy || 0); x += t.ox; y += t.oy; putTile(t, x, y, mx, my); return; }
         var push = spread > 0.0001 && u < 12 ? spread * Math.exp(-u) : 0, tx = dx * push, ty = dy * push;
         if (dt) {
           var k = 1 - Math.exp(-dt / (SPREAD_LAG + Math.sqrt(d2) * SPREAD_LAG_FAR));
@@ -250,12 +258,30 @@
         var left = Math.max(Math.abs(tx - t.ox), Math.abs(ty - t.oy), push ? 0 : Math.abs(t.ox) + Math.abs(t.oy));
         if (left > restless) restless = left;
         x += t.ox; y += t.oy;
+        putTile(t, x, y, mx, my);
+      });
+    }
+    /* the elastic sheet, for one image: how much of the wall's movement it is left behind by grows from nothing at the pointer to ELASTIC_LAG far out, and a damped spring pulls it back. Stepped in short slices so a slow frame cannot throw it */
+    function elastic(t, d2, dt, dpx, dpy) {
+      if (!dt) { t.ox = t.oy = t.ex = t.ey = 0; return; }
+      var w = ELASTIC_LAG * (1 - Math.exp(-d2 / (2 * ELASTIC_R * ELASTIC_R)));
+      t.ox -= dpx * w; t.oy -= dpy * w;
+      for (var n = Math.ceil(dt / 16), h = dt / n, i = 0; i < n; i++) {
+        t.ex += (-ELASTIC_K * t.ox - ELASTIC_C * t.ex) * h; t.ey += (-ELASTIC_K * t.oy - ELASTIC_C * t.ey) * h;
+        t.ox += t.ex * h; t.oy += t.ey * h;
+      }
+      var m = Math.sqrt(t.ox * t.ox + t.oy * t.oy);
+      if (m > ELASTIC_MAX) { t.ox *= ELASTIC_MAX / m; t.oy *= ELASTIC_MAX / m; }
+      if (m < 0.05 && Math.abs(t.ex) + Math.abs(t.ey) < 0.0005) t.ox = t.oy = t.ex = t.ey = 0;
+      var left = m + (Math.abs(t.ex) + Math.abs(t.ey)) * 200;
+      if (left > restless) restless = left;
+    }
+    function putTile(t, x, y, mx, my) {
         t.sx = x; t.sy = y;
         t.el.style.translate = x + 'px ' + y + 'px';
         var seen = x < boxW + mx && x + t.w > -mx && y < boxH + my && y + t.h > -my;
         if (seen !== t.shown) { t.shown = seen; t.el.style.visibility = seen || t.hold ? '' : 'hidden'; }
         if (!t.asked && x < boxW + mx + 400 && x + t.w > -mx - 400 && y < boxH + my + 400 && y + t.h > -my - 400) loadTile(t);
-      });
     }
     var zoomAnim = null;
     function unzoom() {
@@ -287,14 +313,15 @@
         vx *= k; vy *= k;
       }
       /* how fast the wall is really moving, however it is being moved (drag, coast or scroll wheel), smoothed so the spread does not flicker */
-      if (!reduce && dt > 0 && lastPX !== null) {
+      var dpx = lastPX === null ? 0 : panX - lastPX, dpy = lastPX === null ? 0 : panY - lastPY;
+      if (!reduce && !ELASTIC && dt > 0 && lastPX !== null) {
         var inst = Math.min(6, Math.sqrt((panX - lastPX) * (panX - lastPX) + (panY - lastPY) * (panY - lastPY)) / dt);
         speed += (inst - speed) * (1 - Math.exp(-dt / 70));
         var f = Math.min(1, speed / SPREAD_AT), target = SPREAD * f * (2 - f);
         spread += (target - spread) * (1 - Math.exp(-dt / (target > spread ? SPREAD_IN : SPREAD_OUT)));
       }
       lastPX = panX; lastPY = panY;
-      apply(reduce ? 0 : dt);
+      apply(reduce ? 0 : dt, dpx, dpy);
       if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || spread > 0.0005 || speed > 0.02 || restless > 0.3) { raf = requestAnimationFrame(tick); return; }
       vx = vy = 0; raf = 0; speed = 0; lastPX = null;
       if (spread) { spread = 0; apply(); }
