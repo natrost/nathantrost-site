@@ -28,7 +28,7 @@
     var TILT = 3.2, TILT_MAX = 7; /* degrees of tip per px/ms of speed, and the most it ever tips */
     var TILT_DEPTH = 1600;        /* px: the perspective the tips are seen in; nearer makes them look deeper */
     /* a hard throw blurs the wall slightly, as a camera would; it fades in from BLUR_FROM to BLUR_AT px/ms and is never more than BLUR_MAX px. Gentle drags stay sharp */
-    var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 2.2;
+    var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 1.3;
     var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
     var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
     var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
