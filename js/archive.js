@@ -16,8 +16,8 @@
     /* the wall acts like an elastic sheet: the images under the pointer or finger stay fixed to it, those further away trail behind the movement, the further the more,
        and when the wall slows they catch up on springs, overshooting a little before they settle */
     var ELASTIC_R = 420;     /* px: around the pointer the sheet is stiff; by about this far out the images start to trail */
-    var ELASTIC_LAG = 0.45;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
-    var ELASTIC_K = 0.00013, ELASTIC_C = 0.009; /* the spring and its damping, per ms: light damping, so it swings back past its place by about half as far as it trailed, then settles in about a second */
+    var ELASTIC_LAG = 0.39;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
+    var ELASTIC_K = 0.00013, ELASTIC_C = 0.0105; /* the spring and its damping, per ms: it swings back past its place by under half as far as it trailed, then settles in about two thirds of a second */
     var ELASTIC_MAX = 90;    /* px: no image trails further than this, so neighbours never run into each other */
     /* moving, each image tips back a little along the way it travels, as if the air pushed its leading edge away, and rocks level with its spring as the wall slows */
     var TILT = 3.2, TILT_MAX = 7; /* degrees of tip per px/ms of speed, and the most it ever tips */
