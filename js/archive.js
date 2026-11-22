@@ -1,4 +1,4 @@
-/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in (along with every image the opening sweep will pass over), the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info, and a sideways swipe steps through a project's images.
+/* Archive image wall: every project image in one full-screen wall that drags in any direction and coasts on release, harder drags coasting further; it moves like an elastic sheet, the images away from the pointer trailing a little and springing back, tipping as they travel, with a slight blur on hard throws. It loops forever, the images fit together in columns, and no two images from one project ever touch. On load the images fill in (along with every image the opening sweep will pass over), the full wall holds for a moment, then it sweeps across on a diagonal, zooming in as it goes, in one smooth motion, to show that it moves. Clicking an image grows it to the center while the rest part around it and leave the screen, with the project text top left, its other images stacked bottom left, arrows at the bottom center to step through them flanked by skip buttons to the previous and next project, and a list of every project lower right to jump to. On phones the description folds away under More Info, and a sideways swipe steps through a project's images.
    All the content is read from the Archives collection in Webflow, so new projects and images appear here on their own. Images come from the Image 1-10 fields, in that order; empty fields are skipped. A project with none of them filled in falls back to its Multi-Images, which Webflow limits to the first five */
 (function () {
   document.documentElement.classList.add('nt-wall-on');
@@ -13,24 +13,17 @@
     var MAX_SPEED = 6;     /* fastest coast on release, in px per ms */
     var FRICTION = 0.03;   /* how much speed is left after one second of coasting; higher coasts further */
     var DRAG_PX = 5;       /* movement before a press becomes a drag rather than a click */
-    var SPREAD = 0.18;     /* moving fast, the images around the pointer (or finger) drift apart: at full speed the gaps right by it open up this much (18%), and they draw back together as the wall slows */
-    var SPREAD_R = 500;    /* px: how far from the pointer the gaps open. Just beyond it the gaps narrow a little to make up the room (never by more than a third of a gap, so images never touch), and further out the wall does not move at all */
-    var SPREAD_AT = 1.6;   /* the speed, in px per ms, at which the spread is full. It rises quickly from a standstill and eases off near the top (ease-out), so a gentle trackpad swipe already opens the gaps a little */
-    var SPREAD_LAG = 110, SPREAD_LAG_FAR = 0.16; /* each image eases to its place on its own: those by the pointer in about 110ms, and every px further out adds 0.16ms, so the movement ripples outward instead of the whole wall shifting at once */
-    /* a second feel to compare, on with ?physics=elastic in the address: the wall acts like an elastic sheet. The images under the pointer or finger stay fixed to it, those further away trail behind the movement, the further the more,
-       and when the wall slows they catch up on springs, overshooting a touch before they settle */
-    var ELASTIC = /[?&]physics=elastic\b/.test(location.search);
+    /* the wall acts like an elastic sheet: the images under the pointer or finger stay fixed to it, those further away trail behind the movement, the further the more,
+       and when the wall slows they catch up on springs, overshooting a little before they settle */
     var ELASTIC_R = 420;     /* px: around the pointer the sheet is stiff; by about this far out the images start to trail */
     var ELASTIC_LAG = 0.45;  /* the most a far image is left behind: this share of each frame's movement, pulled back in by its spring */
     var ELASTIC_K = 0.00013, ELASTIC_C = 0.009; /* the spring and its damping, per ms: light damping, so it swings back past its place by about half as far as it trailed, then settles in about a second */
     var ELASTIC_MAX = 90;    /* px: no image trails further than this, so neighbours never run into each other */
-    /* moving, each image tips back a little along the way it travels, as if the air pushed its leading edge away, and levels out as it slows; with the elastic feel it also rocks with its spring */
+    /* moving, each image tips back a little along the way it travels, as if the air pushed its leading edge away, and rocks level with its spring as the wall slows */
     var TILT = 3.2, TILT_MAX = 7; /* degrees of tip per px/ms of speed, and the most it ever tips */
     var TILT_DEPTH = 1600;        /* px: the perspective the tips are seen in; nearer makes them look deeper */
     /* a hard throw blurs the wall slightly, as a camera would; it fades in from BLUR_FROM to BLUR_AT px/ms and is never more than BLUR_MAX px. Gentle drags stay sharp */
     var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 1.3;
-    var SPREAD_IN = 170;   /* ms: how quickly the images move apart as the wall speeds up */
-    var SPREAD_OUT = 480;  /* ms: and how gently they settle back together as it slows */
     var INTRO_X = -560, INTRO_Y = -340; /* how far the wall sweeps on load, in px: left and up, on a diagonal, zooming in as it goes */
     var INTRO_MS = 2600;   /* how long the whole sweep takes, easing in and out */
     var ZOOM_AT = 0.3;     /* the zoom joins in this far into the sweep, and both finish together */
@@ -251,18 +244,8 @@
       tiles.forEach(function (t) {
         /* tiles wrap around a stretch that starts above and left of the screen by as much as the zoom shows there, so a zoomed-out wall is filled to its edges */
         var x = mod(t.x + panX + step + mx, worldW) - step - mx, y = mod(t.y + panY + t.h + my, worldH) - t.h - my;
-        /* the spread: each image is pushed away from the pointer by a bell-shaped amount, largest about SPREAD_R out and fading to nothing well beyond it, so the gaps open around the pointer and the far side of the wall stays put.
-           Each image then eases toward that place on its own, the far ones a little later, rather than jumping to it */
-        var dx = x + t.w / 2 - ptrX, dy = y + t.h / 2 - ptrY, d2 = dx * dx + dy * dy, u = d2 / (2 * SPREAD_R * SPREAD_R);
-        if (ELASTIC) { elastic(t, d2, dt, dpx || 0, dpy || 0); x += t.ox; y += t.oy; putTile(t, x, y, mx, my); return; }
-        var push = spread > 0.0001 && u < 12 ? spread * Math.exp(-u) : 0, tx = dx * push, ty = dy * push;
-        if (dt) {
-          var k = 1 - Math.exp(-dt / (SPREAD_LAG + Math.sqrt(d2) * SPREAD_LAG_FAR));
-          t.ox += (tx - t.ox) * k; t.oy += (ty - t.oy) * k;
-        } else { t.ox = tx; t.oy = ty; }
-        if (Math.abs(t.ox) < 0.05 && Math.abs(t.oy) < 0.05 && !push) t.ox = t.oy = 0;
-        var left = Math.max(Math.abs(tx - t.ox), Math.abs(ty - t.oy), push ? 0 : Math.abs(t.ox) + Math.abs(t.oy));
-        if (left > restless) restless = left;
+        var dx = x + t.w / 2 - ptrX, dy = y + t.h / 2 - ptrY;
+        elastic(t, dx * dx + dy * dy, dt, dpx || 0, dpy || 0);
         x += t.ox; y += t.oy;
         putTile(t, x, y, mx, my);
       });
@@ -308,13 +291,13 @@
       t.img.src = t.im.src;
     }
     var vx = 0, vy = 0, raf = 0, last = 0, moving = false, dragging = false;
-    var spread = 0, speed = 0, lastPX = null, lastPY = null;
+    var lastPX = null, lastPY = null;
     var gvx = 0, gvy = 0, blurNow = '';   /* the wall's own speed, px per ms, smoothed, for the tip and the blur */
     function setBlur(px) {
       var b = px > 0.05 ? 'blur(' + px.toFixed(1) + 'px)' : '';
       if (b !== blurNow) { blurNow = b; field.style.filter = b; }
     }
-    /* where the spread centres: the pointer or finger, last seen over the wall; before anyone points, the middle of the screen. While the wall coasts on after a throw it stays where it was let go */
+    /* where the sheet is held: the pointer or finger, last seen over the wall; before anyone points, the middle of the screen. While the wall coasts on after a throw it stays where it was let go */
     var ptrX = innerWidth / 2, ptrY = innerHeight / 2;
     function aim(e) { var b = wall.getBoundingClientRect(); ptrX = e.clientX - b.left; ptrY = e.clientY - b.top; }
     wall.addEventListener('pointermove', aim, { passive: true });
@@ -327,14 +310,8 @@
         var k = Math.pow(FRICTION, dt / 1000);
         vx *= k; vy *= k;
       }
-      /* how fast the wall is really moving, however it is being moved (drag, coast or scroll wheel), smoothed so the spread does not flicker */
+      /* how far the wall moved this frame, however it is being moved (drag, coast or scroll wheel): the sheet, tip and blur all follow it */
       var dpx = lastPX === null ? 0 : panX - lastPX, dpy = lastPX === null ? 0 : panY - lastPY;
-      if (!reduce && !ELASTIC && dt > 0 && lastPX !== null) {
-        var inst = Math.min(6, Math.sqrt((panX - lastPX) * (panX - lastPX) + (panY - lastPY) * (panY - lastPY)) / dt);
-        speed += (inst - speed) * (1 - Math.exp(-dt / 70));
-        var f = Math.min(1, speed / SPREAD_AT), target = SPREAD * f * (2 - f);
-        spread += (target - spread) * (1 - Math.exp(-dt / (target > spread ? SPREAD_IN : SPREAD_OUT)));
-      }
       lastPX = panX; lastPY = panY;
       if (!reduce && dt > 0) {
         var kv = 1 - Math.exp(-dt / 60);
@@ -343,9 +320,9 @@
         setBlur(BLUR_MAX * bf * bf * (3 - 2 * bf));
       }
       apply(reduce ? 0 : dt, dpx, dpy);
-      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || spread > 0.0005 || speed > 0.02 || restless > 0.3 || Math.abs(gvx) + Math.abs(gvy) > 0.01) { raf = requestAnimationFrame(tick); return; }
-      vx = vy = 0; raf = 0; speed = 0; lastPX = null; gvx = gvy = 0; setBlur(0);
-      spread = 0; apply();
+      if (dragging || Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01 || restless > 0.3 || Math.abs(gvx) + Math.abs(gvy) > 0.01) { raf = requestAnimationFrame(tick); return; }
+      vx = vy = 0; raf = 0; lastPX = null; gvx = gvy = 0; setBlur(0);
+      apply();
       setMoving(false);
     }
     function coast() { setMoving(true); if (!raf) { last = performance.now(); if (lastPX === null) { lastPX = panX; lastPY = panY; } raf = requestAnimationFrame(tick); } }
