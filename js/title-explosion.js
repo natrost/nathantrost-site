@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', function () {
   layer.setAttribute('aria-hidden', 'true');
   document.body.appendChild(layer);
 
+  /* the footer name shows faint (Webflow sets it to 20%): while it blows apart its copy brightens to full, and once the pointer leaves it fades
+     gently back down to that faint level before the real name returns, so it never jumps from white to grey. FADE_IN and FADE_OUT are in seconds */
+  var FADE_IN = .15, FADE_OUT = .9, glow = 0, baseOp = 1, baseA = 1;
   var broken = false, map = null, flying = [], holes = [], tears = [], sprites = [], sources = null, nextImg = 0, energy = 0, x = 0, y = 0, raf = 0, last = 0, seed = 1, lastSeed = 0, on = false, color = '#000', dpr = 1;
   var PAD = 16;
   var INKS = ['#ff1e3c', '#18d6ff', '#ffe600'];
@@ -163,12 +166,13 @@ document.addEventListener('DOMContentLoaded', function () {
     /* a new mix of failures for each rollover */
     mix = { seed: rnd(0, 999), wave: Math.random() < .6 ? rnd(2, 6) : 0, freq: rnd(.08, .16), slip: (Math.random() < .5 ? -1 : 1) * rnd(1.5, 5), tear: rnd(2, 6), lines: Math.floor(rnd(0, 10)) };
     size();
+    if (opt.img) baseOp = parseFloat(getComputedStyle(host).opacity) || 1;
     host.classList.add('nt-burst-on');
     if (opt.img) host.style.visibility = 'hidden';
     layer.classList.add('is-on');
   }
   function stop() {
-    on = false; energy = 0; flying = []; holes = []; tears = []; sprites = [];
+    on = false; energy = 0; glow = 0; flying = []; holes = []; tears = []; sprites = [];
     if (map) map.gone.fill(0);
     host.classList.remove('nt-burst-on');
     if (opt.img) host.style.visibility = '';
@@ -299,11 +303,11 @@ document.addEventListener('DOMContentLoaded', function () {
     /* streaks fade the further they are from the cursor */
     for (var i = 0; i < mix.lines * k; i++) {
       var sy = y + rnd(-band, band);
-      ctx.globalAlpha = smooth((1 - Math.abs(sy - y) / band) * 1.5) * (.4 + Math.random() * .6);
+      ctx.globalAlpha = baseA * smooth((1 - Math.abs(sy - y) / band) * 1.5) * (.4 + Math.random() * .6);
       ctx.fillStyle = Math.random() < .5 ? color : INKS[Math.floor(rnd(0, 3))];
       ctx.fillRect(x + rnd(-REACH, REACH), sy, rnd(30, REACH * 1.5), Math.random() < .7 ? 1 : 2);
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = baseA;
     /* the scan lines: a soft patch around the cursor rather than a full-width block. Each line fades out at both ends and toward the top and bottom of the patch, and its length and centre drift a little from line to line, so the patch has a ragged, uneven edge */
     if (k > .02) {
       ctx.globalCompositeOperation = 'destination-out';
@@ -328,6 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var box = host.getBoundingClientRect();
     if (now - lastSeed > 70) { seed++; lastSeed = now; }
     energy *= Math.pow(.02, dt);
+    if (opt.img) { glow = energy > .05 ? Math.min(1, glow + dt / FADE_IN) : Math.max(0, glow - dt / FADE_OUT); baseA = baseOp + (1 - baseOp) * smooth(glow); }
     if (energy > .05) { blast(now, box); tear(now); throwImage(now); }
     holes = holes.filter(function (i) { return map.gone[i] > now; });
     tears = tears.filter(function (b) { return b.end > now; });
@@ -336,7 +341,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var ox = box.left - PAD, oy = box.top - PAD;
     /* the footer name: the picture, its tears and its holes stay inside the strip that shows it; the flying pixels can leave it */
     if (map.cut) { var ct = Math.max(oy + map.cut.t, shownFrom()); ctx.save(); ctx.beginPath(); ctx.rect(ox + map.cut.l, ct, map.cut.r - map.cut.l, Math.max(0, oy + map.cut.b - ct)); ctx.clip(); }
+    ctx.globalAlpha = baseA;
     paintText(ox, oy, now);
+    ctx.globalAlpha = baseA;
     tears.forEach(function (b) {
       var sx = Math.max(0, x - b.wide - ox), sy = Math.max(0, b.y - oy), sw = Math.min(map.w - sx, b.wide * 2), sh = Math.min(map.h - sy, b.h);
       if (sw <= 0 || sh <= 0) return;
@@ -349,6 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
       ctx.clearRect(ox + (holes[h] % map.cols) * CELL, oy + Math.floor(holes[h] / map.cols) * CELL, CELL, CELL);
     }
     if (map.cut) ctx.restore();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = color;
     /* static around the cursor, as thick as the blast is busy, redrawn at random every frame */
     var specks = Math.min(NOISE, Math.floor((holes.length + flying.length) * .09));
@@ -372,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
       ctx.fillRect(Math.round(p.x / CELL) * CELL + skip, Math.round(p.y / CELL) * CELL, p.w, p.s);
       return true;
     });
-    if (energy > .05 || holes.length || flying.length || sprites.length) { raf = requestAnimationFrame(frame); return; }
+    if (energy > .05 || holes.length || flying.length || sprites.length || glow > 0) { raf = requestAnimationFrame(frame); return; }
     stop();
   }
   function run() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
