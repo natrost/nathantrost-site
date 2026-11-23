@@ -17,6 +17,8 @@
   function blur(f){return f>=1?'none':'blur('+Math.min(3/Math.max(f,.001)-3,30)+'px)';}
   /* turns an element's text into two stacked spans that can melt from one string into another */
   function morpher(el){
+    /* the pixel version being tried out (js/pixel-morph.js), only there when its address flag is on */
+    if(window.__ntPixelMorph)return window.__ntPixelMorph(el);
     el.classList.add('nt-morph');
     var a=document.createElement('span'),b=document.createElement('span');
     el.textContent='';el.appendChild(a);el.appendChild(b);
@@ -306,6 +308,8 @@
       var from=btnShown;btnShown=show;
       stage.classList.toggle('is-ready',show);
       if(!btn||reduce||(!from&&!show))return;
+      /* with the pixel version the button glitches in place rather than blurring */
+      if(window.__ntPixelMorph&&from&&show){if(window.__ntVhsButton)window.__ntVhsButton(btn);return;}
       var t0=performance.now();
       btn.style.transition='none';
       (function step(now){
@@ -374,6 +378,7 @@
       if(idx<0){morphHead('');morphEyebrow('');meltBtn(false);return;}
       blurs[idx].classList.add('is-active');stageCards[idx].classList.add('is-active');dots[idx].classList.add('is-active');dots[idx].setAttribute('aria-current','true');
       var p=projects[idx];
+      if(morphHead.snap)morphHead.snap();
       if(hl)hl.className=p.headClass+' nt-morph'+(hl.classList.contains('is-morphing')?' is-morphing':'');
       if(btn)btn.setAttribute('href',p.href);
       morphEyebrow(p.eyebrow);
