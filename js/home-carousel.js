@@ -10,7 +10,7 @@
      itself holds the perspective, so the slide's own transforms and the intro's rise are untouched */
   var ELASTIC_R = 420, ELASTIC_LAG = 0.3, ELASTIC_K = 0.00013, ELASTIC_C = 0.0165, ELASTIC_MAX = 50;
   var TILT = 3.2, TILT_MAX = 7, TILT_DEPTH = 1600;          /* degrees per px/ms of speed, the most it tips, perspective px */
-  var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 1.3;       /* the blur starts at this speed (px/ms), is full by this one, and is this many px */
+  var BLUR_FROM = 0.8, BLUR_AT = 2.4, BLUR_MAX = 1.3;       /* the blur starts at this speed (px/ms), is full by this one, and is this many px (lower than the wall, as rows are dragged slower) */
   function elasticRow(root, list) {
     var items = [], px = null, gv = 0, blurNow = '';
     function collect() {
