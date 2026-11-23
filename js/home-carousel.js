@@ -3,6 +3,49 @@
   var SECONDS_PER_SLIDE = 25; /* lower = faster */
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* the row stretches like the Archive wall's elastic sheet, side to side only: slides near the pointer move with the drag or throw,
+     ones further off trail behind and spring back into line. The auto drift is left out, so a resting carousel stays evenly spaced.
+     The offset goes on each slide's inner element (its translate), so the slide's own transforms and the intro's rise are untouched */
+  var ELASTIC_R = 420, ELASTIC_LAG = 0.39, ELASTIC_K = 0.00013, ELASTIC_C = 0.0105, ELASTIC_MAX = 70;
+  function elasticRow(root, list) {
+    var items = [], px = null, rest = 0;
+    function collect() {
+      items = Array.prototype.slice.call(list.children).map(function (s) {
+        var old = items.filter(function (i) { return i.s === s; })[0];
+        return { s: s, el: s.firstElementChild || s, c: s.offsetLeft + s.offsetWidth / 2, o: old ? old.o : 0, v: old ? old.v : 0 };
+      });
+    }
+    function aim(e) { px = e.clientX; }
+    root.addEventListener('pointermove', aim);
+    root.addEventListener('pointerdown', aim);
+    window.addEventListener('pointermove', function (e) { if (root.classList.contains('is-dragging')) aim(e); });
+    return {
+      measure: collect,
+      /* the row loops by jumping half its length, which swaps every slide for its copy: the copies take over the offsets so nothing pops */
+      swap: function () {
+        var h = items.length / 2;
+        for (var i = 0; i < h; i++) { var a = items[i], b = items[i + h], o = a.o, v = a.v; a.o = b.o; a.v = b.v; b.o = o; b.v = v; }
+      },
+      /* moved: how far the drag or throw (not the drift) shifted the row this frame; x: the row's offset; ms: frame time */
+      step: function (moved, x, ms) {
+        if (!items.length) collect();
+        var left = root.getBoundingClientRect().left, p = px === null ? left + root.clientWidth / 2 : px, n = Math.max(1, Math.ceil(ms / 16)), h = ms / n;
+        rest = 0;
+        items.forEach(function (it) {
+          var d = left + x + it.c - p, w = ELASTIC_LAG * (1 - Math.exp(-d * d / (2 * ELASTIC_R * ELASTIC_R)));
+          it.o -= moved * w;
+          for (var i = 0; i < n; i++) { it.v += (-ELASTIC_K * it.o - ELASTIC_C * it.v) * h; it.o += it.v * h; }
+          if (it.o > ELASTIC_MAX) { it.o = ELASTIC_MAX; it.v = 0; } else if (it.o < -ELASTIC_MAX) { it.o = -ELASTIC_MAX; it.v = 0; }
+          if (Math.abs(it.o) < 0.05 && Math.abs(it.v) < 0.001) { it.o = 0; it.v = 0; }
+          rest = Math.max(rest, Math.abs(it.o));
+          var t = it.o ? it.o.toFixed(2) + 'px 0' : '';
+          if (it.t !== t) { it.t = t; it.el.style.translate = t; }
+        });
+        return rest > 0.05;
+      }
+    };
+  }
+
   document.querySelectorAll('.splide').forEach(function (root) {
     var list = root.querySelector('.splide__list');
     if (!list) return;
@@ -29,10 +72,12 @@
     var dir = root.id === 'splide2' ? 1 : -1;
     var x = 0, half = 0, speed = 0, momentum = 0;
     var dragging = false, moved = false, startX = 0, lastX = 0, lastT = 0, vel = 0;
+    var sheet = reduce ? null : elasticRow(root, list), shift = 0, springing = false;
 
     function measure() {
       half = list.scrollWidth / 2;
       speed = (half / count) / SECONDS_PER_SLIDE;
+      if (sheet) sheet.measure();
     }
     function wrap(v) {
       if (!half) return v;
@@ -49,7 +94,7 @@
       prev = now;
       if (!dragging) {
         if (Math.abs(momentum) > 1) {
-          x += momentum * dt;
+          x += momentum * dt; shift += momentum * dt;
           momentum *= Math.pow(0.05, dt);
         } else {
           momentum = 0;
@@ -57,9 +102,12 @@
         /* root._ntBoost speeds the drift up for a moment (the homepage intro's fast run-through); 1 is the usual pace */
         if (!reduce) x += dir * speed * dt * (root._ntBoost || 1);
       }
+      var unwrapped = x;
       x = wrap(x);
+      if (sheet && x !== unwrapped) sheet.swap();
       list.style.transform = 'translate3d(' + x + 'px,0,0)';
-      if (seen || dragging || Math.abs(momentum) > 1) requestAnimationFrame(tick); else running = false;
+      if (sheet) { springing = sheet.step(shift, x, dt * 1000); shift = 0; }
+      if (seen || dragging || springing || Math.abs(momentum) > 1) requestAnimationFrame(tick); else running = false;
     }
     /* it only moves while it is on screen, or still being dragged or coasting; off screen it rests and picks up where it left off */
     var seen = true, running = true;
@@ -80,7 +128,7 @@
       var now = performance.now();
       var dx = e.clientX - lastX;
       if (Math.abs(e.clientX - startX) > 5) moved = true;
-      x += dx;
+      x += dx; shift += dx;
       vel = dx / Math.max((now - lastT) / 1000, 0.001);
       lastX = e.clientX; lastT = now;
     });
