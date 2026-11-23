@@ -1,4 +1,4 @@
-/* Pixel explosion on the homepage, About page and project page titles (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
+/* Pixel explosion on the homepage, About page and project page titles, and on the big outlined name along the bottom of the footer (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
    The text near the cursor also fails like a VHS tape: its rows slip and wobble, red and blue ghosts pull away from it, scan lines cut through it and streaks shoot off, in a new mix for each rollover. Only on a real pointer, and never with reduced motion */
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -6,8 +6,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (window.__ntTitleBurst) return;
   window.__ntTitleBurst = true;
   /* the wrapper matters: the Archive title has the same classes as the homepage headline, but sits outside this section. On project pages it is the white headline in the dark header */
-  var host = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text, .work_feature_wrapper .theworktextwrapper .title_text');
-  if (!host) return;
+  var title = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text, .work_feature_wrapper .theworktextwrapper .title_text');
+  /* the footer's big name is an image (the outlined SVG): it blows apart the same way, its pixels taken from the picture instead of the text */
+  var footerName = document.querySelector('.nt-footer-under .image-63') || document.querySelector('.image-63');
+  if (!title && !footerName) return;
   var REACH = 150;     /* the blast reaches this far from the cursor, in px, so it is about 300px across */
   var CELL = 4;        /* the size of one pixel of the text, in px */
   var SPEED = 620;     /* how fast the pixels nearest the cursor fly out, in px per second */
@@ -23,13 +25,25 @@ document.addEventListener('DOMContentLoaded', function () {
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
-  var section = host.closest('.home_feature_wrapper, .feature_wrapper, .work_feature_wrapper') || document.body;
+  if (title) explode(title, {});
+  if (footerName) explode(footerName, { img: true });
+
+  /* each exploding thing gets its own copy of everything below, and its own drawing layer */
+  function explode(host, opt) {
+  /* the footer name sits in a strip that crops its bottom off, so the drawing is kept inside that strip; it has no text reveal to wait for */
+  var clipEl = opt.img ? host.parentElement : null;
+  function ready() { return opt.img || host.classList.contains('is-done'); }
+  /* a copy of the picture fetched for drawing (the page's own copy can't be read back from a canvas); jsDelivr allows this */
+  var pic = null;
+  if (opt.img) { pic = new Image(); pic.crossOrigin = 'anonymous'; pic.decoding = 'async'; }
+  function picReady() { if (!pic.src) pic.src = host.currentSrc || host.src; return pic.complete && pic.naturalWidth > 0 && pic.src === (host.currentSrc || host.src); }
+  var section = opt.img ? (host.closest('footer, [class*="footer"]') || document.body) : (host.closest('.home_feature_wrapper, .feature_wrapper, .work_feature_wrapper') || document.body);
   var layer = document.createElement('canvas'), ctx = layer.getContext('2d');
   layer.className = 'nt-burst-layer';
   layer.setAttribute('aria-hidden', 'true');
   document.body.appendChild(layer);
 
-  var map = null, flying = [], holes = [], tears = [], sprites = [], sources = null, nextImg = 0, energy = 0, x = 0, y = 0, raf = 0, last = 0, seed = 1, lastSeed = 0, on = false, color = '#000', dpr = 1;
+  var broken = false, map = null, flying = [], holes = [], tears = [], sprites = [], sources = null, nextImg = 0, energy = 0, x = 0, y = 0, raf = 0, last = 0, seed = 1, lastSeed = 0, on = false, color = '#000', dpr = 1;
   var PAD = 16;
   var INKS = ['#ff1e3c', '#18d6ff', '#ffe600'];
   var mix = null;
@@ -91,7 +105,8 @@ document.addEventListener('DOMContentLoaded', function () {
     g.scale(dpr, dpr);
     g.textBaseline = 'alphabetic';
     if ('fontKerning' in g) g.fontKerning = 'normal';
-    var walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT), node, range = document.createRange();
+    if (opt.img) g.drawImage(pic, PAD, PAD, box.width, box.height);
+    var walker = document.createTreeWalker(opt.img ? document.createElement('i') : host, NodeFilter.SHOW_TEXT), node, range = document.createRange();
     while ((node = walker.nextNode())) {
       var text = node.textContent;
       if (!text.trim()) continue;
@@ -110,14 +125,28 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
     var cols = Math.ceil(w / CELL), rows = Math.ceil(h / CELL), ink = new Uint8Array(cols * rows), gone = new Float64Array(cols * rows);
-    var data = g.getImageData(0, 0, c.width, c.height).data, tally = new Uint16Array(cols * rows);
+    var data;
+    try { data = g.getImageData(0, 0, c.width, c.height).data; } catch (e) { map = null; broken = true; return; }
+    var tally = new Uint16Array(cols * rows), sum = [0, 0, 0, 0];
     for (var py = 0; py < c.height; py++) {
       var row = Math.floor(py / dpr / CELL) * cols;
-      for (var px = 0; px < c.width; px++) if (data[(py * c.width + px) * 4 + 3] > 96) tally[row + Math.floor(px / dpr / CELL)]++;
+      for (var px = 0; px < c.width; px++) {
+        var at = (py * c.width + px) * 4;
+        if (data[at + 3] > 96) { tally[row + Math.floor(px / dpr / CELL)]++; if (opt.img) { sum[0] += data[at]; sum[1] += data[at + 1]; sum[2] += data[at + 2]; sum[3]++; } }
+      }
     }
+    /* the picture's flying pixels take its own colour */
+    if (opt.img && sum[3]) color = 'rgb(' + Math.round(sum[0] / sum[3]) + ',' + Math.round(sum[1] / sum[3]) + ',' + Math.round(sum[2] / sum[3]) + ')';
+    /* where the strip shows the picture, measured from the drawing's corner; only that part can blow apart */
+    var cut = null;
+    if (clipEl) { var cb = clipEl.getBoundingClientRect(); cut = { l: cb.left - box.left + PAD, t: cb.top - box.top + PAD, r: cb.right - box.left + PAD, b: cb.bottom - box.top + PAD }; }
     var need = CELL * dpr * CELL * dpr * 0.15;
-    for (var n = 0; n < tally.length; n++) if (tally[n] > need) ink[n] = 1;
-    map = { c: c, red: tint(c, INKS[0]), blue: tint(c, INKS[1]), w: w, h: h, bw: box.width, bh: box.height, cols: cols, rows: rows, ink: ink, gone: gone };
+    for (var n = 0; n < tally.length; n++) {
+      if (tally[n] <= need) continue;
+      if (cut) { var mx = (n % cols + .5) * CELL, my = (Math.floor(n / cols) + .5) * CELL; if (mx < cut.l || mx > cut.r || my < cut.t || my > cut.b) continue; }
+      ink[n] = 1;
+    }
+    map = { c: c, red: tint(c, INKS[0]), blue: tint(c, INKS[1]), w: w, h: h, bw: box.width, bh: box.height, cols: cols, rows: rows, ink: ink, gone: gone, cut: cut };
     holes = []; flying = []; tears = [];
   }
   /* the layer is 100% wide, which leaves out a page scrollbar, so its pixels are sized to that same width; sized to the whole window instead, the drawing got squeezed into the narrower box and the text slid left, more so the further right it sat */
@@ -132,12 +161,14 @@ document.addEventListener('DOMContentLoaded', function () {
     mix = { seed: rnd(0, 999), wave: Math.random() < .6 ? rnd(2, 6) : 0, freq: rnd(.08, .16), slip: (Math.random() < .5 ? -1 : 1) * rnd(1.5, 5), tear: rnd(2, 6), lines: Math.floor(rnd(0, 10)) };
     size();
     host.classList.add('nt-burst-on');
+    if (opt.img) host.style.visibility = 'hidden';
     layer.classList.add('is-on');
   }
   function stop() {
     on = false; energy = 0; flying = []; holes = []; tears = []; sprites = [];
     if (map) map.gone.fill(0);
     host.classList.remove('nt-burst-on');
+    if (opt.img) host.style.visibility = '';
     layer.classList.remove('is-on');
   }
   function noise(a, b) { var n = Math.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453; return n - Math.floor(n); }
@@ -289,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function () {
     raf = 0;
     if (!map) return;
     /* the text's own reveal takes over if it replays */
-    if (!host.classList.contains('is-done')) { stop(); return; }
+    if (!ready()) { stop(); return; }
     var dt = Math.min(now - last, 50) / 1000; last = now;
     var box = host.getBoundingClientRect();
     if (now - lastSeed > 70) { seed++; lastSeed = now; }
@@ -300,6 +331,8 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     var ox = box.left - PAD, oy = box.top - PAD;
+    /* the footer name: the picture, its tears and its holes stay inside the strip that shows it; the flying pixels can leave it */
+    if (map.cut) { ctx.save(); ctx.beginPath(); ctx.rect(ox + map.cut.l, oy + map.cut.t, map.cut.r - map.cut.l, map.cut.b - map.cut.t); ctx.clip(); }
     paintText(ox, oy, now);
     tears.forEach(function (b) {
       var sx = Math.max(0, x - b.wide - ox), sy = Math.max(0, b.y - oy), sw = Math.min(map.w - sx, b.wide * 2), sh = Math.min(map.h - sy, b.h);
@@ -312,6 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (Math.random() < .06) continue;
       ctx.clearRect(ox + (holes[h] % map.cols) * CELL, oy + Math.floor(holes[h] / map.cols) * CELL, CELL, CELL);
     }
+    if (map.cut) ctx.restore();
     ctx.fillStyle = color;
     /* static around the cursor, as thick as the blast is busy, redrawn at random every frame */
     var specks = Math.min(NOISE, Math.floor((holes.length + flying.length) * .09));
@@ -343,10 +377,10 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('mousemove', function (e) {
     var nx = e.clientX, ny = e.clientY, moved = Math.sqrt((nx - x) * (nx - x) + (ny - y) * (ny - y));
     x = nx; y = ny;
-    if (!host.classList.contains('is-done') || !section.contains(e.target) || (e.target.closest && e.target.closest('a, button'))) return;
+    if (broken || !ready() || !section.contains(e.target) || (e.target.closest && e.target.closest('a, button'))) return;
     var box = host.getBoundingClientRect();
     if (nx < box.left - 24 || nx > box.right + 24 || ny < box.top - 24 || ny > box.bottom + 24) return;
-    if (!document.fonts || document.fonts.status !== 'loaded') return;
+    if (opt.img ? !picReady() : (!document.fonts || document.fonts.status !== 'loaded')) return;
     loadSources();
     if (!map || Math.abs(map.bw - box.width) > 1 || Math.abs(map.bh - box.height) > 1) { if (on) stop(); build(); }
     energy = Math.min(1, energy + moved / 90);
@@ -354,4 +388,5 @@ document.addEventListener('DOMContentLoaded', function () {
   }, { passive: true });
   addEventListener('resize', function () { if (on) stop(); map = null; if (layer.classList.contains('is-on')) size(); });
   addEventListener('pagehide', stop);
+  }
 });
