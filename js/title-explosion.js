@@ -25,9 +25,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
-  /* the fine-grained version being tried out along with js/pixel-morph.js (only there when its address flag is on): the same blast in much smaller pixels, fewer of them, staying closer to the letters */
-  var FINE = !!window.__ntPixelMorph, STEP = CELL, SNAP = CELL, SHARE = 1, COLOURED = .3, DASHES = .12;
-  if (FINE) { CELL = 2; SNAP = 1; SHARE = .4; COLOURED = .16; DASHES = .02; REACH = 120; SPEED = 300; GRAVITY = 110; LIFE = 650; MAX = 1400; NOISE = 60; }
+  /* the toned-down version being tried out along with js/pixel-morph.js (only there when its address flag is on): the same blast with slightly smaller pixels, fewer of them, and a little less reach */
+  var SOFT = !!window.__ntPixelMorph, STEP = CELL, SHARE = 1, COLOURED = .3, DASHES = .12;
+  if (SOFT) { CELL = 3; SHARE = .75; COLOURED = .27; DASHES = .1; REACH = 140; SPEED = 540; GRAVITY = 230; LIFE = 800; MAX = 2000; NOISE = 130; }
   if (title) explode(title, {});
   if (footerName) explode(footerName, { img: true });
 
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (flying.length >= MAX || (SHARE < 1 && !opt.img && Math.random() > SHARE)) continue;
         var along = d > 1 ? Math.atan2(dy, dx) : Math.random() * 6.283, turn = along + (Math.random() - .5) * 1.1;
         var speed = SPEED * (.25 + near * .75) * (.45 + Math.random() * .75) * (.6 + energy * .4);
-        var big = Math.random(), s = FINE ? (big > .8 ? 2 : big > .3 ? 1.5 : 1) : big > .85 ? CELL * 2 : big > .35 ? CELL : CELL / 2;
+        var big = Math.random(), s = big > .85 ? CELL * 2 : big > .35 ? CELL : CELL / 2;
         /* a few stretch into the thin dashes a bad signal makes */
         flying.push({ x: cx, y: cy, vx: Math.cos(turn) * speed, vy: Math.sin(turn) * speed, s: s, c: Math.random() < COLOURED ? INKS[Math.floor(rnd(0, 3))] : null, w: Math.random() < DASHES ? s * (3 + Math.floor(Math.random() * 5)) : s, end: now + LIFE * (.35 + Math.random() * .65) });
       }
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* static around the cursor, as thick as the blast is busy, redrawn at random every frame */
     var specks = Math.min(NOISE, Math.floor((holes.length + flying.length) * .09));
     for (var n = 0; n < specks; n++) {
-      var a = Math.random() * 6.283, d = REACH * 1.25 * Math.sqrt(Math.random()), s = Math.random() < .12 ? Math.min(CELL, STEP) : Math.random() < .5 ? (FINE ? 1 : 2) : 1;
+      var a = Math.random() * 6.283, d = REACH * 1.25 * Math.sqrt(Math.random()), s = Math.random() < .12 ? Math.min(CELL, STEP) : Math.random() < .5 ? 2 : 1;
       ctx.globalAlpha = .2 + Math.random() * .8;
       ctx.fillRect(Math.round((x + Math.cos(a) * d) / 2) * 2, Math.round((y + Math.sin(a) * d) / 2) * 2, s, s);
     }
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
       /* snapped to the grid, so they travel in little jumps like pixels rather than gliding, and some skip sideways */
       var skip = Math.random() < .16 ? (Math.random() < .5 ? -1 : 1) * CELL * (1 + Math.floor(Math.random() * 4)) : 0;
       ctx.fillStyle = p.c || color;
-      ctx.fillRect(Math.round(p.x / SNAP) * SNAP + skip, Math.round(p.y / SNAP) * SNAP, p.w, p.s);
+      ctx.fillRect(Math.round(p.x / CELL) * CELL + skip, Math.round(p.y / CELL) * CELL, p.w, p.s);
       return true;
     });
     if (energy > .05 || holes.length || flying.length || sprites.length || glow > 0) { raf = requestAnimationFrame(frame); return; }
