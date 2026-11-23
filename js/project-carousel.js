@@ -6,14 +6,19 @@
   var slice = function (l) { return Array.prototype.slice.call(l); };
 
   /* the row stretches like the Archive wall's elastic sheet, side to side only: slides near the pointer move with the drag or throw,
-     ones further off trail behind and spring back into line. The auto drift is left out, so a resting carousel stays evenly spaced.
-     The offset goes on each slide's inner element (its translate), so the slide's own transforms and the intro's rise are untouched */
-  var ELASTIC_R = 420, ELASTIC_LAG = 0.39, ELASTIC_K = 0.00013, ELASTIC_C = 0.0105, ELASTIC_MAX = 70;
+     ones further off trail behind and ease back into line, with less bounce than the wall. While it moves fast the slides tip away
+     from the way they travel and the row blurs a touch, as the wall does. The auto drift is left out, so a resting carousel stays
+     flat, sharp and evenly spaced. The offset and tip go on each slide's inner element (translate and rotate) and the slide
+     itself holds the perspective, so the slide's own transforms and the intro's rise are untouched */
+  var ELASTIC_R = 420, ELASTIC_LAG = 0.3, ELASTIC_K = 0.00013, ELASTIC_C = 0.0165, ELASTIC_MAX = 50;
+  var TILT = 3.2, TILT_MAX = 7, TILT_DEPTH = 1600;          /* degrees per px/ms of speed, the most it tips, perspective px */
+  var BLUR_FROM = 1.2, BLUR_AT = 3.2, BLUR_MAX = 1.3;       /* the blur starts at this speed (px/ms), is full by this one, and is this many px */
   function elasticRow(root, list) {
-    var items = [], px = null, rest = 0;
+    var items = [], px = null, gv = 0, blurNow = '';
     function collect() {
       items = Array.prototype.slice.call(list.children).map(function (s) {
         var old = items.filter(function (i) { return i.s === s; })[0];
+        s.style.perspective = TILT_DEPTH + 'px';
         return { s: s, el: s.firstElementChild || s, c: s.offsetLeft + s.offsetWidth / 2, o: old ? old.o : 0, v: old ? old.v : 0 };
       });
     }
@@ -28,11 +33,17 @@
         var h = items.length / 2;
         for (var i = 0; i < h; i++) { var a = items[i], b = items[i + h], o = a.o, v = a.v; a.o = b.o; a.v = b.v; b.o = o; b.v = v; }
       },
-      /* moved: how far the drag or throw (not the drift) shifted the row this frame; x: the row's offset; ms: frame time */
+      /* moved: how far the drag or throw (not the drift) shifted the row this frame; x: the row's offset; ms: frame time.
+         Returns whether anything is still settling */
       step: function (moved, x, ms) {
         if (!items.length) collect();
-        var left = root.getBoundingClientRect().left, p = px === null ? left + root.clientWidth / 2 : px, n = Math.max(1, Math.ceil(ms / 16)), h = ms / n;
-        rest = 0;
+        ms = Math.max(ms, 1);
+        gv += (Math.max(-6, Math.min(6, moved / ms)) - gv) * (1 - Math.exp(-ms / 60));
+        if (Math.abs(gv) < 0.005) gv = 0;
+        var f = Math.max(0, Math.min(1, (Math.abs(gv) - BLUR_FROM) / (BLUR_AT - BLUR_FROM))), bl = BLUR_MAX * f * f * (3 - 2 * f);
+        var b = bl > 0.05 ? 'blur(' + bl.toFixed(1) + 'px)' : '';
+        if (b !== blurNow) { blurNow = b; list.style.filter = b; }
+        var left = root.getBoundingClientRect().left, p = px === null ? left + root.clientWidth / 2 : px, n = Math.max(1, Math.ceil(ms / 16)), h = ms / n, rest = 0;
         items.forEach(function (it) {
           var d = left + x + it.c - p, w = ELASTIC_LAG * (1 - Math.exp(-d * d / (2 * ELASTIC_R * ELASTIC_R)));
           it.o -= moved * w;
@@ -42,8 +53,10 @@
           rest = Math.max(rest, Math.abs(it.o));
           var t = it.o ? it.o.toFixed(2) + 'px 0' : '';
           if (it.t !== t) { it.t = t; it.el.style.translate = t; }
+          var rv = gv + it.v, deg = Math.min(TILT_MAX, Math.abs(rv) * TILT), r = deg > 0.02 ? '0 ' + (rv > 0 ? 1 : -1) + ' 0 ' + deg.toFixed(2) + 'deg' : '';
+          if (it.r !== r) { it.r = r; it.el.style.rotate = r; }
         });
-        return rest > 0.05;
+        return rest > 0.05 || gv !== 0;
       }
     };
   }
