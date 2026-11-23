@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function () {
   /* the footer name sits in a strip that crops its bottom off, so the drawing is kept inside that strip; it has no text reveal to wait for */
   var clipEl = opt.img ? host.parentElement : null;
   function ready() { return opt.img || host.classList.contains('is-done'); }
+  /* the footer is a drawer pinned under the page (js/footer-drawer.js): only what the page has slid up off shows, so nothing above the page's bottom edge may blow apart or be drawn */
+  var drawerTop = opt.img ? document.querySelector('.nt-footer-space') : null;
+  function shownFrom() { return drawerTop ? drawerTop.getBoundingClientRect().top : -1e9; }
   /* a copy of the picture fetched for drawing (the page's own copy can't be read back from a canvas); jsDelivr allows this */
   var pic = null;
   if (opt.img) { pic = new Image(); pic.crossOrigin = 'anonymous'; pic.decoding = 'async'; }
@@ -173,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function noise(a, b) { var n = Math.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453; return n - Math.floor(n); }
   function blast(now, box) {
-    var ox = box.left - PAD, oy = box.top - PAD;
+    var ox = box.left - PAD, oy = box.top - PAD, top = shownFrom();
     var c0 = Math.max(0, Math.floor((x - REACH - ox) / CELL)), c1 = Math.min(map.cols - 1, Math.ceil((x + REACH - ox) / CELL));
     var r0 = Math.max(0, Math.floor((y - REACH - oy) / CELL)), r1 = Math.min(map.rows - 1, Math.ceil((y + REACH - oy) / CELL));
     for (var r = r0; r <= r1; r++) {
@@ -181,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var i = r * map.cols + c;
         if (!map.ink[i] || map.gone[i] > now) continue;
         var cx = ox + (c + .5) * CELL, cy = oy + (r + .5) * CELL, dx = cx - x, dy = cy - y, d = Math.sqrt(dx * dx + dy * dy);
-        if (d > REACH) continue;
+        if (d > REACH || cy < top) continue;
         var near = 1 - d / REACH;
         /* thickest at the cursor, thinning to scattered pixels at the edge, in ragged clumps rather than a neat circle */
         var clump = noise(Math.floor(c / 4), Math.floor(r / 4));
@@ -332,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     var ox = box.left - PAD, oy = box.top - PAD;
     /* the footer name: the picture, its tears and its holes stay inside the strip that shows it; the flying pixels can leave it */
-    if (map.cut) { ctx.save(); ctx.beginPath(); ctx.rect(ox + map.cut.l, oy + map.cut.t, map.cut.r - map.cut.l, map.cut.b - map.cut.t); ctx.clip(); }
+    if (map.cut) { var ct = Math.max(oy + map.cut.t, shownFrom()); ctx.save(); ctx.beginPath(); ctx.rect(ox + map.cut.l, ct, map.cut.r - map.cut.l, Math.max(0, oy + map.cut.b - ct)); ctx.clip(); }
     paintText(ox, oy, now);
     tears.forEach(function (b) {
       var sx = Math.max(0, x - b.wide - ox), sy = Math.max(0, b.y - oy), sw = Math.min(map.w - sx, b.wide * 2), sh = Math.min(map.h - sy, b.h);
@@ -379,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function () {
     x = nx; y = ny;
     if (broken || !ready() || !section.contains(e.target) || (e.target.closest && e.target.closest('a, button'))) return;
     var box = host.getBoundingClientRect();
-    if (nx < box.left - 24 || nx > box.right + 24 || ny < box.top - 24 || ny > box.bottom + 24) return;
+    if (nx < box.left - 24 || nx > box.right + 24 || ny < box.top - 24 || ny > box.bottom + 24 || ny < shownFrom()) return;
     if (opt.img ? !picReady() : (!document.fonts || document.fonts.status !== 'loaded')) return;
     loadSources();
     if (!map || Math.abs(map.bw - box.width) > 1 || Math.abs(map.bh - box.height) > 1) { if (on) stop(); build(); }
