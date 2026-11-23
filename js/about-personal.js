@@ -11,6 +11,8 @@
   }
   /* turns an element's text into two stacked spans that can melt from one string into another */
   function morpher(el){
+    /* the pixel version being tried out (js/pixel-morph.js), only there when its address flag is on */
+    if(window.__ntPixelMorph)return window.__ntPixelMorph(el);
     el.classList.add('nt-morph');
     var a=document.createElement('span'),b=document.createElement('span');
     el.textContent='';el.appendChild(a);el.appendChild(b);
@@ -236,6 +238,7 @@
       if(idx===cur)return;
       cur=idx;
       var f=idx<0?{label:'',text:''}:facts[idx];
+      if(morphText.snap){morphLabel.snap();morphText.snap();}
       pin.setAttribute('data-nt-fact',idx+1);
       morphLabel(idx<0?'':String(idx+1));morphText(f.text);
       if(stage)stage.show(idx);

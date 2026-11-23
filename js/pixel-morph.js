@@ -1,6 +1,6 @@
 /* An exploration, not switched on for visitors: a pixel version of the site's melts. Add ?morph=pixels to any page's address to see it (it then stays on for that browser tab; ?morph=off ends it);
-   without it this file does nothing. On the homepage's additional projects the old title glitches, breaks into fine pixels and is put back together as the new one: load this before js/home-projects.js runs,
-   which asks for window.__ntPixelMorph(element) and gets back a function that changes the element's text. And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. Never with reduced motion */
+   without it this file does nothing. On the homepage's additional projects (and the About page's personal facts) the old title glitches, breaks into fine pixels and is put back together as the new one: load this before js/home-projects.js and js/about-personal.js run,
+   which ask for window.__ntPixelMorph(element) and get back a function that changes the element's text. And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. Never with reduced motion */
 (function () {
   var on = /[?&]morph=pixels\b/.test(location.search), off = /[?&]morph=off\b/.test(location.search);
   try { if (on) sessionStorage.setItem('nt-morph', '1'); if (off) sessionStorage.removeItem('nt-morph'); on = on || (!off && sessionStorage.getItem('nt-morph') === '1'); } catch (e) {}
@@ -13,8 +13,8 @@
   var SPEED = 260;      /* px per second: the fastest pixels leave at */
   var DRAG = 4.2;       /* how quickly the flying pixels slow down */
   var FALL = 90;       /* px per second per second: how fast pixels with nowhere to land drop */
-  var MAX = window.innerWidth < 768 ? 350 : 800; /* most flying pixels */
-  var SHARE = .1;       /* and never more than this share of the text's own pixels, so small text gets little dust */
+  var MAX = window.innerWidth < 768 ? 600 : 1400; /* most flying pixels */
+  var SHARE = .17;      /* and never more than this share of the text's own pixels, so small text gets little dust */
   var FLICKER = .12, COLOURED = .16, DASHES = .02; /* shares of the flying pixels that blink, take a tape colour, or stretch into a dash */
   var SLIP = 7;         /* px the rows of text slip sideways at worst */
   var GHOST = 5;        /* px the red and blue ghosts pull away at worst */
@@ -35,17 +35,19 @@
 
   /* one drawing layer per pinned stage, shared by every title on it; it sits on top of the text and is cut off at the stage's edges */
   function stageOf(el, own) {
-    var host = own ? el : el.closest('.nt-stick') || el.parentElement, m = own ? IN_ROOM : 0;
+    var host = own ? el : el.closest('.nt-stick, .nt-personal') || el.parentElement, m = own || !host.classList.contains('nt-stick') ? IN_ROOM : 0;
     if (host._ntPx) return host._ntPx;
     var c = sheet(1, 1), st = { host: host, c: c, g: c.getContext('2d'), jobs: [], raf: 0, dpr: 1 };
     c.setAttribute('aria-hidden', 'true');
     c.style.cssText = 'position:absolute;max-width:none;left:' + -m + 'px;top:' + -m + 'px;width:calc(100% + ' + m * 2 + 'px);height:calc(100% + ' + m * 2 + 'px);pointer-events:none;display:none;z-index:2';
-    if (own && getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.appendChild(c);
     st.run = function () {
-      if (st.raf) return;
+      cancelAnimationFrame(st.raf);
       c.style.display = 'block';
-      st.raf = requestAnimationFrame(function loop(now) {
+      /* the first frame is drawn at once, so there is never a blank one between the real text hiding and its copy showing */
+      loop(performance.now());
+      function loop(now) {
         st.raf = 0;
         st.dpr = Math.min(window.devicePixelRatio || 1, 2);
         var w = host.clientWidth + m * 2, h = host.clientHeight + m * 2, W = Math.round(w * st.dpr), H = Math.round(h * st.dpr);
@@ -55,7 +57,7 @@
         st.g.translate(m, m);
         st.jobs = st.jobs.filter(function (j) { return j.draw(st.g, now); });
         if (st.jobs.length) st.raf = requestAnimationFrame(loop); else c.style.display = 'none';
-      });
+      }
     };
     return (host._ntPx = st);
   }
@@ -182,7 +184,7 @@
           g.fillRect(Math.round(x - s / 2) + skip, Math.round(y - s / 2), w, s);
         }
         /* grain: specks of static round the words, and a few streaks of lost signal, thickest in the middle */
-        var bx = box.x - 12, by = box.y - 8, bw = box.w + 24, bh = box.h + 16, specks = Math.round(Math.min(40, parts.length * .05) * busy);
+        var bx = box.x - 12, by = box.y - 8, bw = box.w + 24, bh = box.h + 16, specks = Math.round(Math.min(60, parts.length * .05) * busy);
         g.fillStyle = color;
         for (i = 0; i < specks; i++) { g.globalAlpha = rnd(.2, .9); var z = Math.random() < .2 ? 2 : 1; g.fillRect(bx + bw * (Math.random() + Math.random()) / 2, by + bh * (Math.random() + Math.random()) / 2, z, z); }
         if (parts.length > 500) for (i = 0; i < 2 * busy; i++) { g.globalAlpha = rnd(.25, .8); g.fillStyle = Math.random() < .5 ? color : INKS[Math.floor(rnd(0, 3))]; g.fillRect(bx + bw * Math.random() * .8, by + bh * Math.random(), rnd(20, 90), 1); }
@@ -203,10 +205,11 @@
     el.classList.add('nt-morph');
     var span = document.createElement('span'), shown = '', cur = null, before = null;
     el.textContent = ''; el.appendChild(span);
-    var st = stageOf(el);
+    var st = null; /* made at the first change, since a title can be set up before it is in the page */
     function clear() { cur = null; span.style.webkitTextFillColor = ''; }
     function go(to) {
       if (to === shown) { before = null; return; }
+      st = st || stageOf(el);
       var ready = !document.fonts || document.fonts.status === 'loaded';
       var was = cur ? cur.take() : { loose: [], from: before || (ready && shown ? raster(el, st) : null), left: null };
       before = null;
@@ -220,7 +223,7 @@
       st.jobs.push(cur); st.run();
     }
     /* called before the element's styles change, so the old title is drawn as it looked */
-    go.snap = function () { before = !cur && shown && (!document.fonts || document.fonts.status === 'loaded') ? raster(el, st) : null; };
+    go.snap = function () { before = !cur && shown && st && (!document.fonts || document.fonts.status === 'loaded') ? raster(el, st) : null; };
     addEventListener('resize', function () { if (cur) { cur.take(); clear(); } });
     return go;
   };
