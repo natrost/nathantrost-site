@@ -4,11 +4,13 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* the row stretches like the Archive wall's elastic sheet, side to side only: slides near the pointer move with the drag or throw,
-     ones further off trail behind and ease back into line, with less bounce than the wall. While it moves fast the slides tip away
+     ones further off trail a little and ease back into line, softer than the wall. While it moves fast the slides tip away
      from the way they travel and the row blurs a touch, as the wall does. The auto drift is left out, so a resting carousel stays
      flat, sharp and evenly spaced. The offset and tip go on each slide's inner element (translate and rotate) and the slide
      itself holds the perspective, so the slide's own transforms and the intro's rise are untouched */
-  var ELASTIC_R = 420, ELASTIC_LAG = 0.3, ELASTIC_K = 0.00013, ELASTIC_C = 0.0165, ELASTIC_MAX = 50;
+  /* a wide, gentle falloff and a critically damped spring, so neighbouring slides differ only a little and the row eases back as one
+     instead of stopping slide by slide; the stretch also eases off as it nears its limit rather than hitting a hard stop */
+  var ELASTIC_R = 650, ELASTIC_LAG = 0.17, ELASTIC_K = 0.0002, ELASTIC_C = 0.028, ELASTIC_MAX = 32;
   var TILT = 7, TILT_MAX = 14, TILT_DEPTH = 700;           /* degrees per px/ms of speed, the most it tips, perspective px: stronger than the wall, as wide flat slides barely show a small tip */
   var BLUR_FROM = 0.8, BLUR_AT = 2.4, BLUR_MAX = 1.3;       /* the blur starts at this speed (px/ms), is full by this one, and is this many px (lower than the wall, as rows are dragged slower) */
   function elasticRow(root, list) {
@@ -44,7 +46,9 @@
         var left = root.getBoundingClientRect().left, p = px === null ? left + root.clientWidth / 2 : px, n = Math.max(1, Math.ceil(ms / 16)), h = ms / n, rest = 0;
         items.forEach(function (it) {
           var d = left + x + it.c - p, w = ELASTIC_LAG * (1 - Math.exp(-d * d / (2 * ELASTIC_R * ELASTIC_R)));
-          it.o -= moved * w;
+          var push = -moved * w;
+          if (push * it.o > 0) push *= Math.max(0, 1 - Math.abs(it.o) / ELASTIC_MAX);
+          it.o += push;
           for (var i = 0; i < n; i++) { it.v += (-ELASTIC_K * it.o - ELASTIC_C * it.v) * h; it.o += it.v * h; }
           if (it.o > ELASTIC_MAX) { it.o = ELASTIC_MAX; it.v = 0; } else if (it.o < -ELASTIC_MAX) { it.o = -ELASTIC_MAX; it.v = 0; }
           if (Math.abs(it.o) < 0.05 && Math.abs(it.v) < 0.001) { it.o = 0; it.v = 0; }
