@@ -125,7 +125,7 @@ window.__ntTextSetup = function () {
   /* only text set in the headline typeface (Instrument Serif, or whichever font site.css is trying, which marks its headlines with --nt-headline) melts in, taking the outermost block that uses it */
   var isInstrument = function (el) { var c = getComputedStyle(el); return /instrument/i.test(c.fontFamily) || c.getPropertyValue('--nt-headline').trim() === '1'; };
   var hasText = function (el) { return slice(el.childNodes).some(function (n) { return n.nodeType === 3 && n.textContent.trim(); }); };
-  var els = [];
+  var els = [], fades = [];
   slice(document.body.querySelectorAll('*')).forEach(function (el) {
     if (!hasText(el) || !isInstrument(el)) return;
     while (el.parentElement && el.parentElement !== document.body && isInstrument(el.parentElement)) el = el.parentElement;
@@ -133,6 +133,16 @@ window.__ntTextSetup = function () {
   });
   /* never the menu, the footer or links; the homepage featured stage and About facts melt their own text */
   els = els.filter(function (el) { return !el.closest('nav, footer, .w-nav, [role="navigation"], a, .favorites_wrapper_1, .personal_text_wrapper'); });
+  /* project pages: the subheads on the sand part (every section after the first, which sits on the dark backdrop) fade in line by line like the body copy instead */
+  if (location.pathname.indexOf('/work/') === 0) {
+    var intro = document.querySelector('.overview_text_wrapper ~ .work_detail_section') || document.querySelector('.work_detail_section');
+    els = els.filter(function (el) {
+      var title = el.closest('.section_title');
+      if (!title || !title.closest('.work_detail_section') || (intro && intro.contains(title))) return true;
+      if (fades.indexOf(title) === -1) fades.push(title);
+      return false;
+    });
+  }
   /* the end-of-page sign-off melts in as a whole: its eyebrow with the headline, then its buttons, which simply fade in together (no blur or goo) */
   var add = function (el) { if (els.indexOf(el) === -1) els.push(el); };
   slice(document.querySelectorAll('.fav_text.about .title_text')).forEach(add);
@@ -140,7 +150,6 @@ window.__ntTextSetup = function () {
 
   /* every other piece of text fades in, taking the outermost block with its own text; text that already animates
      (melting, glitching in on project pages, Webflow interactions, the featured stage and About facts), the menu, footer, links and buttons are left alone */
-  var fades = [];
   slice(document.body.querySelectorAll('*')).forEach(function (el) {
     if (!hasText(el) || /^(SCRIPT|STYLE|NOSCRIPT|OPTION)$/.test(el.tagName)) return;
     if (el.closest('nav, footer, [class*="footer"], .w-nav, [role="navigation"], a, button, .favorites_wrapper_1, .personal_text_wrapper, .interaction_wrap, .nt-rise, .detail_title, .detail_text, .close_btn, .pill_button, .w-lightbox-backdrop, [data-w-id]')) return;

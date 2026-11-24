@@ -444,6 +444,10 @@ html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block
 html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: none !important; }
 .nt-fade.nt-lines { opacity: 1 !important; translate: none !important; transition: none !important; }
 .nt-lines .nt-line { will-change: transform; white-space: nowrap; } /* a split line never breaks again: rejoined words can measure a hair wider than when they were split */
+/* About's capabilities: the row fills the page and its four cards share it equally, and the text fills its card. Sized by their text, they came out uneven and short of the right edge once the split lines above stopped wrapping */
+.section_text_wrapper.capabilities .div-4 { width: 100%; }
+.section_text_wrapper.capabilities .capability_description { width: 100%; }
+@media (min-width: 992px) { .section_text_wrapper.capabilities .capabilities_wrapper { flex: 1 1 0; min-width: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .nt-melt, .nt-fade { opacity: 1 !important; translate: none !important; }
 }
