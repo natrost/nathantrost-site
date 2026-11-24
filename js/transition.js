@@ -4,7 +4,6 @@
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var KINDS = 7;                 /* how many transitions there are to pick from */
   var CHUNKS = [4, 6, 6, 9];     /* sizes one pixel of static can be, in px; repeats make a size more likely */
-  var BLURS = [2, 4, 7, 11];     /* the four strengths of motion blur, weakest to strongest, in px */
   function rnd(lo, hi) { return lo + Math.random() * (hi - lo); }
   /* a random transition, but not the one the last page change used */
   function pick() {
@@ -18,15 +17,6 @@
   addEventListener('pagereveal', function (e) {
     if (!e.viewTransition) return;
     var root = document.documentElement, k = pick();
-    /* the motion blurs the transition's animations point to, one for each strength in each direction */
-    if (!document.getElementById('nt-mb-x1')) {
-      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0">';
-      BLURS.forEach(function (b, i) {
-        svg += '<filter id="nt-mb-x' + (i + 1) + '" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="' + b + ' 0" edgeMode="duplicate"/></filter>';
-        svg += '<filter id="nt-mb-y' + (i + 1) + '" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="0 ' + b + '" edgeMode="duplicate"/></filter>';
-      });
-      (document.body || root).insertAdjacentHTML('beforeend', svg + '</svg>');
-    }
     if (k > 1) {
       root.classList.add('nt-vt-' + k);
       e.viewTransition.finished.then(function () { root.classList.remove('nt-vt-' + k); }, function () { root.classList.remove('nt-vt-' + k); });
