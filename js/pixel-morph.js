@@ -1,6 +1,6 @@
 /* The site's text changes in fine pixels, in place of the melts. On the homepage's additional projects and the About page's personal facts the old title glitches, breaks into fine pixels and is put back
    together as the new one: this must load before js/home-projects.js and js/about-personal.js run, which ask for window.__ntPixelMorph(element) and get back a function that changes the element's text.
-   And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. With reduced motion, or with ?morph=off in the address (for that browser tab, until ?morph=on), the melts stay */
+   And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. window.__ntPixelOut blows a title apart for good (js/archive.js). With reduced motion, or with ?morph=off in the address (for that browser tab, until ?morph=on), the melts stay */
 (function () {
   var off = /[?&]morph=off\b/.test(location.search), on = /[?&]morph=(on|pixels)\b/.test(location.search);
   try { if (off) sessionStorage.setItem('nt-morph', 'off'); else if (on) sessionStorage.removeItem('nt-morph'); else off = sessionStorage.getItem('nt-morph') === 'off'; } catch (e) {}
@@ -16,6 +16,9 @@
   var MAX = window.innerWidth < 768 ? 600 : 1400; /* most flying pixels */
   var SHARE = .17;      /* and never more than this share of the text's own pixels, so small text gets little dust */
   var FLICKER = .12, COLOURED = .16, DASHES = .02; /* shares of the flying pixels that blink, take a tape colour, or stretch into a dash */
+  /* a title that blows apart for good (the Archive page's big word): how long it all takes in ms, the px of room its dust gets, how much faster its pixels fly, how much longer they last,
+     how much bigger they are, the share of the text's pixels that fly, and the most of them */
+  var OUT = { total: 1500, room: 340, power: 3.8, life: 2, grain: window.innerWidth < 768 ? 1.5 : 2.2, share: .45, max: window.innerWidth < 768 ? 800 : 2400 };
   var SLIP = 7;         /* px the rows of text slip sideways at worst */
   var GHOST = 5;        /* px the red and blue ghosts pull away at worst */
   var INKS = ['#ff1e3c', '#18d6ff', '#ffe600'], PAD = 14;
@@ -39,7 +42,11 @@
     if (host._ntPx) return host._ntPx;
     var c = sheet(1, 1), st = { host: host, c: c, g: c.getContext('2d'), jobs: [], raf: 0, dpr: 1 };
     c.setAttribute('aria-hidden', 'true');
-    c.style.cssText = 'position:absolute;max-width:none;left:' + -m + 'px;top:' + -m + 'px;width:calc(100% + ' + m * 2 + 'px);height:calc(100% + ' + m * 2 + 'px);pointer-events:none;display:none;z-index:2';
+    var mx = m, my = m;
+    c.style.cssText = 'position:absolute;max-width:none;pointer-events:none;display:none;z-index:2';
+    /* the px of room around the host */
+    st.room = function (x, y) { mx = x; my = y; c.style.left = -x + 'px'; c.style.top = -y + 'px'; c.style.width = 'calc(100% + ' + x * 2 + 'px)'; c.style.height = 'calc(100% + ' + y * 2 + 'px)'; };
+    st.room(m, m);
     if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.appendChild(c);
     st.run = function () {
@@ -50,11 +57,11 @@
       function loop(now) {
         st.raf = 0;
         st.dpr = Math.min(window.devicePixelRatio || 1, 2);
-        var w = host.clientWidth + m * 2, h = host.clientHeight + m * 2, W = Math.round(w * st.dpr), H = Math.round(h * st.dpr);
+        var w = host.clientWidth + mx * 2, h = host.clientHeight + my * 2, W = Math.round(w * st.dpr), H = Math.round(h * st.dpr);
         if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
         st.g.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
         st.g.clearRect(0, 0, w, h);
-        st.g.translate(m, m);
+        st.g.translate(mx, my);
         st.jobs = st.jobs.filter(function (j) { return j.draw(st.g, now); });
         if (st.jobs.length) st.raf = requestAnimationFrame(loop); else c.style.display = 'none';
       }
@@ -121,7 +128,7 @@
     var TOT = opt.total || TOTAL, LA = opt.land || LAND;
     var t0 = performance.now(), seed = rnd(0, 999), box = from || to, color = (to || from).color, cell = box.cell, alive = true, last = t0;
     /* the blast starts somewhere in the middle of the words */
-    var ex = box.x + box.w * rnd(.25, .75), ey = box.y + box.h * rnd(.3, .7), span = Math.max(200, box.w * .6);
+    var ex = opt.at ? opt.at[0] : box.x + box.w * rnd(.25, .75), ey = opt.at ? opt.at[1] : box.y + box.h * rnd(.3, .7), power = opt.power || 1, span = Math.max(200, box.w * .6);
     var gone = from ? left.work || copies(from, true) : null, built = to ? copies(to, false) : null;
     var leaving = [], parts = [], landing = [];
     (loose || []).forEach(function (p) { leaving.push({ x: p.x, y: p.y, at: 0 }); });
@@ -138,7 +145,7 @@
       if (q.ink) landing.push({ x: x, y: y, at: q.at });
     });
     function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-    function few(a) { return shuffle(a).slice(0, Math.min(MAX, Math.ceil(a.length * SHARE))); }
+    function few(a) { return shuffle(a).slice(0, Math.min(opt.max || MAX, Math.ceil(a.length * (opt.share || SHARE)))); }
     leaving = few(leaving); landing = few(landing);
     /* pixels go to roughly the same part of the new title as they left, with plenty of crossing over */
     leaving.forEach(function (p) { p.k = p.x + rnd(-1, 1) * 40; }); landing.forEach(function (p) { p.k = p.x; });
@@ -153,9 +160,9 @@
       /* with no old title the pixels gather out of static scattered round the new one */
       var sx = a ? a.x : b.x + rnd(-1, 1) * box.fs * .6, sy = a ? a.y : b.y + rnd(-1, 1) * box.fs * .4, at = a ? a.at : Math.max(0, b.at - rnd(220, 520));
       var ang = a ? Math.atan2(sy - ey, sx - ex) + rnd(-.8, .8) : rnd(0, 6.283), near = 1 - Math.min(1, Math.sqrt((sx - ex) * (sx - ex) + (sy - ey) * (sy - ey)) / span);
-      var sp = a ? SPEED * (.18 + .5 * near) * rnd(.3, 1.25) : 40, big = Math.random(), s = big > .8 ? 2 : big > .3 ? 1.5 : 1;
+      var sp = a ? SPEED * power * (.18 + .5 * near) * rnd(.3, 1.25) : 40, big = Math.random(), s = (big > .8 ? 2 : big > .3 ? 1.5 : 1) * (opt.grain || 1);
       parts.push({ x: sx, y: sy, sx: sx, sy: sy, at: at, vx: Math.cos(ang) * sp * 1.35, vy: Math.sin(ang) * sp, to: b, s: s, w: Math.random() < DASHES ? s * (3 + Math.floor(Math.random() * 5)) : s, ink: Math.random() < COLOURED ? INKS[Math.floor(rnd(0, 3))] : null,
-        end: b ? b.at : at + rnd(180, 420), turn: b ? at + (b.at - at) * rnd(.22, .42) : 0 });
+        end: b ? b.at : at + rnd(180, 420) * (opt.life || 1), turn: b ? at + (b.at - at) * rnd(.22, .42) : 0 });
     }
     return {
       draw: function (g, now) {
@@ -242,6 +249,7 @@
     function finish(whole) { el.style.webkitTextFillColor = ''; el._ntPxStop = null; removeEventListener('resize', cut); if (whole && el._ntToken === token) { if (el.classList.contains('nt-melt')) el.style.opacity = ''; el.classList.add('is-done'); } }
     function cut() { if (j) j.take(); finish(true); }
     var j = null, live = true;
+    el._ntPxTake = function () { var t = j ? j.take() : null; live = false; finish(false); return t; };
     el._ntPxStop = function () { live = false; if (j) j.take(); finish(false); };
     addEventListener('resize', cut);
     function go() {
@@ -259,6 +267,27 @@
       if (performance.now() - asked > FONT_WAIT || fontsIn(el)) go(); else requestAnimationFrame(wait);
     })();
   }
+  /* a title leaving for good: blown apart from a point on the screen (its middle, if none is given), and done() once the last pixel is out. Returns false if it can't, so the caller can fade it instead.
+     One still being put together blows apart from as far as it had got */
+  window.__ntPixelOut = function (el, at, done) {
+    var st, was = null, m = null, waiting = !!el._ntPxStop;
+    try {
+      st = stageOf(el, true);
+      if (waiting) was = el._ntPxTake();
+      if (!was || !was.from) { was = null; if (!waiting) m = raster(el, st); }
+    } catch (e) { return false; }
+    el._ntToken = (el._ntToken || 0) + 1;
+    el.style.webkitTextFillColor = 'transparent';
+    /* not showing yet */
+    if (!was && !m) { done(); return true; }
+    var b = el.getBoundingClientRect(), from = was ? was.from : m;
+    st.room(Math.max(0, Math.min(OUT.room, Math.floor(b.left), Math.floor(document.documentElement.clientWidth - b.right))), OUT.room);
+    /* a touch away from the word sets it off from its nearest edge */
+    var x = at ? Math.max(from.x, Math.min(from.x + from.w, at[0] - b.left)) : from.x + from.w / 2, y = at ? Math.max(from.y, Math.min(from.y + from.h, at[1] - b.top)) : from.y + from.h / 2;
+    st.jobs.push(job(from, was ? was.left : { cells: m.cells }, was ? was.loose : null, null, done, { total: OUT.total, at: [x, y], power: OUT.power, life: OUT.life, grain: OUT.grain, share: OUT.share, max: OUT.max }));
+    st.run();
+    return true;
+  };
   var FONT_WAIT = 1200;
   function fontsIn(el) {
     if (!document.fonts) return true;

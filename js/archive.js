@@ -73,10 +73,14 @@
     /* the page title is the real element, moved out of the old list, so it keeps its own melt */
     var pageTitle = document.querySelector('.page_title_wrapper');
     if (pageTitle) document.body.appendChild(pageTitle);
+    var touchAt = null; /* where the last touch, click or scroll was */
     function hideTitle() {
       if (!pageTitle) return;
       var t = pageTitle;
       pageTitle = null;
+      /* it blows apart into pixels from where it was touched (js/pixel-morph.js); without that, or with reduced motion, it fades */
+      var word = t.querySelector('.title_text');
+      if (!reduce && word && window.__ntPixelOut && window.__ntPixelOut(word, touchAt, function () { t.remove(); })) { t.style.zIndex = 660; return; } /* in front of the tile being hovered, so nothing covers the blast */
       t.classList.add('is-gone');
       setTimeout(function () { t.remove(); }, reduce ? 0 : 500);
     }
@@ -329,7 +333,7 @@
     function kick() { hideTitle(); coast(); }
     /* on load the wall gets a throw of its own, once there is something to see; the title stays, as nobody has touched anything yet, and any touch, scroll or key press calls it off */
     var touched = false;
-    ['pointerdown', 'wheel', 'keydown'].forEach(function (n) { document.addEventListener(n, function () { touched = true; unzoom(); }, { capture: true, passive: true }); });
+    ['pointerdown', 'wheel', 'keydown'].forEach(function (n) { document.addEventListener(n, function (e) { touched = true; if (e.clientX != null) touchAt = [e.clientX, e.clientY]; unzoom(); }, { capture: true, passive: true }); });
     function intro() {
       if (reduce || touched) { unzoom(); return; }
       var began = performance.now();
