@@ -1,7 +1,7 @@
 /* Homepage loader, ahead of the big-carousel intro (js/home-intro.js). Laid out like the end card: the logo at the top (the nav's own logo, which stays
    put when the loader leaves; The Work and About Me wait), the percent loaded in large type in the middle, and the big "Nathan Trost"
-   along the bottom, edge to edge. Each new percent melts into the next, the same melt as the additional projects and personal facts.
-   When it reaches 100 the number melts away, the name drops off the bottom and the sand fades, uncovering the carousels as they race in.
+   along the bottom, edge to edge. Each new percent breaks into fine pixels and is put back together as the next, as on the additional projects and personal facts (js/pixel-morph.js, in the site footer, always there by the first change; without it the numbers melt).
+   When it reaches 100 the number breaks away, the name drops off the bottom and the sand fades, uncovering the carousels as they race in.
    It plays with the same rules as the first-visit intro it opens: only when the homepage is the first page of a visit, arriving from outside the site,
    once per visit (the browser tab's session), and never with reduced motion. ?intro=big in the address plays it every time, to try it out.
    It loads in the homepage head, before the page itself, and turns the big-carousel intro on (js/home-intro.js) */
@@ -15,6 +15,7 @@
   } catch (e) { return; }
 
   var MELT = 340;        /* ms each change of number takes to melt */
+  var PIXEL_MS = 520;    /* ms each change of number takes in pixels */
   var GAP = 20;          /* ms between one melt ending and the next starting */
   var STEP = 0.75;       /* how much of the way to the real percent each change goes */
   var MIN_STEP = 20;     /* smallest jump between numbers, so it never crawls one by one */
@@ -79,7 +80,14 @@
 
   /* the site's melt is tuned for headline-sized text (about 48px); the blur grows with the number so it melts just as much at this size */
   var MELT_REF = 48, MELT_CAP = 3;
+  var pixels = null;
   function melt(text, done) {
+    if (window.__ntPixelMorph) {
+      pixels = pixels || window.__ntPixelMorph(num, { text: cur.textContent, total: PIXEL_MS, own: true, eager: true });
+      pixels(text);
+      if (done) setTimeout(done, PIXEL_MS);
+      return;
+    }
     if (LITE) { meltLite(text, done); return; }
     var old = cur, n = document.createElement('span'), t0 = performance.now();
     /* capped, since very large blurs are slow to draw on phones (Safari especially), and a melt that cannot keep up just jumps to its end */

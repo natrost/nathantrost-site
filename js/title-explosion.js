@@ -10,24 +10,25 @@ document.addEventListener('DOMContentLoaded', function () {
   /* the footer's big name is an image (the outlined SVG): it blows apart the same way, its pixels taken from the picture instead of the text */
   var footerName = document.querySelector('.nt-footer-under .image-63') || document.querySelector('.image-63');
   if (!title && !footerName) return;
-  var REACH = 150;     /* the blast reaches this far from the cursor, in px, so it is about 300px across */
-  var CELL = 4;        /* the size of one pixel of the text, in px */
-  var SPEED = 620;     /* how fast the pixels nearest the cursor fly out, in px per second */
+  var REACH = 140;     /* the blast reaches this far from the cursor, in px, so it is about 280px across */
+  var CELL = 3;        /* the size of one pixel of the text, in px */
+  var STEP = 4;        /* the torn bands are cut in steps of this, in px */
+  var SHARE = .75;     /* the share of blown-out pixels that fly (the rest just go) */
+  var COLOURED = .27;  /* the share of flying pixels in a tape colour */
+  var DASHES = .1;     /* the share stretched into dashes */
+  var SPEED = 540;     /* how fast the pixels nearest the cursor fly out, in px per second */
   var DRAG = 0.04;     /* how much speed is left after one second */
-  var GRAVITY = 260;   /* how fast the pixels start to fall, in px per second per second */
-  var LIFE = 850;      /* longest a flying pixel lasts, in ms */
+  var GRAVITY = 230;   /* how fast the pixels start to fall, in px per second per second */
+  var LIFE = 800;      /* longest a flying pixel lasts, in ms */
   var RETURN = 900;    /* longest a blown-out part of a letter stays gone, in ms */
-  var MAX = 2500;      /* most pixels in the air at once */
-  var NOISE = 170;     /* most specks of static in one frame */
+  var MAX = 2000;      /* most pixels in the air at once */
+  var NOISE = 130;     /* most specks of static in one frame */
   var FLICKER = .14;   /* the share of flying pixels that blink out in any one frame */
   var TEARS = 5;       /* most bands of text torn sideways at once */
   var IMG_SIZE = 100;  /* longest side of the small images, in px */
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
-  /* the toned-down version being tried out along with js/pixel-morph.js (only there when its address flag is on): the same blast with slightly smaller pixels, fewer of them, and a little less reach */
-  var SOFT = !!window.__ntPixelMorph, STEP = CELL, SHARE = 1, COLOURED = .3, DASHES = .12;
-  if (SOFT) { CELL = 3; SHARE = .75; COLOURED = .27; DASHES = .1; REACH = 140; SPEED = 540; GRAVITY = 230; LIFE = 800; MAX = 2000; NOISE = 130; }
   if (title) explode(title, {});
   if (footerName) explode(footerName, { img: true });
 

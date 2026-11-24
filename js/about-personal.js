@@ -11,7 +11,7 @@
   }
   /* turns an element's text into two stacked spans that can melt from one string into another */
   function morpher(el){
-    /* the pixel version being tried out (js/pixel-morph.js), only there when its address flag is on */
+    /* the pixel version (js/pixel-morph.js); the melt below is for when it is not there */
     if(window.__ntPixelMorph)return window.__ntPixelMorph(el);
     el.classList.add('nt-morph');
     var a=document.createElement('span'),b=document.createElement('span');

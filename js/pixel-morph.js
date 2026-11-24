@@ -1,10 +1,10 @@
-/* An exploration, not switched on for visitors: a pixel version of the site's melts. Add ?morph=pixels to any page's address to see it (it then stays on for that browser tab; ?morph=off ends it);
-   without it this file does nothing. On the homepage's additional projects (and the About page's personal facts) the old title glitches, breaks into fine pixels and is put back together as the new one: load this before js/home-projects.js and js/about-personal.js run,
-   which ask for window.__ntPixelMorph(element) and get back a function that changes the element's text. And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. Never with reduced motion */
+/* The site's text changes in fine pixels, in place of the melts. On the homepage's additional projects and the About page's personal facts the old title glitches, breaks into fine pixels and is put back
+   together as the new one: this must load before js/home-projects.js and js/about-personal.js run, which ask for window.__ntPixelMorph(element) and get back a function that changes the element's text.
+   And the headlines that melt in on scroll (js/site-early.js) are put together out of fine dust instead. With reduced motion, or with ?morph=off in the address (for that browser tab, until ?morph=on), the melts stay */
 (function () {
-  var on = /[?&]morph=pixels\b/.test(location.search), off = /[?&]morph=off\b/.test(location.search);
-  try { if (on) sessionStorage.setItem('nt-morph', '1'); if (off) sessionStorage.removeItem('nt-morph'); on = on || (!off && sessionStorage.getItem('nt-morph') === '1'); } catch (e) {}
-  if (!on || window.__ntPixelMorph || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var off = /[?&]morph=off\b/.test(location.search), on = /[?&]morph=(on|pixels)\b/.test(location.search);
+  try { if (off) sessionStorage.setItem('nt-morph', 'off'); else if (on) sessionStorage.removeItem('nt-morph'); else off = sessionStorage.getItem('nt-morph') === 'off'; } catch (e) {}
+  if (off || window.__ntPixelMorph || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var TOTAL = 1250;     /* ms from one title to the next */
   var WAVE = 260;       /* ms the blast takes to cross the old title */
   var LAND = [420, 1080]; /* ms: when the first and last pixels of the new title land */
@@ -160,7 +160,7 @@
     return {
       draw: function (g, now) {
         if (!alive) return false;
-        var t = now - t0, i, q;
+        var t = (now - t0) * (opt.rate || 1), i, q;
         if (t < 0) t = 0;
         /* text whose colour changes as the page's background fades (About) changes here too */
         if (opt.el) { var live = getComputedStyle(opt.el).color; if (live !== tone) { tone = color = live; [to.art[2].getContext('2d'), built[2]].forEach(function (n) { n.save(); n.setTransform(1, 0, 0, 1, 0, 0); n.globalCompositeOperation = 'source-in'; n.fillStyle = live; n.fillRect(0, 0, n.canvas.width, n.canvas.height); n.restore(); }); } }
@@ -201,16 +201,19 @@
     };
   }
 
-  window.__ntPixelMorph = function (el) {
+  /* o.text: what it already shows; o.total: how long each change takes, in ms (everything in it speeds up or slows down to match); o.own: drawn on a layer inside the element, so it fades with it;
+     o.eager: never waits for fonts (the homepage loader, js/home-loader.js, waits for its own) */
+  window.__ntPixelMorph = function (el, o) {
+    o = o || {};
     el.classList.add('nt-morph');
-    var span = document.createElement('span'), shown = '', cur = null, before = null;
-    el.textContent = ''; el.appendChild(span);
+    var span = document.createElement('span'), shown = o.text || '', cur = null, before = null;
+    el.textContent = ''; el.appendChild(span); span.textContent = shown;
     var st = null; /* made at the first change, since a title can be set up before it is in the page */
     function clear() { cur = null; span.style.webkitTextFillColor = ''; }
     function go(to) {
       if (to === shown) { before = null; return; }
-      st = st || stageOf(el);
-      var ready = !document.fonts || document.fonts.status === 'loaded';
+      st = st || stageOf(el, o.own);
+      var ready = o.eager || !document.fonts || document.fonts.status === 'loaded';
       var was = cur ? cur.take() : { loose: [], from: before || (ready && shown ? raster(el, st) : null), left: null };
       before = null;
       if (was.from && !was.left) was.left = { cells: was.from.cells };
@@ -219,7 +222,7 @@
       if (!ready || (!was.from && !next && !was.loose.length)) { clear(); return; }
       if (!was.from && !next) { clear(); return; }
       span.style.webkitTextFillColor = 'transparent';
-      cur = job(was.from, was.left, was.loose, next, clear);
+      cur = job(was.from, was.left, was.loose, next, clear, { rate: o.total ? TOTAL / o.total : 1 });
       st.jobs.push(cur); st.run();
     }
     /* called before the element's styles change, so the old title is drawn as it looked */
@@ -232,7 +235,7 @@
      Numbers that count up keep the melt, since their text changes as they go */
   function comeIn(el) {
     if (!el.classList || !el.classList.contains('is-in') || el.classList.contains('is-done') || el.matches(SKIP)) return;
-    var token = el._ntToken = (el._ntToken || 0) + 1, inner = el._nt && el._nt.inner;
+    var token = el._ntToken = (el._ntToken || 0) + 1, inner = el._nt ? el._nt.inner : el._ntInner;
     el.style.filter = ''; if (inner && inner !== el) { inner.style.filter = ''; inner.style.opacity = ''; }
     el.style.webkitTextFillColor = 'transparent';
     if (el._ntPxStop) el._ntPxStop();
@@ -275,4 +278,16 @@
   document.addEventListener('nt:unmelt', function (e) { if (e.target._ntPxStop) e.target._ntPxStop(); });
   /* any already part way through melting when this loaded start over */
   Array.prototype.forEach.call(document.querySelectorAll('.nt-melt.is-in:not(.is-done), .nt-melt-soft.is-in:not(.is-done)'), function (el) { if (el._nt) comeIn(el); });
+  /* the homepage's related project headlines melt in on their own (page head code), with no nt:melt, so they are caught as they start */
+  if (window.MutationObserver) document.addEventListener('DOMContentLoaded', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.related_project .work_samples_text'), function (el) {
+      var was = false;
+      new MutationObserver(function () {
+        var is = el.classList.contains('is-in');
+        if (is === was) return;
+        was = is;
+        if (is && el._ntInner) comeIn(el); else if (!is && el._ntPxStop) el._ntPxStop();
+      }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+  });
 })();
