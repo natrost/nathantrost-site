@@ -1,4 +1,4 @@
-/* Pixel explosion on the homepage, About page, project page and 404 page titles, and on the big outlined name along the bottom of the footer (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
+/* Pixel explosion on the homepage, About page, project page and 404 page titles, and on the big outlined name along the bottom of the footer (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the pixels fly back and put the letters together again. The harder the cursor moves, the bigger the blast.
    The text near the cursor also fails like a VHS tape: its rows slip and wobble, red and blue ghosts pull away from it, scan lines cut through it and streaks shoot off, in a new mix for each rollover. Only on a real pointer, and never with reduced motion */
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -29,10 +29,11 @@ document.addEventListener('DOMContentLoaded', function () {
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
-  /* the other version of the rollover, on trial: the blown-out pixels don't fall away but hang for a moment, then fly back and put the letters together again, each to the spot it came from.
-     ?burst=return in the address turns it on for that browser tab, ?burst=away turns it off */
-  var BACK = /[?&]burst=return\b/.test(location.search), AWAY = /[?&]burst=away\b/.test(location.search);
-  try { if (BACK) sessionStorage.setItem('nt-burst', 'return'); else if (AWAY) sessionStorage.removeItem('nt-burst'); else BACK = sessionStorage.getItem('nt-burst') === 'return'; } catch (e) {}
+  /* the blown-out pixels hang for a moment, then fly back and put the letters together again, each to the spot it came from.
+     ?burst=away in the address shows the earlier version, where they fall away and the letters fill back in, for that browser tab; ?burst=return goes back. The B_ settings are for the pixels coming back; SHARE, SPEED, DRAG, GRAVITY, LIFE, RETURN and MAX are only for the earlier version */
+  var away = /[?&]burst=away\b/.test(location.search), home = /[?&]burst=return\b/.test(location.search);
+  try { if (away) sessionStorage.setItem('nt-burst', 'away'); else if (home) sessionStorage.removeItem('nt-burst'); else away = sessionStorage.getItem('nt-burst') === 'away'; } catch (e) {}
+  var BACK = !away;
   var B_SPEED = 780;   /* how fast the pixels nearest the cursor leave, in px per second */
   var B_DRAG = 5.2;    /* how quickly they slow down and hang */
   var B_HANG = [130, 300]; /* ms before they start back */
