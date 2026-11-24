@@ -29,6 +29,18 @@ document.addEventListener('DOMContentLoaded', function () {
   var IMG_MAX = 4;     /* most small images out at once */
   var IMG_LIFE = 950;  /* how long each small image lasts, in ms */
   var IMG_GAP = 170;   /* shortest wait between small images, in ms */
+  /* the other version of the rollover, on trial: the blown-out pixels don't fall away but hang for a moment, then fly back and put the letters together again, each to the spot it came from.
+     ?burst=return in the address turns it on for that browser tab, ?burst=away turns it off */
+  var BACK = /[?&]burst=return\b/.test(location.search), AWAY = /[?&]burst=away\b/.test(location.search);
+  try { if (BACK) sessionStorage.setItem('nt-burst', 'return'); else if (AWAY) sessionStorage.removeItem('nt-burst'); else BACK = sessionStorage.getItem('nt-burst') === 'return'; } catch (e) {}
+  var B_SPEED = 780;   /* how fast the pixels nearest the cursor leave, in px per second */
+  var B_DRAG = 5.2;    /* how quickly they slow down and hang */
+  var B_HANG = [130, 300]; /* ms before they start back */
+  var B_TRIP = [420, 720]; /* ms the way back takes */
+  var B_LATE = 260;    /* how much later, in ms, the letters nearest the cursor are put back than those at the edge */
+  var B_CURL = 1.1;    /* how far round they swing on the way back, in radians at most */
+  var B_STILL = 90;    /* ms after the mouse stops that nothing more blows out, so the letters can settle */
+  var B_MAX = 3200;    /* most pixels out at once */
   if (title) explode(title, {});
   if (footerName) explode(footerName, { img: true });
 
@@ -53,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
   /* the footer name shows faint (Webflow sets it to 20%): while it blows apart its copy brightens to full, and once the pointer leaves it fades
      gently back down to that faint level before the real name returns, so it never jumps from white to grey. FADE_IN and FADE_OUT are in seconds */
   var FADE_IN = .15, FADE_OUT = .9, glow = 0, baseOp = 1, baseA = 1;
-  var broken = false, map = null, flying = [], holes = [], tears = [], sprites = [], sources = null, nextImg = 0, energy = 0, x = 0, y = 0, raf = 0, last = 0, seed = 1, lastSeed = 0, on = false, color = '#000', dpr = 1;
+  var broken = false, map = null, flying = [], holes = [], tears = [], sprites = [], sources = null, nextImg = 0, energy = 0, x = 0, y = 0, movedAt = 0, raf = 0, last = 0, seed = 1, lastSeed = 0, on = false, color = '#000', dpr = 1;
   var PAD = 16;
   var INKS = ['#ff1e3c', '#18d6ff', '#ffe600'];
   var mix = null;
@@ -199,6 +211,16 @@ document.addEventListener('DOMContentLoaded', function () {
         /* thickest at the cursor, thinning to scattered pixels at the edge, in ragged clumps rather than a neat circle */
         var clump = noise(Math.floor(c * CELL / 16), Math.floor(r * CELL / 16));
         if (Math.random() > (near * near * .9 + near * .1) * (.12 + energy * .75) * (clump * .7 + .5)) continue;
+        if (BACK) {
+          if (flying.length >= B_MAX) return;
+          var way = (d > 1 ? Math.atan2(dy, dx) : Math.random() * 6.283) + (Math.random() - .5) * 1.2, v = B_SPEED * (.2 + near * .8) * (.35 + Math.random() * .8) * (.55 + energy * .45), z = Math.random();
+          /* letters fill back in by clumps, from the edge of the hole inward */
+          var turnAt = now + rnd(B_HANG[0], B_HANG[1]) + near * B_LATE * (.5 + clump * .5);
+          flying.push({ i: i, t0: now, vx: Math.cos(way) * v, vy: Math.sin(way) * v, s: z > .85 ? CELL * 2 : z > .3 ? CELL : CELL / 2, w: Math.random() < DASHES ? CELL * (3 + Math.floor(Math.random() * 4)) : 0, c: Math.random() < COLOURED ? INKS[Math.floor(rnd(0, 3))] : null, curl: rnd(-B_CURL, B_CURL), turn: turnAt, end: turnAt + rnd(B_TRIP[0], B_TRIP[1]) });
+          map.gone[i] = flying[flying.length - 1].end;
+          holes.push(i);
+          continue;
+        }
         map.gone[i] = now + RETURN * (.35 + near * .45 + Math.random() * .2);
         holes.push(i);
         if (flying.length >= MAX || (SHARE < 1 && !opt.img && Math.random() > SHARE)) continue;
@@ -339,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (now - lastSeed > 70) { seed++; lastSeed = now; }
     energy *= Math.pow(.02, dt);
     if (opt.img) { glow = energy > .05 ? Math.min(1, glow + dt / FADE_IN) : Math.max(0, glow - dt / FADE_OUT); baseA = baseOp + (1 - baseOp) * smooth(glow); }
-    if (energy > .05) { blast(now, box); tear(now); throwImage(now); }
+    if (energy > .05 && (!BACK || now - movedAt < B_STILL)) { blast(now, box); tear(now); throwImage(now); }
     holes = holes.filter(function (i) { return map.gone[i] > now; });
     tears = tears.filter(function (b) { return b.end > now; });
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -358,14 +380,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     /* blown-out parts of the letters blink back for a frame now and then */
     for (var h = 0; h < holes.length; h++) {
-      if (Math.random() < .06) continue;
+      if (!BACK && Math.random() < .06) continue;
       ctx.clearRect(ox + (holes[h] % map.cols) * CELL, oy + Math.floor(holes[h] / map.cols) * CELL, CELL, CELL);
     }
     if (map.cut) ctx.restore();
     ctx.globalAlpha = 1;
     ctx.fillStyle = color;
     /* static around the cursor, as thick as the blast is busy, redrawn at random every frame */
-    var specks = Math.min(NOISE, Math.floor((holes.length + flying.length) * .09));
+    var specks = Math.min(NOISE, Math.floor((holes.length + (BACK ? 0 : flying.length)) * .09));
     for (var n = 0; n < specks; n++) {
       var a = Math.random() * 6.283, d = REACH * 1.25 * Math.sqrt(Math.random()), s = Math.random() < .12 ? Math.min(CELL, STEP) : Math.random() < .5 ? 2 : 1;
       ctx.globalAlpha = .2 + Math.random() * .8;
@@ -374,8 +396,9 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.globalAlpha = 1;
     sprites = sprites.filter(function (sp) { return drawImage(sp, now); });
     ctx.fillStyle = color;
+    if (BACK) flyBack(ox, oy, now);
     var keep = Math.pow(DRAG, dt);
-    flying = flying.filter(function (p) {
+    if (!BACK) flying = flying.filter(function (p) {
       if (p.end <= now) return false;
       p.vx *= keep; p.vy = p.vy * keep + GRAVITY * dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
@@ -389,6 +412,28 @@ document.addEventListener('DOMContentLoaded', function () {
     if (energy > .05 || holes.length || flying.length || sprites.length || glow > 0) { raf = requestAnimationFrame(frame); return; }
     stop();
   }
+  /* out fast, slowing to a hang, then home on a curve, landing exactly on the cell each came from. Its hole closes as it lands. They move on the text's own grid, so they click into place,
+     and they lose their colour, stretch and flicker as they get close */
+  function flyBack(ox, oy, now) {
+    var n = 0;
+    ctx.globalAlpha = baseA;
+    for (var k = 0; k < flying.length; k++) {
+      var p = flying[k];
+      if (p.end <= now) continue;
+      flying[n++] = p;
+      var out = (1 - Math.exp(-B_DRAG * (now - p.t0) / 1000)) / B_DRAG, h = Math.max(0, Math.min(1, (now - p.turn) / (p.end - p.turn)));
+      h = h * h * h * (h * (h * 6 - 15) + 10);
+      if (Math.random() < FLICKER * (1 - h)) continue;
+      var dx = p.vx * out * (1 - h), dy = p.vy * out * (1 - h), a = p.curl * h, ca = Math.cos(a), sa = Math.sin(a), near = h > .75;
+      var gx = Math.round((dx * ca - dy * sa) / CELL) * CELL, gy = Math.round((dx * sa + dy * ca) / CELL) * CELL;
+      if (h < .5 && Math.random() < .12) gx += (Math.random() < .5 ? -1 : 1) * CELL * (1 + Math.floor(Math.random() * 3));
+      var s = near ? CELL : p.s, c = h < .6 && p.c || color;
+      if (ctx.fillStyle !== c) ctx.fillStyle = c;
+      ctx.fillRect(ox + (p.i % map.cols) * CELL + gx, oy + Math.floor(p.i / map.cols) * CELL + gy, h < .4 && p.w ? p.w : s, s);
+    }
+    flying.length = n;
+    ctx.globalAlpha = 1;
+  }
   function run() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
   /* only over the text itself, or just beside it, and never when the pointer is on something else on top of it */
   document.addEventListener('mousemove', function (e) {
@@ -400,6 +445,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (opt.img ? !picReady() : (!document.fonts || document.fonts.status !== 'loaded')) return;
     loadSources();
     if (!map || Math.abs(map.bw - box.width) > 1 || Math.abs(map.bh - box.height) > 1) { if (on) stop(); build(); }
+    movedAt = performance.now();
     energy = Math.min(1, energy + moved / 90);
     if (energy > .05) { start(); run(); }
   }, { passive: true });
