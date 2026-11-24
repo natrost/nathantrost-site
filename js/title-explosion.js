@@ -1,4 +1,4 @@
-/* Pixel explosion on the homepage, About page and project page titles, and on the big outlined name along the bottom of the footer (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
+/* Pixel explosion on the homepage, About page, project page and 404 page titles, and on the big outlined name along the bottom of the footer (loaded once, from the site footer): moving the cursor over the text blows the letters around it apart into flickering square pixels that fly outward, with static around the blast, bands of the text tearing sideways, and small images from the page thrown out, failing like a bad VHS tape as they go. Then the letters fill back in. The harder the cursor moves, the bigger the blast.
    The text near the cursor also fails like a VHS tape: its rows slip and wobble, red and blue ghosts pull away from it, scan lines cut through it and streaks shoot off, in a new mix for each rollover. Only on a real pointer, and never with reduced motion */
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (window.__ntTitleBurst) return;
   window.__ntTitleBurst = true;
   /* the wrapper matters: the Archive title has the same classes as the homepage headline, but sits outside this section. On project pages it is the white headline in the dark header */
-  var title = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text, .work_feature_wrapper .theworktextwrapper .title_text');
+  var title = document.querySelector('.home_feature_wrapper .page_title_wrapper.home .title_text, .about_feature_text, .work_feature_wrapper .theworktextwrapper .title_text, .utility-page-wrap h1');
   /* the footer's big name is an image (the outlined SVG): it blows apart the same way, its pixels taken from the picture instead of the text */
   var footerName = document.querySelector('.nt-footer-under .image-63') || document.querySelector('.image-63');
   if (!title && !footerName) return;
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var pic = null;
   if (opt.img) { pic = new Image(); pic.crossOrigin = 'anonymous'; pic.decoding = 'async'; }
   function picReady() { if (!pic.src) pic.src = host.currentSrc || host.src; return pic.complete && pic.naturalWidth > 0 && pic.src === (host.currentSrc || host.src); }
-  var section = opt.img ? (host.closest('footer, [class*="footer"]') || document.body) : (host.closest('.home_feature_wrapper, .feature_wrapper, .work_feature_wrapper') || document.body);
+  var section = opt.img ? (host.closest('footer, [class*="footer"]') || document.body) : (host.closest('.home_feature_wrapper, .feature_wrapper, .work_feature_wrapper, .utility-page-wrap') || document.body);
   var layer = document.createElement('canvas'), ctx = layer.getContext('2d');
   layer.className = 'nt-burst-layer';
   layer.setAttribute('aria-hidden', 'true');
@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
   /* the small images come from this page's own images, using a small version of each where Webflow made one; they only download once someone first rolls over the text */
   function loadSources() {
     if (sources) return;
+    /* the 404 page has no images of its own: it throws the toast and the gifs that have shown up so far (js/404-gifs.js keeps adding to this list) */
+    if (window.__ntBurstImages) { sources = window.__ntBurstImages; return; }
     sources = [];
     var seen = {}, list = [];
     Array.prototype.forEach.call(document.images, function (im) {

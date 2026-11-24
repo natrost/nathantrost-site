@@ -36,6 +36,14 @@
   var IN = { ms: 650, block: 28, tear: 40, flicker: true };
   var OUT = { ms: 320, block: 16, tear: 26 };
 
+  /* what the headline's pixel explosion throws out (js/title-explosion.js): the toast, then each gif once it has loaded to show. Nothing extra downloads for it */
+  var thrown = window.__ntBurstImages = [];
+  function throwable(src) {
+    if (thrown.some(function (t) { return t.src === src; })) return;
+    var t = new Image(); t.src = src; thrown.push(t);
+  }
+  if (window.matchMedia('(hover: hover)').matches) throwable(TOAST);
+
   var pool = GIFS.map(function (f) { return CDN + f; });
   var live = [], last = null;
   function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -95,6 +103,7 @@
     img.onload = function () {
       clearTimeout(wait);
       if (gone) return;
+      throwable(src);
       /* where there isn't room at the size picked, it tries a little smaller (phones have only a strip under the buttons) */
       var w = Math.round(Math.min(rnd(L.w[0], L.w[1]), Math.max(L.w[0] * .8, img.naturalWidth * 1.4))), ratio = img.naturalHeight / img.naturalWidth, h, box = null;
       for (var k = 1; k >= .55 && !box; k -= .15) { w = Math.round(w * (k < 1 ? .85 : 1)); h = Math.round(w * ratio); box = spot(w, h); }
