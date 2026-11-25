@@ -395,9 +395,22 @@ html.nt-work body .nt-pj-top:not(.is-on) .smaller_project_title.top { pointer-ev
   .nt-pj-top { bottom: calc(12px - 2rem); margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .nt-pj-top { transition: none; } }
-/* the rollover images pass over the page but under Next, Prev and the top bar */
-.nt-pj-trail { position: fixed; left: 0; top: 0; z-index: 190; width: 0; height: 0; pointer-events: none; }
-html body .nt-pj-trail img { position: absolute; left: 0; top: 0; display: block; width: auto; height: auto; max-width: 250px; max-height: 250px; opacity: 0; }
+/* under Next and Prev, three thumbnails of the project each leads to (js/project-nav.js), in a row along the outside edge: Prev's from the left, Next's from the right. Each row takes up to half the bar less a gap in the middle, and never more than 600px, so the thumbnails shrink to fit on narrower screens. They rise in one after another when the bar comes on screen, and lift a little in turn on rollover */
+html.nt-work body .project_links_wrapper, html.nt-work body .project_links_wrapper > :not(.project_links) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: clamp(24px, 6vw, 120px); }
+html.nt-work body .project_links.has-thumbs { width: 100%; max-width: 600px; }
+html.nt-work body .project_links.next.has-thumbs { grid-column: 2 !important; }
+.nt-pn-thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 14px; }
+.nt-pn-thumb { display: block; overflow: hidden; aspect-ratio: 1.631; border-radius: 4px; background: rgba(0,0,0,.06); opacity: 0; transform: translateY(14px); transition: opacity .6s ease calc(var(--i) * 90ms), transform .8s cubic-bezier(.16, 1, .3, 1) calc(var(--i) * 90ms); }
+.project_links.next .nt-pn-thumb { transition-delay: calc((2 - var(--i)) * 90ms); }
+.nt-pn-thumbs.is-in .nt-pn-thumb { opacity: 1; transform: none; }
+html body .nt-pn-thumb img { display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; transition: transform .6s cubic-bezier(.16, 1, .3, 1); }
+@media (hover: hover) {
+  html.nt-work body .project_links:hover .nt-pn-thumbs.is-in .nt-pn-thumb { transform: translateY(-6px); transition: transform .45s cubic-bezier(.16, 1, .3, 1) calc(var(--i) * 50ms); }
+  html.nt-work body .project_links.next:hover .nt-pn-thumbs.is-in .nt-pn-thumb { transition-delay: calc((2 - var(--i)) * 50ms); }
+  html.nt-work body .project_links:hover .nt-pn-thumb img { transform: scale(1.05); }
+}
+@media (max-width: 767px) { .nt-pn-thumbs { gap: 4px; margin-top: 10px; } .nt-pn-thumb { border-radius: 2px; } }
+@media (prefers-reduced-motion: reduce) { .nt-pn-thumb, html body .nt-pn-thumb img { transition: none !important; transform: none !important; } }
 
 /* homepage carousels: each slide's link fills its slide, so the picture inside always fills it too */
 .splide.is-marquee .splide__slide > a { display: block; width: 100%; }
