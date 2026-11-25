@@ -5,7 +5,7 @@
 .w-lightbox-close {background-image: url(https://uploads-ssl.webflow.com/665638e0329e026c932efbd5/66b7d9402e3e75a374b75fc5_close.svg);}
 
 /* a very faint paper grain: a warm grain plus a few far-apart flecks. Only for sections that paint their own solid sand: it is semi-transparent, so on a see-through section it doubles and reads darker. The fourth row of each colour matrix sets the strength: grain first, then flecks */
-html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .nt-full-stage, html body .feature_wrapper:has(.nt-px-canvas)::after, html body .nt-bgfade-color {
+html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .nt-full-stage, html body .nt-full-flat, html body .feature_wrapper:has(.nt-px-canvas)::after, html body .nt-bgfade-color {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .24  0 0 0 0 .19  0 0 0 0 .11  .1 0 0 0 -.035'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .08  2 0 0 0 -1.56'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E");
   background-size: 600px 600px;
 }
@@ -476,12 +476,14 @@ html body .nt-full-btn { pointer-events: auto; box-sizing: border-box; height: 5
 html body .nt-full-btn:focus-visible, html body .nt-full-x:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px #000; }
 html body .nt-full-btn:focus:not(:focus-visible), html body .nt-full-x:focus:not(:focus-visible), html body .nt-full-btn.is-quiet, html body .nt-full-x.is-quiet { outline: none; box-shadow: none; }
 /* opened: the window gives up its place to the flat page, which is part of the site page's flow */
-.nt-full-flat { display: none; box-sizing: border-box; padding-bottom: 96px; text-align: center; cursor: zoom-out; }
+/* white, so it stands apart from the sand page, with a hairline round the page so a white one keeps its edges */
+.nt-full-flat { display: none; box-sizing: border-box; background-color: #fff; padding-bottom: 96px; text-align: center; cursor: zoom-out; }
 .scroll_showcase.is-full .nt-full-flat { display: block; }
 .scroll_showcase.is-full .scroll_showcase_frame { position: absolute; top: 0; visibility: hidden; pointer-events: none; }
 html body .nt-full-page { display: block; max-width: none; margin: 0 auto 64px; }
+html body :is(.nt-full-page, .nt-full-fly) { box-shadow: 0 0 0 1px rgba(0, 0, 0, .08); }
 /* the layer the move is drawn on: over the page, under the nav while that fades */
-.nt-full-stage.scroll_showcase { position: fixed; inset: -24px; z-index: 150; width: auto; margin: 0 !important; padding: 0; overflow: hidden; display: none; background-color: var(--sand, #f2f0e8); }
+.nt-full-stage.scroll_showcase { position: fixed; inset: -24px; z-index: 150; width: auto; margin: 0 !important; padding: 0; overflow: hidden; display: none; background-color: var(--sand, #f2f0e8); background-position: 24px 24px; }
 .nt-full-stage.is-on { display: block; }
 .nt-full-moves { position: absolute; left: 24px; top: 24px; width: 100vw; height: 0; }
 .nt-full-stage .scroll_showcase_tilt { will-change: transform; }

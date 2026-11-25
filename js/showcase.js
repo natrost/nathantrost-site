@@ -14,7 +14,7 @@
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
   /* "View full page": a button on each window (clicking the window works too). The middle page straightens and grows to its own size while the side pages push off the screen and what shows above it lifts away; the window opens out to the whole screen and the page becomes part of the site page's own flow, so the visitor just scrolls through it and on to the next section. The button shrinks into a close button in the corner, with a ring that fills as the page is scrolled; that, Escape, or a click anywhere on the open page folds it back from whatever part is showing, and the page then drifts back to its hero. FULL_ON is which pages have it (a match on the address).
      data-full on the .scroll_showcase block can point it at a larger copy of the page, only loaded once opened */
-  var FULL_ON = /^\/work\/qualcomm-game-studios\/?$/;
+  var FULL_ON = /^\/work\/(qualcomm-game-studios|island-way|nexgrill)\/?$/;
   var OPEN_MS = 1150;    /* how long it takes to open */
   var CLOSE_MS = 1000;   /* how long it takes to fold back */
   var BACK_MS = 1500;    /* how long the page then takes to drift back to its hero */
@@ -308,6 +308,7 @@
         var u = colU(), v = copyTop(c) + f * h0, tw = tilt.offsetWidth, th = tilt.offsetHeight, opening = to.spread > from.spread;
         fly.style.width = W + 'px'; fly.style.height = HT + 'px'; fly.style.transformOrigin = '50% ' + f * 100 + '%';
         tilt.style.transformOrigin = (tw / 2 + u) + 'px ' + (th / 2 + v) + 'px';
+        var sand = (getComputedStyle(frame).backgroundColor.match(/\d+/g) || [242, 240, 232]).slice(0, 3).map(Number);
         var dir = cols.map(function (k, i) { return i < mid ? -1 : i > mid ? 1 : 0; });
         var reach = (vw() * .75) / Math.max(1, W / cw), t0 = 0, last = 0, slow = 0, plain = false;
         function draw(t) {
@@ -320,6 +321,8 @@
           /* the window itself opens out to the whole screen, a little ahead of the page */
           var k = opening ? lift(Math.min(1, t * 1.35)) : lift(Math.max(0, t * 1.35 - .35));
           stage.style.clipPath = 'inset(' + (BLEED + mixn(from.top, to.top, k)).toFixed(1) + 'px ' + BLEED + 'px ' + (BLEED + mixn(from.bottom, to.bottom, k)).toFixed(1) + 'px)';
+          /* the section goes from the window's sand to white as it opens, and back */
+          stage.style.backgroundColor = 'rgb(' + sand.map(function (n) { return Math.round(mixn(n, 255, mixn(from.spread, to.spread, k))); }) + ')';
           /* red and blue pull apart while it moves fastest */
           var l = plain ? 0 : Math.round(Math.sin(Math.PI * t) * 2.6);
           stage.style.filter = l ? 'url(#nt-speed-' + l + (opening ? 'd' : 'u') + ')' : '';
