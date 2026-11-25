@@ -468,8 +468,10 @@ html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: 
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col { opacity: 0; translate: 0 -30%; }
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col.is-up { translate: 0 30%; }
 @media (prefers-reduced-motion: reduce) { .scroll_showcase.nt-sc-on .scroll_showcase_col { transition: none; } }
-/* case study videos (Webflow video embeds, e.g. Nexgrill): the block holding one sizes to its contents, and an embed has no contents of its own, so below 1440px (where Webflow's 1280px width stops applying) the player shrank to nothing. The block now takes the full width */
-._1_image_block:has(> .w-video) { width: 100%; box-sizing: border-box; }
+/* case study videos (Webflow video embeds on Nexgrill, YouTube players in code embeds with the work_video class on Qualcomm): the block holding one sizes to its contents, and an embed has no contents of its own, so below 1440px (where Webflow's 1280px width stops applying) the player shrank to nothing. The block now takes the full width, and the code embed fills it */
+._1_image_block:has(> .w-video, > .work_video) { width: 100%; box-sizing: border-box; }
+._1_image_block > .work_video.w-embed:not(.w-video) { width: 100%; }
+@media (min-width: 1440px) { ._1_image_block > .work_video.w-embed:not(.w-video) { width: 1280px; } }
 
 /* "View full page" (js/showcase.js): the button near the bottom of the window, above where the TOP link rests. It sits in a holder that centres it, because its rollover moves it with translate */
 .scroll_showcase.has-full .scroll_showcase_frame { cursor: pointer; }
