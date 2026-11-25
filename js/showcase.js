@@ -12,11 +12,12 @@
   var GLITCH_MS = 600;   /* about how long the bad-tape moment lasts, in ms */
   var HOVER_MS = 450;    /* a rollover glitch is a quicker burst than the arrival */
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
-  /* "View full page": a button on each window (clicking the window works too) that opens the whole page design upright and flat over the site, to scroll through at its own size. It closes with its close button, Escape, the browser's back button or a click beside the page, back where the visitor was. FULL_ON is which pages have it (a match on the address).
+  /* "View full page": a button on each window (clicking the window works too). The middle page straightens and grows to its own size while the side pages push off the screen and what shows above it lifts away; the window opens out to the whole screen and the page becomes part of the site page's own flow, so the visitor just scrolls through it and on to the next section. The button shrinks into a close button in the corner, with a ring that fills as the page is scrolled; that, Escape, or the Close button at the end folds it back from whatever part is showing, and the page then drifts back to its hero. FULL_ON is which pages have it (a match on the address).
      data-full on the .scroll_showcase block can point it at a larger copy of the page, only loaded once opened */
   var FULL_ON = /^\/work\/qualcomm-game-studios\/?$/;
-  var FULL_IN = 520;     /* ms the page takes to settle from its bad-tape moment as it opens */
-  var FULL_OUT = 260;    /* ms it takes to fall apart as it closes */
+  var OPEN_MS = 1150;    /* how long it takes to open */
+  var CLOSE_MS = 1000;   /* how long it takes to fold back */
+  var BACK_MS = 1500;    /* how long the page then takes to drift back to its hero */
   var rnd = function (lo, hi) { return lo + Math.random() * (hi - lo); };
   var hash = function (n) { var v = Math.sin(n * 127.1) * 43758.5453; return v - Math.floor(v); };
   /* smooth random from -1 to 1 along a line */
@@ -62,6 +63,8 @@
 
     /* q is where the window sits on the screen: 0 centred, positive below the centre, negative above, in screen heights. The pages follow it softly */
     var q = 0, target = 0, near = false, raf = 0, fh = 0, ang = 0, gap = 0;
+    /* held while the page is opened out (View full page): the columns stay put. bias is how far along its strip the middle page is from where it usually sits */
+    var held = false, bias = 0;
     function place() {
       items.forEach(function (it) {
         if (!it.strip) return;
@@ -71,6 +74,7 @@
         var over = Math.max(0, it.col.clientHeight / 2 - fh / (2 * Math.cos(ang)) + it.col.clientWidth / 2 * Math.tan(ang));
         var drift = q * RANGE * fh;
         var s = it.start * H - (it.up ? over + fh * PEEK : 0) + (it.up ? -drift : drift);
+        if (it.up) s += bias;
         s = ((s % H) + H) % H;
         it.strip.style.transform = 'translate3d(0,' + (-H - s).toFixed(1) + 'px,0)';
       });
@@ -81,6 +85,7 @@
     }
     function tick() {
       raf = 0;
+      if (held) return;
       measure();
       /* with the smooth wheel (smooth-scroll.js) the page already glides, so the pages follow it more closely */
       q += (target - q) * (window.__ntSmoothScroll ? Math.max(EASE, .3) : EASE);
@@ -189,7 +194,7 @@
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     }
     function glitch(gain, settle) {
-      if (glitching) return;
+      if (glitching || held) return;
       tiles();
       var tapes = items.map(function (it) { return it.img ? snapshot(it) : null; }).filter(Boolean);
       if (!tapes.length) return;
@@ -229,107 +234,241 @@
 
     /* ---- view full page ---- */
     function fullPage() {
-      var main = items[mid] && items[mid].img;
-      if (!main) return;
-      var holder = document.createElement('div'), btn = document.createElement('button');
-      holder.className = 'nt-full-open'; btn.className = 'nt-full-btn'; btn.type = 'button';
+      var it = items[mid], main = it && it.img;
+      if (!main || !tilt) return;
+      var root = document.documentElement;
+      function make(tag, cls, into) { var e = document.createElement(tag); e.className = cls; if (tag === 'button') e.type = 'button'; if (into) into.appendChild(e); return e; }
+      var name = main.alt || 'this page';
+      var holder = make('div', 'nt-full-open', frame), btn = make('button', 'nt-full-btn', holder);
       btn.textContent = 'View full page';
-      btn.setAttribute('aria-haspopup', 'dialog');
-      if (main.alt) btn.setAttribute('aria-label', 'View full page: ' + main.alt);
-      holder.appendChild(btn); frame.appendChild(holder);
+      btn.setAttribute('aria-label', 'View full page: ' + name); btn.setAttribute('aria-expanded', 'false');
       sec.classList.add('has-full');
-      if (!reduce && window.matchMedia('(hover: hover)').matches) btn.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(btn); });
+      function roll(b, o) { if (!reduce && window.matchMedia('(hover: hover)').matches) b.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(b, o); }); }
+      roll(btn);
 
-      var root = document.documentElement, view = null, scroller, page, shut, token = 0, closing = false, pushed = false, hushed = [];
+      var BLEED = 24, isOpen = false, busy = false, wasIn = false, flat = null, page, end, ctl, arc, stage, moves, fly;
       frame.addEventListener('click', function (e) { if (e.button === 0) open(); });
 
-      /* the part of the page showing right now, glitched on a canvas laid exactly over it */
-      function burst(ms, settle, done) {
-        var mine = ++token, r = page.getBoundingClientRect(), vh = view.clientHeight;
-        var top = Math.max(0, -r.top), h = Math.round(Math.min(r.height - top, vh - Math.max(0, r.top))), W = Math.round(r.width);
-        if (reduce || !page.naturalWidth || W < 2 || h < 2) { if (done) done(); return; }
-        tiles();
-        var plain = document.createElement('canvas'), k = page.naturalHeight / r.height;
-        plain.width = W; plain.height = h;
-        plain.getContext('2d').drawImage(page, 0, top * k, page.naturalWidth, h * k, 0, 0, W, h);
-        var T = tape(plain), t0 = performance.now();
-        T.c.className = 'nt-full-tape'; T.c.style.top = top + 'px'; T.c.style.height = h + 'px';
-        page.parentNode.appendChild(T.c);
-        (function step(now) {
-          var t = (now - t0) / ms;
-          if (t >= 1 || mine !== token) { T.c.remove(); if (done && mine === token) done(); return; }
-          if (Math.random() > .12) paint(T, settle ? Math.pow(1 - t, 1.6) : Math.min(1, .25 + t * 1.2), now);
-          if (settle) T.c.style.opacity = t > .86 ? (1 - t) / .14 : 1;
-          requestAnimationFrame(step);
-        })(t0);
-      }
+      /* made the first time it is opened */
       function build() {
-        view = document.createElement('div');
-        view.className = 'nt-full'; view.setAttribute('role', 'dialog'); view.setAttribute('aria-modal', 'true');
-        view.setAttribute('aria-label', main.alt || 'Full page');
-        /* data-native-scroll: the smooth wheel (smooth-scroll.js) leaves it alone, so the page behind never moves */
-        scroller = document.createElement('div');
-        scroller.className = 'nt-full-scroll'; scroller.tabIndex = 0; scroller.setAttribute('data-native-scroll', '');
-        var sheet = document.createElement('div');
-        sheet.className = 'nt-full-sheet';
-        page = document.createElement('img');
-        page.className = 'nt-full-page'; page.alt = main.alt; page.decoding = 'async';
-        page.src = sec.getAttribute('data-full') || main.src;
-        /* never shown larger than it is, so it stays sharp */
-        function fit() { if (page.naturalWidth) sheet.style.maxWidth = page.naturalWidth + 'px'; }
-        if (page.complete) fit(); else page.addEventListener('load', fit, { once: true });
-        shut = document.createElement('button');
-        shut.className = 'nt-full-close'; shut.type = 'button'; shut.setAttribute('aria-label', 'Close full page');
-        sheet.appendChild(page); scroller.appendChild(sheet); view.appendChild(shut); view.appendChild(scroller);
-        shut.addEventListener('click', close);
-        if (!reduce && window.matchMedia('(hover: hover)').matches) shut.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(shut, { drop: true }); });
-        scroller.addEventListener('click', function (e) { if (e.target === scroller) close(); });
-        document.body.appendChild(view);
+        /* the page as it ends up: flat, in the site page's own flow, so the visitor just scrolls through it */
+        flat = make('div', 'nt-full-flat', sec);
+        page = make('img', 'nt-full-page', flat);
+        page.alt = main.alt; page.decoding = 'async'; page.src = sec.getAttribute('data-full') || main.src;
+        end = make('button', 'nt-full-btn', flat);
+        end.textContent = 'Close';
+        end.setAttribute('aria-label', 'Close full page: ' + name);
+        end.addEventListener('click', close); roll(end);
+        /* the close button: the View full page button shrinks into it. The ring inside it fills as the page is scrolled */
+        ctl = make('button', 'nt-full-x', document.body);
+        ctl.setAttribute('aria-label', 'Close full page: ' + name);
+        ctl.innerHTML = '<span class="nt-full-x-label" aria-hidden="true">View full page</span><svg class="nt-full-x-mark" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2"/><circle class="nt-full-arc" cx="26" cy="26" r="23" fill="none" stroke="#18d6ff" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 26 26)"/><path d="M20 20l12 12M32 20L20 32" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+        arc = ctl.querySelector('.nt-full-arc');
+        ctl.addEventListener('click', close);
+        roll(ctl, { drop: true });
+        /* the moving parts are drawn on a layer over the screen, so the site page underneath can be resized and scrolled out of sight */
+        stage = make('div', 'nt-full-stage scroll_showcase', document.body);
+        stage.setAttribute('aria-hidden', 'true');
+        /* it reaches BLEED past the screen on every side, so the colour split never shows its edges */
+        moves = make('div', 'nt-full-moves', stage);
+        fly = make('img', 'nt-full-fly', moves);
+        fly.alt = ''; fly.src = main.src;
       }
-      function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } }
-      function onPop() { pushed = false; close(); }
+      function small() { return innerWidth < 768; }
+      function vw() { return root.clientWidth; }
+      function pad() { return small() ? 80 : 96; }
+      /* the size the page opens to: never larger than it really is, so it stays sharp */
+      function pageW() { return Math.min(page.naturalWidth || main.naturalWidth, small() ? vw() : vw() - 64); }
+      function fitFlat() {
+        flat.style.width = vw() + 'px';
+        flat.style.marginLeft = '0px';
+        flat.style.marginLeft = -flat.getBoundingClientRect().left + 'px';
+        page.style.width = pageW() + 'px';
+        page.style.height = pageW() * main.naturalHeight / main.naturalWidth + 'px';
+        flat.style.paddingTop = pad() + 'px';
+      }
+      function lift(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+      function mixn(a, b, t) { return a + (b - a) * t; }
+
+      /* where the middle page is in the tilted layer, measured from the layer's centre: the middle of its column across, and how far down each copy of the page starts */
+      function colU() { return it.col.offsetLeft + it.col.offsetWidth / 2 - tilt.offsetWidth / 2; }
+      function stripY() { var m = /translate3d\(0(?:px)?,\s*(-?[\d.]+)px/.exec(it.strip.style.transform || ''); return m ? +m[1] : 0; }
+      function copyTop(c) { return -tilt.offsetHeight / 2 + stripY() + c * (main.offsetHeight + gap); }
+      function nearest(f, want) { var best = 1, d0 = 1e9; [0, 1, 2].forEach(function (c) { var d = Math.abs(copyTop(c) + f * main.offsetHeight - want); if (d < d0) { d0 = d; best = c; } }); return best; }
+      function signed() { return (parseFloat(getComputedStyle(tilt).getPropertyValue('--nt-sc-tilt')) || -14) * Math.PI / 180; }
+      function turn(a, u, v) { return [u * Math.cos(a) - v * Math.sin(a), u * Math.sin(a) + v * Math.cos(a)]; }
+
+      /* runs the move between two ends: w is how wide the middle page is, a its angle, x and y where its anchor point is on the screen, top and bottom how much of the screen is hidden above and below, spread how far the other pieces have gone (0 to 1).
+         f is the anchor: how far down the page (0 to 1) the point is that everything turns about; c is which copy of the page is standing in the column */
+      function run(from, to, f, c, ms, done) {
+        var h0 = main.offsetHeight, cw = it.col.clientWidth, W = pageW(), HT = W * main.naturalHeight / main.naturalWidth;
+        var u = colU(), v = copyTop(c) + f * h0, tw = tilt.offsetWidth, th = tilt.offsetHeight, opening = to.spread > from.spread;
+        fly.style.width = W + 'px'; fly.style.height = HT + 'px'; fly.style.transformOrigin = '50% ' + f * 100 + '%';
+        tilt.style.transformOrigin = (tw / 2 + u) + 'px ' + (th / 2 + v) + 'px';
+        var dir = cols.map(function (k, i) { return i < mid ? -1 : i > mid ? 1 : 0; });
+        var reach = (vw() * .75) / Math.max(1, W / cw), t0 = 0, last = 0, slow = 0, plain = false;
+        function draw(t) {
+          var e = lift(t), x = mixn(from.x, to.x, e), y = mixn(from.y, to.y, e), a = mixn(from.a, to.a, e), w = mixn(from.w, to.w, e), s = mixn(from.spread, to.spread, e);
+          fly.style.transform = 'translate3d(' + (x - W / 2).toFixed(2) + 'px,' + (y - f * HT).toFixed(2) + 'px,0) rotate(' + a.toFixed(5) + 'rad) scale(' + (w / W).toFixed(5) + ')';
+          tilt.style.transform = 'translate3d(' + (x - tw / 2 - u).toFixed(2) + 'px,' + (y - th / 2 - v).toFixed(2) + 'px,0) rotate(' + a.toFixed(5) + 'rad) scale(' + (w / cw).toFixed(5) + ')';
+          /* the side pages push out across their own tilt, one drifting up and the other down; in the middle column, what shows above the page lifts away and what shows below it drops away */
+          cols.forEach(function (k, i) { if (dir[i]) k.style.translate = (dir[i] * reach * s).toFixed(1) + 'px ' + (dir[i] * -th * .16 * s).toFixed(1) + 'px'; });
+          it.imgs.forEach(function (k, i) { if (i !== c) k.style.translate = '0px ' + ((i < c ? -1 : 1) * th * .5 * s).toFixed(1) + 'px'; });
+          /* the window itself opens out to the whole screen, a little ahead of the page */
+          var k = opening ? lift(Math.min(1, t * 1.35)) : lift(Math.max(0, t * 1.35 - .35));
+          stage.style.clipPath = 'inset(' + (BLEED + mixn(from.top, to.top, k)).toFixed(1) + 'px ' + BLEED + 'px ' + (BLEED + mixn(from.bottom, to.bottom, k)).toFixed(1) + 'px)';
+          /* red and blue pull apart while it moves fastest */
+          var l = plain ? 0 : Math.round(Math.sin(Math.PI * t) * 2.6);
+          stage.style.filter = l ? 'url(#nt-speed-' + l + (opening ? 'd' : 'u') + ')' : '';
+        }
+        draw(0);
+        requestAnimationFrame(function step(now) {
+          if (!t0) t0 = last = now;
+          /* a device that cannot keep up drops the colour split */
+          if (now - last > 34 && ++slow > 2) plain = true;
+          last = now;
+          var t = Math.min(1, (now - t0) / ms);
+          draw(t);
+          if (t < 1) requestAnimationFrame(step); else { stage.style.filter = ''; done(); }
+        });
+      }
+      /* the tilted layer goes onto the stage for the move, and back into its window after */
+      function toStage() {
+        stage.classList.toggle('is-tall', sec.classList.contains('is-tall'));
+        stage.classList.add('is-on');
+        moves.insertBefore(tilt, fly);
+        var s = tilt.style; s.left = s.top = '0'; s.translate = 'none'; s.rotate = 'none';
+        cols.forEach(function (k) { k.style.transition = 'none'; });
+      }
+      function toFrame() {
+        frame.insertBefore(tilt, holder);
+        var s = tilt.style; s.left = s.top = s.translate = s.rotate = s.transform = s.transformOrigin = '';
+        cols.forEach(function (k) { k.style.translate = ''; void k.offsetWidth; k.style.transition = ''; });
+        it.imgs.forEach(function (k) { k.style.visibility = k.style.translate = ''; });
+        stage.classList.remove('is-on'); stage.style.clipPath = '';
+      }
+      /* nothing may scroll the site page during the move */
+      function halt(e) { e.preventDefault(); }
+      function freeze(on) {
+        ['wheel', 'touchmove'].forEach(function (n) { if (on) addEventListener(n, halt, { passive: false, capture: true }); else removeEventListener(n, halt, { capture: true }); });
+        root.style.overflowAnchor = on ? 'none' : '';
+      }
+      function top() { return sec.getBoundingClientRect().top + scrollY; }
+      /* the site page has changed height: once nothing is moving, everything that measures it looks again */
+      function remeasure() { setTimeout(function () { var y = scrollY; dispatchEvent(new Event('resize')); if (Math.abs(scrollY - y) > 1) scrollTo(0, y); }, 60); }
+
+      /* the close button travels between the View full page button's place and the corner */
+      function corner() { var m = small() ? 14 : 28; return { left: vw() - m - 52, top: m, width: 52, height: 52 }; }
+      function px(r) { return { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' }; }
+      function morph(a, b, toX, ms) {
+        Object.assign(ctl.style, px(b));
+        ctl.style.transition = 'none';
+        ctl.classList.add('is-on'); ctl.classList.toggle('is-x', toX);
+        setTimeout(function () { ctl.style.transition = ''; }, 60);
+        if (!reduce && ctl.animate) ctl.animate([px(a), px(b)], { duration: ms, easing: 'cubic-bezier(.65, 0, .25, 1)' });
+      }
+      /* while the open page fills the screen the nav steps aside and the close button shows; scrolled past it, they swap back */
+      function watch() {
+        if (!isOpen || busy) return;
+        var r = sec.getBoundingClientRect(), inside = r.top < innerHeight * .45 && r.bottom > innerHeight * .4;
+        /* only when this one changes, as another window on the page may be open too */
+        if (inside !== wasIn) { wasIn = inside; root.classList.toggle('nt-full-in', inside); }
+        ctl.classList.toggle('is-on', inside);
+        arc.style.strokeDashoffset = 1 - Math.max(0, Math.min(1, -r.top / Math.max(1, r.height - innerHeight)));
+      }
+      function onKey(e) { if (e.key === 'Escape' && isOpen && !busy && ctl.classList.contains('is-on')) { e.preventDefault(); close(); } }
+      function onSize() { if (!isOpen || busy) return; fitFlat(); Object.assign(ctl.style, px(corner())); watch(); }
+
       function open() {
-        if (view && view.classList.contains('is-open')) return;
-        if (!view) build();
-        closing = false;
-        /* nothing behind it can scroll or be tabbed to, and a page with a scrollbar keeps its width */
-        var bar = innerWidth - root.clientWidth;
-        root.style.overflow = 'hidden';
-        if (bar > 0) document.body.style.paddingRight = bar + 'px';
-        hushed = Array.prototype.filter.call(document.body.children, function (n) { return n !== view && !n.inert && !/^(SCRIPT|STYLE|LINK|CANVAS)$/.test(n.tagName); });
-        hushed.forEach(function (n) { n.inert = true; });
-        view.classList.remove('is-closing'); view.classList.add('is-open');
-        scroller.scrollTop = 0;
-        /* the page itself takes the focus, so the arrow keys and space scroll it straight away */
-        scroller.focus({ preventScroll: true });
-        document.addEventListener('keydown', onKey, true);
-        /* the back button (and a phone's back swipe) closes it instead of leaving the page */
-        try { history.pushState({ ntFull: 1 }, ''); pushed = true; } catch (e) {}
-        addEventListener('popstate', onPop);
-        function start() { if (view.classList.contains('is-open') && !closing) burst(FULL_IN, true); }
-        if (page.complete && page.naturalWidth) requestAnimationFrame(start); else page.addEventListener('load', start, { once: true });
+        if (isOpen || busy || !main.naturalWidth) return;
+        if (!flat) build();
+        busy = true; held = true;
+        var pill = btn.getBoundingClientRect(), r = frame.getBoundingClientRect();
+        freeze(true);
+        root.classList.add('nt-full-in'); wasIn = true;
+        btn.setAttribute('aria-expanded', 'true');
+        morph(pill, corner(), true, OPEN_MS);
+        arc.style.strokeDashoffset = 1;
+        holder.style.visibility = 'hidden';
+        function settled() {
+          sec.classList.add('is-full');
+          fitFlat();
+          scrollTo(0, top());
+          isOpen = true;
+          /* the flat page is ready underneath before the moving one goes */
+          var gone = false;
+          function reveal() {
+            if (gone) return;
+            gone = true;
+            requestAnimationFrame(function () { requestAnimationFrame(function () {
+              stage.classList.remove('is-on');
+              busy = false; freeze(false); watch(); remeasure();
+              ctl.focus({ preventScroll: true });
+            }); });
+          }
+          if (page.decode) page.decode().then(reveal, reveal); else reveal();
+          setTimeout(reveal, 1200);
+        }
+        if (reduce) { settled(); return; }
+        var a = signed(), c = nearest(0, -fh * .4), o = turn(a, colU(), copyTop(c));
+        it.imgs[c].style.visibility = 'hidden';
+        var from = { x: r.left + r.width / 2 + o[0], y: r.top + r.height / 2 + o[1], a: a, w: it.col.clientWidth, spread: 0, top: Math.max(0, r.top), bottom: Math.max(0, innerHeight - r.bottom) };
+        toStage();
+        run(from, { x: vw() / 2, y: pad(), a: 0, w: pageW(), spread: 1, top: 0, bottom: 0 }, 0, c, OPEN_MS, settled);
       }
       function close() {
-        if (!view || closing || !view.classList.contains('is-open')) return;
-        closing = true;
-        removeEventListener('popstate', onPop);
-        document.removeEventListener('keydown', onKey, true);
-        if (pushed) { pushed = false; history.back(); }
-        view.classList.add('is-closing');
-        var ended = false;
-        function end() {
-          if (ended) return;
-          ended = true;
-          token++;
-          view.classList.remove('is-open', 'is-closing');
-          hushed.forEach(function (n) { n.inert = false; }); hushed = [];
-          root.style.overflow = ''; document.body.style.paddingRight = '';
-          closing = false;
-          btn.focus({ preventScroll: true });
+        if (!isOpen || busy) return;
+        busy = true;
+        freeze(true);
+        var fr = page.getBoundingClientRect(), f = Math.max(0, Math.min(1, (innerHeight / 2 - fr.top) / fr.height));
+        var seen = { x: fr.left + fr.width / 2, y: fr.top + f * fr.height, w: fr.width };
+        /* the window goes back to its own size, centred on the screen, where it shows the hero. With motion this happens unseen, under the stage */
+        function shut() {
+          if (!reduce) toStage();
+          sec.classList.remove('is-full');
+          scrollTo(0, Math.max(0, top() - (innerHeight - fh) / 2));
+          isOpen = false;
+          measure(); q = target; bias = 0; place();
         }
-        burst(FULL_OUT, false, end);
-        setTimeout(end, FULL_OUT + 60);
+        function finish() {
+          held = false; busy = false;
+          freeze(false);
+          root.classList.remove('nt-full-in'); wasIn = false;
+          holder.style.visibility = '';
+          ctl.classList.remove('is-on', 'is-x');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.focus({ preventScroll: true });
+          remeasure();
+        }
+        shut();
+        if (reduce) { finish(); return; }
+        /* the same part of the page is put in the middle of the tilted window, so it folds back from there */
+        var r = frame.getBoundingClientRect(), a = signed(), h = main.offsetHeight, H = h + gap;
+        bias = f * h - tilt.offsetHeight / 2 + H + stripY();
+        bias = ((bias % H) + H * 1.5) % H - H / 2;
+        place();
+        var c = nearest(f, 0), o = turn(a, colU(), copyTop(c) + f * h);
+        it.imgs.forEach(function (k, i) { k.style.visibility = i === c ? 'hidden' : ''; k.style.translate = ''; });
+        morph(corner(), btn.getBoundingClientRect(), false, CLOSE_MS);
+        root.classList.remove('nt-full-in');
+        run({ x: seen.x, y: seen.y, a: 0, w: seen.w, spread: 1, top: 0, bottom: 0 },
+          { x: r.left + r.width / 2 + o[0], y: r.top + r.height / 2 + o[1], a: a, w: it.col.clientWidth, spread: 0, top: Math.max(0, r.top), bottom: Math.max(0, innerHeight - r.bottom) }, f, c, CLOSE_MS, function () {
+          toFrame();
+          finish();
+          /* then the page drifts back to where the window usually shows it */
+          var b0 = bias, t0 = 0;
+          requestAnimationFrame(function back(now) {
+            if (held) return;
+            if (!t0) t0 = now;
+            var t = Math.min(1, (now - t0) / BACK_MS);
+            bias = b0 * (1 - lift(t)); place();
+            if (t < 1) requestAnimationFrame(back);
+          });
+        });
       }
+      addEventListener('scroll', watch, { passive: true });
+      addEventListener('resize', onSize);
+      document.addEventListener('keydown', onKey);
     }
   }
   function init() { Array.prototype.forEach.call(document.querySelectorAll('.scroll_showcase'), setup); }

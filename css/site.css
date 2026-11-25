@@ -5,7 +5,7 @@
 .w-lightbox-close {background-image: url(https://uploads-ssl.webflow.com/665638e0329e026c932efbd5/66b7d9402e3e75a374b75fc5_close.svg);}
 
 /* a very faint paper grain: a warm grain plus a few far-apart flecks. Only for sections that paint their own solid sand: it is semi-transparent, so on a see-through section it doubles and reads darker. The fourth row of each colour matrix sets the strength: grain first, then flecks */
-html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .nt-full, html body .feature_wrapper:has(.nt-px-canvas)::after, html body .nt-bgfade-color {
+html body, html body .favorites_wrapper_2, html body .professionalwrapper, html body .qualcomm_wrapper, html body .section_text_wrapper.clients, html body .overview_text_wrapper, html body .nt-wall, html body .main_image, html body ._1_image_block, html body .scroll_showcase_frame, html body .nt-full-stage, html body .feature_wrapper:has(.nt-px-canvas)::after, html body .nt-bgfade-color {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .24  0 0 0 0 .19  0 0 0 0 .11  .1 0 0 0 -.035'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .08  2 0 0 0 -1.56'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23g)'/%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E");
   background-size: 600px 600px;
 }
@@ -468,29 +468,36 @@ html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: 
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col { opacity: 0; translate: 0 -30%; }
 .scroll_showcase.nt-sc-on:not(.is-in) .scroll_showcase_col.is-up { translate: 0 30%; }
 @media (prefers-reduced-motion: reduce) { .scroll_showcase.nt-sc-on .scroll_showcase_col { transition: none; } }
-/* "View full page" (js/showcase.js): the button near the bottom of the window, above where the TOP link rests, and the view it opens. The button sits in a holder that centres it, because its rollover moves it with translate. The view covers everything, the nav and the case study menu included; its glitches are drawn inside it */
+/* "View full page" (js/showcase.js): the button near the bottom of the window, above where the TOP link rests. It sits in a holder that centres it, because its rollover moves it with translate */
 .scroll_showcase.has-full .scroll_showcase_frame { cursor: pointer; }
 .nt-full-open { position: absolute; z-index: 2; left: 0; right: 0; bottom: 72px; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .6s ease; }
 .scroll_showcase.is-in .nt-full-open { opacity: 1; transition-delay: .9s; }
 html body .nt-full-btn { pointer-events: auto; box-sizing: border-box; height: 54px; padding: 0 32px; border: 0; border-radius: 999px !important; background: #000; color: #18d6ff; font-family: trade-gothic-next-condensed, sans-serif; font-size: 16px; font-weight: 700; line-height: 1; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
-html body .nt-full-btn:focus-visible { outline: 2px solid #18d6ff; outline-offset: 3px; box-shadow: 0 0 0 3px #000; }
-.nt-full { position: fixed; inset: 0; z-index: 2147483000; visibility: hidden; opacity: 0; background-color: var(--sand, #f2f0e8); transition: opacity .2s ease, visibility 0s linear .2s; }
-.nt-full.is-open { visibility: visible; opacity: 1; transition: opacity .25s ease; }
-.nt-full.is-open.is-closing { opacity: 0; transition: opacity .2s ease .08s; }
-.nt-full-scroll { position: absolute; inset: 0; overflow: hidden auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 96px 32px; box-sizing: border-box; cursor: pointer; outline: none; }
-.nt-full-sheet { position: relative; width: 100%; margin: 0 auto; cursor: auto; }
-html body .nt-full-page { display: block; width: 100%; max-width: none; height: auto; }
-.nt-full-tape { position: absolute; left: 0; width: 100%; pointer-events: none; }
-html body .nt-full-close { position: absolute; z-index: 2; top: 2rem; right: 2rem; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50% !important; cursor: pointer; background: #000 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M1 1l12 12M13 1L1 13' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / 14px 14px no-repeat; }
-html body .nt-full-close:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
-html body .nt-full-close:focus:not(:focus-visible) { outline: none; }
-/* phones: edge to edge, with the close button over the page */
-@media (max-width: 767px) {
-  .nt-full-scroll { padding: 80px 0 48px; }
-  html body .nt-full-close { top: 18px; right: 18px; }
-  .nt-full-open { bottom: 64px; }
-}
-@media (prefers-reduced-motion: reduce) { .nt-full-open, .nt-full, .nt-full.is-open, .nt-full.is-open.is-closing { transition-duration: .01s; transition-delay: 0s; } }
+html body .nt-full-btn:focus-visible, html body .nt-full-x:focus-visible { outline: 2px solid #18d6ff; outline-offset: 3px; box-shadow: 0 0 0 3px #000; }
+html body .nt-full-btn:focus:not(:focus-visible), html body .nt-full-x:focus:not(:focus-visible) { outline: none; }
+/* opened: the window gives up its place to the flat page, which is part of the site page's flow */
+.nt-full-flat { display: none; box-sizing: border-box; padding-bottom: 96px; text-align: center; }
+.scroll_showcase.is-full .nt-full-flat { display: block; }
+.scroll_showcase.is-full .scroll_showcase_frame { position: absolute; top: 0; visibility: hidden; pointer-events: none; }
+html body .nt-full-page { display: block; max-width: none; margin: 0 auto 64px; }
+/* the layer the move is drawn on: over the page, under the nav while that fades */
+.nt-full-stage.scroll_showcase { position: fixed; inset: -24px; z-index: 150; width: auto; margin: 0 !important; padding: 0; overflow: hidden; display: none; background-color: var(--sand, #f2f0e8); }
+.nt-full-stage.is-on { display: block; }
+.nt-full-moves { position: absolute; left: 24px; top: 24px; width: 100vw; height: 0; }
+.nt-full-stage .scroll_showcase_tilt { will-change: transform; }
+html body .nt-full-fly { position: absolute; left: 0; top: 0; max-width: none; will-change: transform; }
+/* the close button: the View full page button, shrunk to a circle */
+html body .nt-full-x { position: fixed; z-index: 2100; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px !important; background: #000; color: #18d6ff; cursor: pointer; overflow: hidden; visibility: hidden; opacity: 0; transition: opacity .25s ease, visibility 0s linear .25s; }
+html body .nt-full-x.is-on { visibility: visible; opacity: 1; transition: opacity .25s ease; }
+.nt-full-x-label { position: absolute; left: 50%; top: 50%; translate: -50% -50%; font-family: trade-gothic-next-condensed, sans-serif; font-size: 16px; font-weight: 700; line-height: 1; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; transition: opacity .3s ease .45s; }
+.nt-full-x.is-x .nt-full-x-label { opacity: 0; transition: opacity .25s ease; }
+html body .nt-full-x-mark { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; translate: -50% -50%; opacity: 0; transition: opacity .25s ease; }
+html body .nt-full-x.is-x .nt-full-x-mark { opacity: 1; transition: opacity .35s ease .6s; }
+/* the nav, the case study menu and the TOP link step aside while the open page fills the screen */
+.main_nav, .nt-pj { transition: opacity .35s ease, visibility 0s; }
+html.nt-full-in :is(.main_nav, .nt-pj, .nt-pj-top) { opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; }
+@media (max-width: 767px) { .nt-full-open { bottom: 64px; } }
+@media (prefers-reduced-motion: reduce) { .nt-full-open, html body .nt-full-x, html body .nt-full-x.is-on, .nt-full-x-label, html body .nt-full-x.is-x .nt-full-x-mark { transition-duration: .01s; transition-delay: 0s; } }
 
 /* Archive wall: each image is its own layer, so moving the wall repositions them instead of repainting it */
 .nt-wall .nt-tile { will-change: translate; }
