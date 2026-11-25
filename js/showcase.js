@@ -12,6 +12,11 @@
   var GLITCH_MS = 600;   /* about how long the bad-tape moment lasts, in ms */
   var HOVER_MS = 450;    /* a rollover glitch is a quicker burst than the arrival */
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
+  /* "View full page": a button on each window (clicking the window works too) that opens the whole page design upright and flat over the site, to scroll through at its own size. It closes with its close button, Escape, the browser's back button or a click beside the page, back where the visitor was. FULL_ON is which pages have it (a match on the address).
+     data-full on the .scroll_showcase block can point it at a larger copy of the page, only loaded once opened */
+  var FULL_ON = /^\/work\/qualcomm-game-studios\/?$/;
+  var FULL_IN = 520;     /* ms the page takes to settle from its bad-tape moment as it opens */
+  var FULL_OUT = 260;    /* ms it takes to fall apart as it closes */
   var rnd = function (lo, hi) { return lo + Math.random() * (hi - lo); };
   var hash = function (n) { var v = Math.sin(n * 127.1) * 43758.5453; return v - Math.floor(v); };
   /* smooth random from -1 to 1 along a line */
@@ -109,6 +114,7 @@
       }
       measure(); q = target; place();
     }
+    if (FULL_ON.test(location.pathname)) fullPage();
     size();
     addEventListener('resize', size);
     items.forEach(function (it) { if (it.img && !it.img.complete) it.img.addEventListener('load', size, { once: true }); });
@@ -124,7 +130,14 @@
       plain.width = W; plain.height = CH;
       g.fillStyle = getComputedStyle(frame).backgroundColor || '#f2f0e8'; g.fillRect(0, 0, W, CH);
       for (var k = 0; k < 3; k++) { var y = top + k * H; if (y < CH && y + h > 0) g.drawImage(it.img, 0, y, W, h); }
-      var layers = ['#f00', '#0f0', '#00f'].map(function (col) {
+      var T = tape(plain);
+      T.c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none';
+      it.col.appendChild(T.c);
+      return T;
+    }
+    /* a picture ready to be glitched: split into its red, green and blue, with a canvas to draw them on */
+    function tape(plain) {
+      var W = plain.width, CH = plain.height, layers = ['#f00', '#0f0', '#00f'].map(function (col) {
         var l = document.createElement('canvas'), n = l.getContext('2d');
         l.width = W; l.height = CH;
         n.drawImage(plain, 0, 0); n.globalCompositeOperation = 'multiply'; n.fillStyle = col; n.fillRect(0, 0, W, CH);
@@ -133,8 +146,6 @@
       });
       var c = document.createElement('canvas');
       c.width = W; c.height = CH; c.setAttribute('aria-hidden', 'true');
-      c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none';
-      it.col.appendChild(c);
       return { c: c, ctx: c.getContext('2d'), W: W, H: CH, plain: plain, layers: layers, events: [], next: 0, seed: rnd(0, 999), split: rnd(4, 12), wave: Math.random() < .5 ? rnd(8, 24) : 0, freq: rnd(.01, .04) };
     }
     /* a row of one colour, shifted sideways and wrapping round, so it never leaves a hole */
@@ -215,6 +226,111 @@
       }, { threshold: .25 });
       arrive.observe(frame);
     } else { near = true; sec.classList.add('is-in'); }
+
+    /* ---- view full page ---- */
+    function fullPage() {
+      var main = items[mid] && items[mid].img;
+      if (!main) return;
+      var holder = document.createElement('div'), btn = document.createElement('button');
+      holder.className = 'nt-full-open'; btn.className = 'nt-full-btn'; btn.type = 'button';
+      btn.textContent = 'View full page';
+      btn.setAttribute('aria-haspopup', 'dialog');
+      if (main.alt) btn.setAttribute('aria-label', 'View full page: ' + main.alt);
+      holder.appendChild(btn); frame.appendChild(holder);
+      sec.classList.add('has-full');
+      if (!reduce && window.matchMedia('(hover: hover)').matches) btn.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(btn); });
+
+      var root = document.documentElement, view = null, scroller, page, shut, token = 0, closing = false, pushed = false, hushed = [];
+      frame.addEventListener('click', function (e) { if (e.button === 0) open(); });
+
+      /* the part of the page showing right now, glitched on a canvas laid exactly over it */
+      function burst(ms, settle, done) {
+        var mine = ++token, r = page.getBoundingClientRect(), vh = view.clientHeight;
+        var top = Math.max(0, -r.top), h = Math.round(Math.min(r.height - top, vh - Math.max(0, r.top))), W = Math.round(r.width);
+        if (reduce || !page.naturalWidth || W < 2 || h < 2) { if (done) done(); return; }
+        tiles();
+        var plain = document.createElement('canvas'), k = page.naturalHeight / r.height;
+        plain.width = W; plain.height = h;
+        plain.getContext('2d').drawImage(page, 0, top * k, page.naturalWidth, h * k, 0, 0, W, h);
+        var T = tape(plain), t0 = performance.now();
+        T.c.className = 'nt-full-tape'; T.c.style.top = top + 'px'; T.c.style.height = h + 'px';
+        page.parentNode.appendChild(T.c);
+        (function step(now) {
+          var t = (now - t0) / ms;
+          if (t >= 1 || mine !== token) { T.c.remove(); if (done && mine === token) done(); return; }
+          if (Math.random() > .12) paint(T, settle ? Math.pow(1 - t, 1.6) : Math.min(1, .25 + t * 1.2), now);
+          if (settle) T.c.style.opacity = t > .86 ? (1 - t) / .14 : 1;
+          requestAnimationFrame(step);
+        })(t0);
+      }
+      function build() {
+        view = document.createElement('div');
+        view.className = 'nt-full'; view.setAttribute('role', 'dialog'); view.setAttribute('aria-modal', 'true');
+        view.setAttribute('aria-label', main.alt || 'Full page');
+        /* data-native-scroll: the smooth wheel (smooth-scroll.js) leaves it alone, so the page behind never moves */
+        scroller = document.createElement('div');
+        scroller.className = 'nt-full-scroll'; scroller.tabIndex = 0; scroller.setAttribute('data-native-scroll', '');
+        var sheet = document.createElement('div');
+        sheet.className = 'nt-full-sheet';
+        page = document.createElement('img');
+        page.className = 'nt-full-page'; page.alt = main.alt; page.decoding = 'async';
+        page.src = sec.getAttribute('data-full') || main.src;
+        /* never shown larger than it is, so it stays sharp */
+        function fit() { if (page.naturalWidth) sheet.style.maxWidth = page.naturalWidth + 'px'; }
+        if (page.complete) fit(); else page.addEventListener('load', fit, { once: true });
+        shut = document.createElement('button');
+        shut.className = 'nt-full-close'; shut.type = 'button'; shut.setAttribute('aria-label', 'Close full page');
+        sheet.appendChild(page); scroller.appendChild(sheet); view.appendChild(shut); view.appendChild(scroller);
+        shut.addEventListener('click', close);
+        if (!reduce && window.matchMedia('(hover: hover)').matches) shut.addEventListener('mouseenter', function () { if (window.__ntVhsButton) window.__ntVhsButton(shut, { drop: true }); });
+        scroller.addEventListener('click', function (e) { if (e.target === scroller) close(); });
+        document.body.appendChild(view);
+      }
+      function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } }
+      function onPop() { pushed = false; close(); }
+      function open() {
+        if (view && view.classList.contains('is-open')) return;
+        if (!view) build();
+        closing = false;
+        /* nothing behind it can scroll or be tabbed to, and a page with a scrollbar keeps its width */
+        var bar = innerWidth - root.clientWidth;
+        root.style.overflow = 'hidden';
+        if (bar > 0) document.body.style.paddingRight = bar + 'px';
+        hushed = Array.prototype.filter.call(document.body.children, function (n) { return n !== view && !n.inert && !/^(SCRIPT|STYLE|LINK|CANVAS)$/.test(n.tagName); });
+        hushed.forEach(function (n) { n.inert = true; });
+        view.classList.remove('is-closing'); view.classList.add('is-open');
+        scroller.scrollTop = 0;
+        /* the page itself takes the focus, so the arrow keys and space scroll it straight away */
+        scroller.focus({ preventScroll: true });
+        document.addEventListener('keydown', onKey, true);
+        /* the back button (and a phone's back swipe) closes it instead of leaving the page */
+        try { history.pushState({ ntFull: 1 }, ''); pushed = true; } catch (e) {}
+        addEventListener('popstate', onPop);
+        function start() { if (view.classList.contains('is-open') && !closing) burst(FULL_IN, true); }
+        if (page.complete && page.naturalWidth) requestAnimationFrame(start); else page.addEventListener('load', start, { once: true });
+      }
+      function close() {
+        if (!view || closing || !view.classList.contains('is-open')) return;
+        closing = true;
+        removeEventListener('popstate', onPop);
+        document.removeEventListener('keydown', onKey, true);
+        if (pushed) { pushed = false; history.back(); }
+        view.classList.add('is-closing');
+        var ended = false;
+        function end() {
+          if (ended) return;
+          ended = true;
+          token++;
+          view.classList.remove('is-open', 'is-closing');
+          hushed.forEach(function (n) { n.inert = false; }); hushed = [];
+          root.style.overflow = ''; document.body.style.paddingRight = '';
+          closing = false;
+          btn.focus({ preventScroll: true });
+        }
+        burst(FULL_OUT, false, end);
+        setTimeout(end, FULL_OUT + 60);
+      }
+    }
   }
   function init() { Array.prototype.forEach.call(document.querySelectorAll('.scroll_showcase'), setup); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
