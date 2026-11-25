@@ -247,7 +247,7 @@
       roll(btn);
 
       var BLEED = 24, isOpen = false, busy = false, wasIn = false, flat = null, page, end, ctl, arc, stage, moves, fly;
-      frame.addEventListener('click', function (e) { if (e.button === 0) open(); });
+      frame.addEventListener('click', function (e) { if (e.button === 0) open(e); });
 
       /* made the first time it is opened */
       function build() {
@@ -260,7 +260,7 @@
         end.setAttribute('aria-label', 'Close full page: ' + name);
         roll(end);
         /* a click anywhere on it closes it: the page, the space beside it, or the Close button at the end */
-        flat.addEventListener('click', function (e) { if (e.button === 0) close(); });
+        flat.addEventListener('click', function (e) { if (e.button === 0) close(e); });
         /* the close button: the View full page button shrinks into it. The ring inside it fills as the page is scrolled */
         ctl = make('button', 'nt-full-x', document.body);
         ctl.setAttribute('aria-label', 'Close full page: ' + name);
@@ -268,6 +268,7 @@
         arc = ctl.querySelector('.nt-full-arc');
         ctl.addEventListener('click', close);
         roll(ctl, { drop: true });
+        ctl.addEventListener('blur', function () { ctl.classList.remove('is-quiet'); });
         /* the moving parts are drawn on a layer over the screen, so the site page underneath can be resized and scrolled out of sight */
         stage = make('div', 'nt-full-stage scroll_showcase', document.body);
         stage.setAttribute('aria-hidden', 'true');
@@ -378,10 +379,15 @@
         ctl.classList.toggle('is-on', inside);
         arc.style.strokeDashoffset = 1 - Math.max(0, Math.min(1, -r.top / Math.max(1, r.height - innerHeight)));
       }
-      function onKey(e) { if (e.key === 'Escape' && isOpen && !busy && ctl.classList.contains('is-on')) { e.preventDefault(); close(); } }
+      function onKey(e) { if (e.key !== 'Escape') { btn.classList.remove('is-quiet'); if (ctl) ctl.classList.remove('is-quiet'); } if (e.key === 'Escape' && isOpen && !busy && ctl.classList.contains('is-on')) { e.preventDefault(); close(); } }
       function onSize() { if (!isOpen || busy) return; fitFlat(); Object.assign(ctl.style, px(corner())); watch(); }
 
-      function open() {
+      /* after a click or tap the focus moves without its outline, which is only for the keyboard (a click made with a key has a detail of 0) */
+      function focusOn(b, e) {
+        b.classList.toggle('is-quiet', !!(e && e.detail));
+        b.focus({ preventScroll: true });
+      }
+      function open(e) {
         if (isOpen || busy || !main.naturalWidth) return;
         if (!flat) build();
         busy = true; held = true;
@@ -405,7 +411,7 @@
             requestAnimationFrame(function () { requestAnimationFrame(function () {
               stage.classList.remove('is-on');
               busy = false; freeze(false); watch(); remeasure();
-              ctl.focus({ preventScroll: true });
+              focusOn(ctl, e);
             }); });
           }
           if (page.decode) page.decode().then(reveal, reveal); else reveal();
@@ -418,7 +424,7 @@
         toStage();
         run(from, { x: vw() / 2, y: pad(), a: 0, w: pageW(), spread: 1, top: 0, bottom: 0 }, 0, c, OPEN_MS, settled);
       }
-      function close() {
+      function close(e) {
         if (!isOpen || busy) return;
         busy = true;
         freeze(true);
@@ -439,7 +445,7 @@
           holder.style.visibility = '';
           ctl.classList.remove('is-on', 'is-x');
           btn.setAttribute('aria-expanded', 'false');
-          btn.focus({ preventScroll: true });
+          focusOn(btn, e);
           remeasure();
         }
         shut();
@@ -471,6 +477,7 @@
       addEventListener('scroll', watch, { passive: true });
       addEventListener('resize', onSize);
       document.addEventListener('keydown', onKey);
+      btn.addEventListener('blur', function () { btn.classList.remove('is-quiet'); });
     }
   }
   function init() { Array.prototype.forEach.call(document.querySelectorAll('.scroll_showcase'), setup); }

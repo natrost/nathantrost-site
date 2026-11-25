@@ -473,8 +473,8 @@ html.nt-split-wait .nt-fade:not(.nt-lines) { opacity: 0 !important; transition: 
 .nt-full-open { position: absolute; z-index: 2; left: 0; right: 0; bottom: 72px; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .6s ease; }
 .scroll_showcase.is-in .nt-full-open { opacity: 1; transition-delay: .9s; }
 html body .nt-full-btn { pointer-events: auto; box-sizing: border-box; height: 54px; padding: 0 32px; border: 0; border-radius: 999px !important; background: #000; color: #18d6ff; font-family: trade-gothic-next-condensed, sans-serif; font-size: 16px; font-weight: 700; line-height: 1; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
-html body .nt-full-btn:focus-visible, html body .nt-full-x:focus-visible { outline: 2px solid #18d6ff; outline-offset: 3px; box-shadow: 0 0 0 3px #000; }
-html body .nt-full-btn:focus:not(:focus-visible), html body .nt-full-x:focus:not(:focus-visible) { outline: none; }
+html body .nt-full-btn:focus-visible, html body .nt-full-x:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px #000; }
+html body .nt-full-btn:focus:not(:focus-visible), html body .nt-full-x:focus:not(:focus-visible), html body .nt-full-btn.is-quiet, html body .nt-full-x.is-quiet { outline: none; box-shadow: none; }
 /* opened: the window gives up its place to the flat page, which is part of the site page's flow */
 .nt-full-flat { display: none; box-sizing: border-box; padding-bottom: 96px; text-align: center; cursor: zoom-out; }
 .scroll_showcase.is-full .nt-full-flat { display: block; }
