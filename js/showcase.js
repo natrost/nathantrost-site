@@ -262,7 +262,7 @@
         /* the close button: the View full page button shrinks into it. The ring inside it fills as the page is scrolled */
         ctl = make('button', 'nt-full-x', document.body);
         ctl.setAttribute('aria-label', 'Close full page: ' + name);
-        ctl.innerHTML = '<span class="nt-full-x-label" aria-hidden="true">View full page</span><svg class="nt-full-x-mark" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2"/><circle class="nt-full-arc" cx="26" cy="26" r="23" fill="none" stroke="#18d6ff" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 26 26)"/><path d="M20 20l12 12M32 20L20 32" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+        ctl.innerHTML = '<span class="nt-full-x-label" aria-hidden="true">View full page</span><svg class="nt-full-x-mark" viewBox="0 0 52 52" aria-hidden="true"><circle class="nt-full-arc" cx="26" cy="26" r="23" fill="none" stroke="#fff" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 26 26)"/><path d="M20 20l12 12M32 20L20 32" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
         arc = ctl.querySelector('.nt-full-arc');
         ctl.addEventListener('click', close);
         roll(ctl, { drop: true });
