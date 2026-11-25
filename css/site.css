@@ -476,7 +476,7 @@ html body .nt-full-btn { pointer-events: auto; box-sizing: border-box; height: 5
 html body .nt-full-btn:focus-visible, html body .nt-full-x:focus-visible { outline: 2px solid #18d6ff; outline-offset: 3px; box-shadow: 0 0 0 3px #000; }
 html body .nt-full-btn:focus:not(:focus-visible), html body .nt-full-x:focus:not(:focus-visible) { outline: none; }
 /* opened: the window gives up its place to the flat page, which is part of the site page's flow */
-.nt-full-flat { display: none; box-sizing: border-box; padding-bottom: 96px; text-align: center; }
+.nt-full-flat { display: none; box-sizing: border-box; padding-bottom: 96px; text-align: center; cursor: zoom-out; }
 .scroll_showcase.is-full .nt-full-flat { display: block; }
 .scroll_showcase.is-full .scroll_showcase_frame { position: absolute; top: 0; visibility: hidden; pointer-events: none; }
 html body .nt-full-page { display: block; max-width: none; margin: 0 auto 64px; }

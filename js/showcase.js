@@ -12,7 +12,7 @@
   var GLITCH_MS = 600;   /* about how long the bad-tape moment lasts, in ms */
   var HOVER_MS = 450;    /* a rollover glitch is a quicker burst than the arrival */
   var HOVER_GAP = 900;   /* shortest wait between rollover glitches, in ms */
-  /* "View full page": a button on each window (clicking the window works too). The middle page straightens and grows to its own size while the side pages push off the screen and what shows above it lifts away; the window opens out to the whole screen and the page becomes part of the site page's own flow, so the visitor just scrolls through it and on to the next section. The button shrinks into a close button in the corner, with a ring that fills as the page is scrolled; that, Escape, or the Close button at the end folds it back from whatever part is showing, and the page then drifts back to its hero. FULL_ON is which pages have it (a match on the address).
+  /* "View full page": a button on each window (clicking the window works too). The middle page straightens and grows to its own size while the side pages push off the screen and what shows above it lifts away; the window opens out to the whole screen and the page becomes part of the site page's own flow, so the visitor just scrolls through it and on to the next section. The button shrinks into a close button in the corner, with a ring that fills as the page is scrolled; that, Escape, or a click anywhere on the open page folds it back from whatever part is showing, and the page then drifts back to its hero. FULL_ON is which pages have it (a match on the address).
      data-full on the .scroll_showcase block can point it at a larger copy of the page, only loaded once opened */
   var FULL_ON = /^\/work\/qualcomm-game-studios\/?$/;
   var OPEN_MS = 1150;    /* how long it takes to open */
@@ -258,7 +258,9 @@
         end = make('button', 'nt-full-btn', flat);
         end.textContent = 'Close';
         end.setAttribute('aria-label', 'Close full page: ' + name);
-        end.addEventListener('click', close); roll(end);
+        roll(end);
+        /* a click anywhere on it closes it: the page, the space beside it, or the Close button at the end */
+        flat.addEventListener('click', function (e) { if (e.button === 0) close(); });
         /* the close button: the View full page button shrinks into it. The ring inside it fills as the page is scrolled */
         ctl = make('button', 'nt-full-x', document.body);
         ctl.setAttribute('aria-label', 'Close full page: ' + name);
