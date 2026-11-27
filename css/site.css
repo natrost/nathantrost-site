@@ -649,8 +649,8 @@ html body .ig_card:focus-visible { transform: rotateY(0deg) translateZ(80px); bo
   html body .ig_wrap:not(.is-dragging) .ig_item:hover { z-index: 3000 !important; }
   html body .ig_wrap:not(.is-dragging) .ig_card:hover { transform: rotateY(0deg) translateZ(80px); box-shadow: 0 36px 60px -18px rgba(0, 0, 0, .5); }
 }
-/* the cards rise in, one after another, as the row comes on screen */
-.ig_wrap.nt-ig .ig_card_image { opacity: 0; translate: 0 30px; transition: opacity .7s ease calc(var(--i) * 60ms), translate 1s cubic-bezier(.16, 1, .3, 1) calc(var(--i) * 60ms); }
+/* the cards rise in one after another, left to right across the screen (the script sets each one's --d), as the row comes on screen */
+.ig_wrap.nt-ig .ig_card_image { opacity: 0; translate: 0 30px; transition: opacity .7s ease var(--d, 0ms), translate 1s cubic-bezier(.16, 1, .3, 1) var(--d, 0ms); }
 .ig_wrap.nt-ig.is-in .ig_card_image { opacity: 1; translate: none; }
 @media (max-width: 767px) { html body .ig_wrap { --w: 44vw; margin-top: -32px; } html body .ig_card { transform: rotateY(-28deg); } }
 /* no posts switched on: the section stays out of the page */

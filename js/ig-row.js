@@ -48,7 +48,8 @@
     function measure() {
       vw = wrap.clientWidth;
       cw = cards[0].offsetWidth;
-      half = list.scrollWidth / 2;
+      /* the loop's length is how far a card sits from its own copy (not half the row: the cards overlap, so that is a little longer) */
+      half = cards[set.length].offsetLeft - cards[0].offsetLeft;
       step = half / set.length;
       cards.forEach(function (c) { c._c = c.offsetLeft + c.offsetWidth / 2; });
     }
@@ -109,7 +110,7 @@
     /* drag and throw, as the project carousels do */
     wrap.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      dragging = true; moved = false; aim = null;
+      dragging = true; moved = false; aim = null; lifted = -1;
       startX = lastX = e.clientX; lastT = performance.now();
       vel = 0; momentum = 0;
       wrap.classList.add('is-dragging');
@@ -141,15 +142,16 @@
     wrap.addEventListener('pointerleave', function () { hover = false; if (!wrap.contains(document.activeElement)) lifted = -1; });
     /* the card under the mouse is the raised one */
     wrap.addEventListener('pointerover', function (e) {
-      if (e.pointerType !== 'mouse') return;
+      if (e.pointerType !== 'mouse' || dragging) return;
       var it = e.target.closest('.ig_item');
       lifted = it ? cards.indexOf(it) : -1;
     });
 
-    /* a card reached by the keyboard comes to the middle and stays there while focus is in the row */
+    /* a card reached by the keyboard comes to the middle and stays there while focus is in the row (a mouse press focuses a card too,
+       but that is a click or a drag, so only keyboard focus counts) */
     wrap.addEventListener('focusin', function (e) {
       var it = e.target.closest('.ig_item');
-      if (!it) return;
+      if (!it || !e.target.matches(':focus-visible')) return;
       wrap.scrollLeft = 0;
       momentum = 0;
       lifted = cards.indexOf(it);
@@ -161,10 +163,17 @@
       aim = null; lifted = -1;
     });
 
-    /* the cards rise in as the row comes on screen */
+    /* the cards rise in from left to right as the row comes on screen */
+    function comeIn() {
+      cards.map(function (c) { return { c: c, l: c.getBoundingClientRect().left }; })
+        .filter(function (o) { return o.l < vw && o.l > -cw; })
+        .sort(function (a, b) { return a.l - b.l; })
+        .forEach(function (o, k) { o.c.style.setProperty('--d', (k * 80) + 'ms'); });
+      wrap.classList.add('is-in');
+    }
     if ('IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (en) {
-        if (en[0].isIntersecting) { wrap.classList.add('is-in'); io.disconnect(); }
+        if (en[0].isIntersecting) { comeIn(); io.disconnect(); }
       }, { rootMargin: '0px 0px -10% 0px' });
       io.observe(wrap);
     } else wrap.classList.add('is-in');
