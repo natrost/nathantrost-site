@@ -631,9 +631,10 @@ html .nt-loader-name { bottom: -20px !important; }
 
 /* Instagram posts on a case study (js/ig-row.js): a looping row of cards across the full width of the screen that drifts, drags and throws
    like the project carousels. Each card is turned away and overlaps the next, all the same size; the script lifts and sinks each one by
-   where it is on screen, so the row climbs to the right, and slides cards aside around a raised one. Each card is its own 3D scene (so turned neighbours never cut into each other), and cards
+   where it is on screen, so the row climbs to the right, and slides cards aside around a raised one. The row's top padding is that climb,
+   so the highest card sits just under the copy above, and it only clips at the sides, so a raised card is never cut off Each card is its own 3D scene (so turned neighbours never cut into each other), and cards
    further left are drawn in front */
-html body .ig_wrap { --w: clamp(170px, 15vw, 250px); position: relative; width: 100vw; max-width: none; margin: 0 calc(50% - 50vw); padding: calc(20vw - 10px) 0 64px; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+html body .ig_wrap { --w: clamp(170px, 15vw, 250px); position: relative; width: 100vw; max-width: none; margin: -64px calc(50% - 50vw) 0; padding: 22vw 0 64px; overflow-x: clip; overflow-y: visible; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 html body .ig_wrap.is-dragging { cursor: grabbing; }
 html body .ig_list { display: flex; flex-wrap: nowrap; width: max-content; will-change: transform; }
 html body .ig_item { position: relative; flex: none; width: var(--w); transform-style: preserve-3d; perspective: 1400px; }
@@ -651,7 +652,7 @@ html body .ig_card:focus-visible { transform: rotateY(0deg) translateZ(80px); bo
 /* the cards rise in, one after another, as the row comes on screen */
 .ig_wrap.nt-ig .ig_card_image { opacity: 0; translate: 0 30px; transition: opacity .7s ease calc(var(--i) * 60ms), translate 1s cubic-bezier(.16, 1, .3, 1) calc(var(--i) * 60ms); }
 .ig_wrap.nt-ig.is-in .ig_card_image { opacity: 1; translate: none; }
-@media (max-width: 767px) { html body .ig_wrap { --w: 44vw; } html body .ig_card { transform: rotateY(-28deg); } }
+@media (max-width: 767px) { html body .ig_wrap { --w: 44vw; margin-top: -32px; } html body .ig_card { transform: rotateY(-28deg); } }
 /* no posts switched on: the section stays out of the page */
 section.nt-ig-empty { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .ig_wrap.nt-ig .ig_card_image, html body .ig_card { transition: none; } .ig_wrap.nt-ig .ig_card_image { translate: none; } }
