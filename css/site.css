@@ -630,10 +630,10 @@ html .nt-loader-num { font-size: min(15.625vw, calc((100vh - 27.75vw) / 2)) !imp
 html .nt-loader-name { bottom: -20px !important; }
 
 /* Instagram posts on a case study (js/ig-row.js): a looping row of cards across the full width of the screen that drifts, drags and throws
-   like the project carousels. Each card is turned away and overlaps the next; the script lifts and sinks each one by where it is on screen,
-   so the row climbs and recedes to the right. Each card is its own 3D scene (so turned neighbours never cut into each other), and cards
+   like the project carousels. Each card is turned away and overlaps the next, all the same size; the script lifts and sinks each one by
+   where it is on screen, so the row climbs to the right, and slides cards aside around a raised one. Each card is its own 3D scene (so turned neighbours never cut into each other), and cards
    further left are drawn in front */
-html body .ig_wrap { --w: clamp(170px, 15vw, 250px); position: relative; width: 100vw; max-width: none; margin: 0 calc(50% - 50vw); padding: calc(19vw - 30px) 0 64px; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+html body .ig_wrap { --w: clamp(170px, 15vw, 250px); position: relative; width: 100vw; max-width: none; margin: 0 calc(50% - 50vw); padding: calc(20vw - 10px) 0 64px; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 html body .ig_wrap.is-dragging { cursor: grabbing; }
 html body .ig_list { display: flex; flex-wrap: nowrap; width: max-content; will-change: transform; }
 html body .ig_item { position: relative; flex: none; width: var(--w); transform-style: preserve-3d; perspective: 1400px; }

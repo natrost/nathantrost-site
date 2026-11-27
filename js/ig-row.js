@@ -1,8 +1,9 @@
 /* Instagram posts on a case study (the "Instagram posts" CMS collection, shown by a collection list with the class ig_wrap): a row of cards,
    newest first, that moves like the project carousels: it drifts along on its own, can be dragged or thrown, and loops round without end.
-   Each card turns away and overlaps the next, and where a card is on screen sets how high and how far back it sits, so the row climbs
-   and recedes towards the right and the cards rise and sink as they travel. The drift pauses under the pointer, where a card straightens
-   and comes forward; keyboard focus brings a card to the middle. Each card opens its post in a new tab. Posts switched off in the CMS
+   Each card turns away and overlaps the next, all the same size, and where a card is on screen sets how high it sits, so the row climbs
+   towards the right and the cards rise and sink as they travel. The drift pauses under the pointer, where a card straightens and comes
+   forward while the cards in front of it slide aside to make room (and those behind it a little); keyboard focus brings a card to the
+   middle and raises it the same way. Each card opens its post in a new tab. Posts switched off in the CMS
    (Show/Hide) are left out by the list itself; with none switched on the whole section stays out of the page. With reduced motion the row
    does not drift, but can still be dragged */
 (function () {
@@ -10,8 +11,9 @@
   if (!wraps.length) return;
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SECONDS_PER_CARD = 4;   /* drift speed: lower is faster */
-  var RISE = 0.26;            /* how much higher the right edge of the screen sits than the left, as a share of the screen width */
-  var DEPTH = 520;            /* px the right edge sits further back than the left */
+  var RISE = 0.2;             /* how much higher the right edge of the screen sits than the left, as a share of the screen width */
+  var PART = 0.55;            /* how far the cards in front of a raised card slide aside, as a share of a card's width */
+  var PART_BEHIND = 0.2;      /* and the cards behind it */
   var slice = function (l) { return Array.prototype.slice.call(l); };
 
   slice(wraps).forEach(function (wrap) {
@@ -41,10 +43,11 @@
     /* cards further left are drawn in front */
     cards.forEach(function (c, i) { c.style.setProperty('--i', i % items.length); c.style.zIndex = cards.length - i; });
 
-    var x = 0, half = 0, step = 0, vw = 0, momentum = 0, aim = null, hover = false;
+    var x = 0, half = 0, step = 0, vw = 0, cw = 0, momentum = 0, aim = null, hover = false, lifted = -1;
     var dragging = false, moved = false, startX = 0, lastX = 0, lastT = 0, vel = 0;
     function measure() {
       vw = wrap.clientWidth;
+      cw = cards[0].offsetWidth;
       half = list.scrollWidth / 2;
       step = half / set.length;
       cards.forEach(function (c) { c._c = c.offsetLeft + c.offsetWidth / 2; });
@@ -55,13 +58,19 @@
       if (v > 0) v -= half;
       return v;
     }
-    /* each card's place on screen, from 0 (left edge) to 1 (right edge), sets how high it sits and how far back: full size at the left,
-       climbing and shrinking away to the right */
-    function place() {
-      var rise = vw * RISE;
-      cards.forEach(function (c) {
-        var t = Math.max(-0.2, Math.min(1.2, (c._c + x) / vw));
-        c.style.transform = 'perspective(1400px) translate3d(0,' + (-t * rise).toFixed(1) + 'px,' + (-t * DEPTH).toFixed(1) + 'px)';
+    /* each card's place on screen, from 0 (left edge) to 1 (right edge), sets how high it sits. Around a raised card the others ease
+       aside: those in front (to its left) by most of a card, those behind by a little, less the further they are from it */
+    function place(dt) {
+      var rise = vw * RISE, k = Math.min(1, dt * 10);
+      cards.forEach(function (c, i) {
+        var want = 0;
+        if (lifted >= 0 && !dragging && i !== lifted) {
+          var d = Math.abs(i - lifted), fall = Math.max(0, 1 - (d - 1) * 0.45);
+          want = (i < lifted ? -PART : PART_BEHIND) * cw * fall;
+        }
+        c._s = (c._s || 0) + (want - (c._s || 0)) * k;
+        var t = Math.max(-0.2, Math.min(1.2, (c._c + x + c._s) / vw));
+        c.style.transform = 'perspective(1400px) translate3d(' + c._s.toFixed(1) + 'px,' + (-t * rise).toFixed(1) + 'px,0)';
       });
     }
 
@@ -83,13 +92,13 @@
       }
       if (aim === null) x = loop(x);
       list.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
-      place();
+      place(dt);
       if (seen || dragging || Math.abs(momentum) > 1 || aim !== null) requestAnimationFrame(tick); else running = false;
     }
     function run() { if (!running) { running = true; prev = performance.now(); requestAnimationFrame(tick); } }
     measure();
     x = loop(-step * 0.5);
-    addEventListener('resize', function () { measure(); place(); });
+    addEventListener('resize', function () { measure(); place(1); });
     addEventListener('load', measure);
     /* it only moves while on screen, or while it is still being dragged or coasting */
     if ('IntersectionObserver' in window) {
@@ -129,7 +138,13 @@
     }, true);
     /* the drift rests under a mouse, so a card can be looked at */
     wrap.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hover = true; });
-    wrap.addEventListener('pointerleave', function () { hover = false; });
+    wrap.addEventListener('pointerleave', function () { hover = false; if (!wrap.contains(document.activeElement)) lifted = -1; });
+    /* the card under the mouse is the raised one */
+    wrap.addEventListener('pointerover', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      var it = e.target.closest('.ig_item');
+      lifted = it ? cards.indexOf(it) : -1;
+    });
 
     /* a card reached by the keyboard comes to the middle and stays there while focus is in the row */
     wrap.addEventListener('focusin', function (e) {
@@ -137,12 +152,13 @@
       if (!it) return;
       wrap.scrollLeft = 0;
       momentum = 0;
+      lifted = cards.indexOf(it);
       aim = vw / 2 - it._c;
       run();
     });
     wrap.addEventListener('focusout', function (e) {
       if (wrap.contains(e.relatedTarget)) return;
-      aim = null;
+      aim = null; lifted = -1;
     });
 
     /* the cards rise in as the row comes on screen */
